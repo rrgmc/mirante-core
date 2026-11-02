@@ -14,11 +14,18 @@ if(NOT MIRANTE_VERSION MATCHES "^[0-9]+\.[0-9]+\.[0-9]+$")
     message(FATAL_ERROR "MIRANTE_VERSION is \"${MIRANTE_VERSION}\", not X.Y.Z")
 endif()
 
-project(mirante
+project(mirante_core
     VERSION ${MIRANTE_VERSION}
     DESCRIPTION "A personal all-work desktop dashboard"
     HOMEPAGE_URL "https://github.com/rrgmc/mirante"
     LANGUAGES CXX)
+
+# Functions of the core run in a module's scope too, where PROJECT_SOURCE_DIR
+# may be the module's. An app fetches the core, so the core's folder is not the
+# top folder either. See docs/decisions/0125-how-modules-are-fetched.md.
+set(MIRANTE_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "The folder of the core")
+option(MIRANTE_CORE_TESTS "Build the core's own tests. Module tests are always built" ${PROJECT_IS_TOP_LEVEL})
+set(MIRANTE_MANIFEST "" CACHE FILEPATH "The manifest of the modules to build. Empty builds no modules")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -80,6 +87,7 @@ endif()
 include(MiranteTargets)
 include(Dependencies)
 include(MiranteModule)
+include(MiranteManifest)
 include(MiranteDeploy)
 include(MiranteInstall)
 
@@ -88,4 +96,6 @@ enable_testing()
 configure_file(cmake/Version.h.in "${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h" @ONLY)
 
 add_subdirectory(src)
-add_subdirectory(tests)
+if(MIRANTE_CORE_TESTS)
+    add_subdirectory(tests)
+endif()

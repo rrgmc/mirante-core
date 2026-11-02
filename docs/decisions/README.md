@@ -128,6 +128,8 @@ Each file records one design decision: what was decided, what else was considere
 | [0121](0121-modules-are-trusted-code.md) | Modules are trusted code, linked statically, without a sandbox | Accepted |
 | [0122](0122-custom-configuration-screens.md) | How a module gives a custom configuration screen | Accepted |
 | [0123](0123-tokens-stay-on-their-origin.md) | A token goes only to the origin of its server | Accepted |
+| [0124](0124-the-core-owns-the-app.md) | The core owns the app | Accepted |
+| [0125](0125-how-modules-are-fetched.md) | How the core fetches modules, and the fields of the manifest | Accepted |
 
 ## Template
 

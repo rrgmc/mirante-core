@@ -50,7 +50,7 @@ function(mirante_add_library name)
         "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
     add_library(${name} STATIC ${sources})
     target_include_directories(${name} PUBLIC
-        "${PROJECT_SOURCE_DIR}/src"
+        "${MIRANTE_CORE_DIR}/src"
         "${PROJECT_BINARY_DIR}/generated")
     target_link_libraries(${name} PUBLIC ${ARG_LIBS})
     mirante_set_warnings(${name})
@@ -72,7 +72,7 @@ function(mirante_precompile_headers target)
     if(ARG_REUSE_FROM)
         target_precompile_headers(${target} REUSE_FROM ${ARG_REUSE_FROM})
     else()
-        target_precompile_headers(${target} PRIVATE "${PROJECT_SOURCE_DIR}/cmake/MirantePrecompiled.h")
+        target_precompile_headers(${target} PRIVATE "${MIRANTE_CORE_DIR}/cmake/MirantePrecompiled.h")
     endif()
 endfunction()
 
@@ -86,7 +86,7 @@ function(mirante_add_test name)
     cmake_parse_arguments(ARG "" "PCH_FROM" "SOURCES;LIBS" ${ARGN})
     # Every test links the same OffscreenByDefault.cpp, so it is compiled once.
     if(NOT TARGET mirante_test_support)
-        add_library(mirante_test_support OBJECT "${PROJECT_SOURCE_DIR}/tests/support/OffscreenByDefault.cpp")
+        add_library(mirante_test_support OBJECT "${MIRANTE_CORE_DIR}/tests/support/OffscreenByDefault.cpp")
         target_link_libraries(mirante_test_support PRIVATE Qt6::Core)
         mirante_set_warnings(mirante_test_support)
     endif()
@@ -97,7 +97,7 @@ function(mirante_add_test name)
     # relative to the test's own file would rely on the path compiled into it,
     # which ccache can change.
     target_compile_definitions(${name} PRIVATE
-        MIRANTE_FIXTURES_DIR="${PROJECT_SOURCE_DIR}/resources/fixtures")
+        MIRANTE_FIXTURES_DIR="${MIRANTE_CORE_DIR}/resources/fixtures")
     mirante_set_warnings(${name})
     # QSKIP and other Qt Test macros are variadic. Called with one argument,
     # they trip this pedantic Clang warning in C++17.

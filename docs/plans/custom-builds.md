@@ -56,7 +56,7 @@ The app's `CMakeLists.txt` is short, and the template holds it unchanged:
 cmake_minimum_required(VERSION 3.21)
 
 set(MIRANTE_VERSION "0.7.0" CACHE STRING "This app's version, as X.Y.Z")
-project(mirante VERSION ${MIRANTE_VERSION} LANGUAGES CXX)
+project(mirante LANGUAGES NONE)
 enable_testing()
 
 set(MIRANTE_MANIFEST "${CMAKE_CURRENT_SOURCE_DIR}/mirante.json")
@@ -72,13 +72,14 @@ FetchContent_MakeAvailable(mirante_core)
 These choices follow from how CMake works, and part 2 tests each of them:
 
 - **`enable_testing()` is in the app.** `ctest` in the top build folder finds only tests below a top folder that called it.
+- **The app's `project()` has `LANGUAGES NONE`.** The core sets a policy before its own `project()`, which must be the first with a language for that policy to apply.
 - **The core fetches the modules from inside its own directory scope,** where `src/modules` is added today. `find_package(Qt6)` makes imported targets that only that folder and those below it can see, so a module added from the app's scope would not find `Qt6::Core`. It also keeps the order: the module interface exists before the first module, and `mirante_finish_modules()` runs after the last one.
 - **A module repository's top `CMakeLists.txt` never runs in an app.** `FetchContent_MakeAvailable` would run it, so each module repository is declared with a `SOURCE_SUBDIR` that does not exist, and the core calls `add_subdirectory()` for each listed folder. That top file exists for the module repository's own CI.
 - **Paths use `MIRANTE_CORE_DIR`.** Functions such as `mirante_add_test()` and `mirante_precompile_headers()` run in a module's scope, and a module folder with its own `project()` changes `PROJECT_SOURCE_DIR`. The core sets `MIRANTE_CORE_DIR` once, as an internal cache variable, and every use of `PROJECT_SOURCE_DIR` in `cmake/` and `src/` changes to it.
 - **The install and CPack use `CMAKE_BINARY_DIR`.** `CPACK_INSTALL_CMAKE_PROJECTS` and `CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS` in `cmake/MiranteInstall.cmake` must name the top build folder, not the core's folder inside it.
 - **A manifest is optional for the core.** Without `MIRANTE_MANIFEST`, the core builds with no modules. That is the `no-modules` build of today, and the core's own development build uses `ci/modules.json` (part 3).
 
-The version stays the app's. The core has its own `project()`, so its `PROJECT_VERSION` no longer applies. It reads `MIRANTE_VERSION`, and `cmake/Version.h.in` uses that. `PROJECT_DESCRIPTION` and `PROJECT_HOMEPAGE_URL` become fixed values in the core, because every build is the same app.
+The version stays the app's: the app sets `MIRANTE_VERSION`, and the core's own `project()`, now named `mirante_core`, takes its version from that. `PROJECT_DESCRIPTION` and `PROJECT_HOMEPAGE_URL` stay in the core's `project()`, because every build is the same app.
 
 ## Part 1: Create and extract the repositories
 
@@ -106,8 +107,8 @@ Before the real change, a small test project confirms the CMake choices under "F
 
 Then, in `mirante-core`:
 
-- `cmake/MiranteManifest.cmake`: `mirante_read_manifest()` checks the fields and fetches each repository. `mirante_add_manifest_modules()` adds the listed folders, with a binary folder named `modules/<name>/<folder>`.
-- `src/modules/CMakeLists.txt` goes, and `src/CMakeLists.txt` calls those functions instead.
+- `cmake/MiranteManifest.cmake`: `mirante_add_manifest_modules()` checks the fields, fetches each repository and adds the listed folders, with a binary folder named `modules/<name>/<folder>`.
+- `src/CMakeLists.txt` calls that function. Part 4 adds a separate step that reads the `qt` list, because it must run before `find_package(Qt6)`.
 - `MIRANTE_CORE_DIR` and `CMAKE_BINARY_DIR` replace the paths named above.
 - `mirante_finish_modules()` reads `cmake/enabled_modules.cpp.in` from `MIRANTE_CORE_DIR`.
 - `option(MIRANTE_CORE_TESTS)` is on when the core is the top project, and off in an app. Module tests are always added. `tests/support/OffscreenByDefault.cpp` stays available, since they need it.
@@ -214,4 +215,4 @@ After the user approves, and only then:
 
 - macOS changes are checked by the CI jobs of `mirante-app` and `mirante-core`. The user builds by hand from time to time, as now.
 - The Developer ID path of the signing job can be proved only in `mirante`, in part 9.
-- Whether Windows paths stay short enough in a build folder such as `build/ci/_deps/mirante_core-src` is not known. Qt's generated files have long names. Part 2 finds out.
+- Windows path lengths were tried in part 2 and are fine: a sample app built, tested and packaged all nine modules from a build folder about 80 characters long. A much deeper checkout could still hit the limit.

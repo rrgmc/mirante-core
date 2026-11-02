@@ -69,14 +69,14 @@ The function:
 5. adds the module's tests to CTest, named `module_<id>_<file>`;
 6. adds the module to the list of enabled modules.
 
-The top-level `CMakeLists.txt` adds every folder in `src/modules/` that has a `CMakeLists.txt`. After all modules are added, it checks `DEPENDS`. If an enabled module depends on a disabled one, configuration stops with a message that names both.
+The core adds each folder that the manifest lists. See [building with modules](../BUILDING.md#building-with-modules) and [decision 0125](decisions/0125-how-modules-are-fetched.md). After all modules are added, it checks `DEPENDS`. If an enabled module depends on a disabled one, configuration stops with a message that names both.
 
 **`DEPENDS`.** A module listed there is linked, and its folder goes on the include path, so its headers are included by file name, such as `#include "GitLabClient.h"`. A module not listed stays out of reach, and the app itself gets none of these paths. Quick add handlers and related-item finders need no dependency, so prefer them where they fit. A test in `tests/cmake/depends/` covers this.
 
 **Choosing modules:**
 
-- one option at a time: `-DMIRANTE_MODULE_JIRA=OFF`;
-- an exact list: `-DMIRANTE_MODULES="gitlab;web;notes"`, which enables those modules and disables all others;
+- the manifest: a listed folder is built, whatever its `DEFAULT` says;
+- an exact list, within what the manifest lists: `-DMIRANTE_MODULES="gitlab;web;notes"`, which enables those modules and disables all others;
 - a configure preset in `CMakePresets.json`, for builds that are used often.
 
 **Registration.** CMake generates `enabled_modules.cpp` in the build folder. It calls each enabled module's register function, in alphabetical order of module id:

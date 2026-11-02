@@ -216,14 +216,16 @@ jobs:
           cmake --build --preset ci-no-modules
           ctest --preset ci-no-modules
 
-      # lupdate reads every module's sources, also in a build without them.
-      # The committed translation files must be up to date and complete.
+      # The committed translation files must be up to date and complete. A file
+      # that CMake made under another name is untracked, so git diff would not
+      # show it, and the app would not load it.
       - name: Check translations
         run: |
           cmake --build --preset ci-no-modules --target update_translations
           python3 tools/translation-glossary.py
           python3 tools/check-translations.py
           git diff --exit-code translations/
+          test -z "$(git status --porcelain translations/)"
 
   module-includes:
     needs: changes

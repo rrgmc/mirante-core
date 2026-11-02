@@ -20,6 +20,17 @@ add_test(NAME cmake_module_depends
         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/depends/run_test.cmake")
 set_tests_properties(cmake_module_depends PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 
+# The manifest, with an app as the top project, in a small project of its own.
+add_test(NAME cmake_module_manifest
+    COMMAND "${CMAKE_COMMAND}"
+        "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/cmake/manifest"
+        "-DBINARY=${CMAKE_CURRENT_BINARY_DIR}/cmake_module_manifest"
+        "-DGENERATOR=${CMAKE_GENERATOR}"
+        "-DCOMPILER=${CMAKE_CXX_COMPILER}"
+        "-DPREFIX=${CMAKE_PREFIX_PATH}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/manifest/run_test.cmake")
+set_tests_properties(cmake_module_manifest PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+
 # The pages that tst_dash_scheme loads from dash://panels/test/.
 qt_add_resources(web_tst_dash_scheme dash_test_pages
     PREFIX /panels/test
