@@ -47,6 +47,24 @@ cd build/release && cpack
 
 [docs/releasing.md](docs/releasing.md) says how to publish a release.
 
+## Building with modules
+
+The core alone has no modules. A manifest names the modules to build, and the core fetches them when it configures. See [decision 0125](docs/decisions/0125-how-modules-are-fetched.md). A manifest is usually in an app repository, but the core can also use one directly:
+
+```sh
+cmake --preset dev -DMIRANTE_MANIFEST=<path to mirante.json>
+```
+
+To use a checkout on disk in place of a pinned repository, without changing the manifest, name it with its `name` from the manifest in capitals:
+
+```sh
+cmake --preset dev -DMIRANTE_MANIFEST=<path to mirante.json> -DFETCHCONTENT_SOURCE_DIR_MIRANTE_MODULES=<folder>
+```
+
+An app repository does the same for the core, with `FETCHCONTENT_SOURCE_DIR_MIRANTE_CORE`.
+
+## Compiling faster
+
 If [ccache](https://ccache.dev) is installed, the build uses it, so worktrees and presets share what they have compiled. Each still has its own build folder. To share between worktrees at different paths, tell it where they live once, with the parent folder of all of them:
 
 ```sh

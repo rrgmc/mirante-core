@@ -22,7 +22,7 @@ function(mirante_add_install target)
     install(TARGETS ${target}
         BUNDLE DESTINATION . COMPONENT Mirante
         RUNTIME DESTINATION "${app_dir}/bin" COMPONENT Mirante)
-    install(FILES "${PROJECT_SOURCE_DIR}/LICENSE" DESTINATION "${app_dir}" COMPONENT Mirante)
+    install(FILES "${MIRANTE_CORE_DIR}/LICENSE" DESTINATION "${app_dir}" COMPONENT Mirante)
 
     # The Visual C++ runtime comes from InstallRequiredSystemLibraries below.
     # Qt Widgets on Direct3D 11 needs neither the shader compilers nor the
@@ -81,11 +81,11 @@ function(mirante_add_install target)
         set(CMAKE_INSTALL_SYSTEM_RUNTIME_COMPONENT Mirante)
         include(InstallRequiredSystemLibraries)
     elseif(NOT APPLE)
-        install(FILES "${PROJECT_SOURCE_DIR}/resources/linux/mirante.desktop"
+        install(FILES "${MIRANTE_CORE_DIR}/resources/linux/mirante.desktop"
             DESTINATION usr/share/applications COMPONENT Mirante)
-        install(FILES "${PROJECT_SOURCE_DIR}/resources/icons/mirante.svg"
+        install(FILES "${MIRANTE_CORE_DIR}/resources/icons/mirante.svg"
             DESTINATION usr/share/icons/hicolor/scalable/apps COMPONENT Mirante)
-        install(FILES "${PROJECT_SOURCE_DIR}/resources/linux/apparmor-mirante"
+        install(FILES "${MIRANTE_CORE_DIR}/resources/linux/apparmor-mirante"
             DESTINATION etc/apparmor.d RENAME mirante COMPONENT Mirante)
         install(CODE "
             file(MAKE_DIRECTORY \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/usr/bin\")
@@ -107,10 +107,10 @@ function(mirante_add_install target)
         endif()
         install(CODE "
             execute_process(
-                COMMAND sh \"${PROJECT_SOURCE_DIR}/tools/sign-macos.sh\"
+                COMMAND sh \"${MIRANTE_CORE_DIR}/tools/sign-macos.sh\"
                     \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${target}.app\"
                     \"${identity}\"
-                    \"${PROJECT_SOURCE_DIR}/resources/macos/webengine.entitlements\"
+                    \"${MIRANTE_CORE_DIR}/resources/macos/webengine.entitlements\"
                 COMMAND_ERROR_IS_FATAL ANY)
         " COMPONENT Mirante)
     endif()
@@ -128,9 +128,9 @@ function(mirante_add_package)
     set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
     set(CPACK_PACKAGE_INSTALL_DIRECTORY Mirante)
     set(CPACK_PACKAGE_EXECUTABLES mirante Mirante)
-    set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
+    set(CPACK_RESOURCE_FILE_LICENSE "${MIRANTE_CORE_DIR}/LICENSE")
     # The component Mirante only, in one package.
-    set(CPACK_INSTALL_CMAKE_PROJECTS "${PROJECT_BINARY_DIR};${PROJECT_NAME};Mirante;/")
+    set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_BINARY_DIR};${PROJECT_NAME};Mirante;/")
 
     if(WIN32)
         set(CPACK_GENERATOR NSIS)
@@ -157,10 +157,10 @@ function(mirante_add_package)
         set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
         # dpkg-shlibdeps finds the bundled Qt libraries here, and leaves them
         # out of the dependencies.
-        set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS "${PROJECT_BINARY_DIR}/_CPack_Packages/Linux/DEB/${CPACK_PACKAGE_FILE_NAME}/opt/mirante/lib")
+        set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS "${CMAKE_BINARY_DIR}/_CPack_Packages/Linux/DEB/${CPACK_PACKAGE_FILE_NAME}/opt/mirante/lib")
         set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
-            "${PROJECT_SOURCE_DIR}/resources/linux/postinst"
-            "${PROJECT_SOURCE_DIR}/resources/linux/prerm")
+            "${MIRANTE_CORE_DIR}/resources/linux/postinst"
+            "${MIRANTE_CORE_DIR}/resources/linux/prerm")
         set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION ON)
     endif()
 
@@ -180,7 +180,7 @@ endfunction()
 # at the start of .onInit. A macro, so the variables reach include(CPack) in
 # the caller's scope.
 macro(mirante_add_nsis_finish_options)
-    file(TO_NATIVE_PATH "${PROJECT_SOURCE_DIR}/resources/app/mirante.ico" _mirante_ico)
+    file(TO_NATIVE_PATH "${MIRANTE_CORE_DIR}/resources/app/mirante.ico" _mirante_ico)
     set(_mirante_nsis_code [=[
 !define MUI_ICON "@ICO@"
 !define MUI_UNICON "@ICO@"

@@ -15,7 +15,7 @@
 # - Linux: only the executable. It finds Qt through its RPATH, so it runs on
 #   the machine that built it. Linux builds are not packaged yet.
 function(mirante_add_bin_folder target)
-    set(bin_dir "${PROJECT_BINARY_DIR}/bin")
+    set(bin_dir "${CMAKE_BINARY_DIR}/bin")
 
     if(WIN32)
         if(NOT TARGET Qt6::windeployqt)

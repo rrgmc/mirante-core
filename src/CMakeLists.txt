@@ -10,6 +10,7 @@ add_subdirectory(items)
 add_subdirectory(layout)
 add_subdirectory(platform)
 add_subdirectory(ui)
+mirante_add_manifest_modules()
 
 qt_add_executable(mirante WIN32 MACOSX_BUNDLE main.cpp)
 # The executable's icon and version on Windows, and the bundle's icon,
@@ -18,11 +19,11 @@ qt_add_executable(mirante WIN32 MACOSX_BUNDLE main.cpp)
 # 0103). While the app runs, the window icon comes from resources/icons.
 # tools/make-macos-icon.sh makes the .icns from it.
 if(WIN32)
-    configure_file("${PROJECT_SOURCE_DIR}/resources/app/mirante.rc.in"
+    configure_file("${MIRANTE_CORE_DIR}/resources/app/mirante.rc.in"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/mirante.rc" @ONLY)
     target_sources(mirante PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/mirante.rc")
 elseif(APPLE)
-    set(bundle_icon "${PROJECT_SOURCE_DIR}/resources/app/mirante.icns")
+    set(bundle_icon "${MIRANTE_CORE_DIR}/resources/app/mirante.icns")
     set_source_files_properties("${bundle_icon}" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     target_sources(mirante PRIVATE "${bundle_icon}")
     set_target_properties(mirante PROPERTIES
@@ -61,17 +62,19 @@ qt_add_translations(mirante
     SOURCES ${translation_sources}
     # lupdate follows the includes to find the class of each tr().
     INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/module_api"
-    TS_FILE_DIR "${PROJECT_SOURCE_DIR}/translations"
+    TS_FILE_DIR "${MIRANTE_CORE_DIR}/translations"
+    # main.cpp loads :/i18n/mirante_<language>. The default is the project's name.
+    TS_FILE_BASE mirante
     RESOURCE_PREFIX /i18n
     LUPDATE_OPTIONS -locations none -no-obsolete)
 
 # The fixture data folder, loaded unless the app is started with --data.
 file(GLOB_RECURSE fixture_files CONFIGURE_DEPENDS
-    "${PROJECT_SOURCE_DIR}/resources/fixtures/*.json"
-    "${PROJECT_SOURCE_DIR}/resources/fixtures/*.mirante")
+    "${MIRANTE_CORE_DIR}/resources/fixtures/*.json"
+    "${MIRANTE_CORE_DIR}/resources/fixtures/*.mirante")
 if(fixture_files)
     qt_add_resources(mirante fixtures
         PREFIX /fixtures
-        BASE "${PROJECT_SOURCE_DIR}/resources/fixtures"
+        BASE "${MIRANTE_CORE_DIR}/resources/fixtures"
         FILES ${fixture_files})
 endif()
