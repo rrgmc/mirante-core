@@ -1,7 +1,8 @@
-# Builds and tests the core on Windows, macOS and Linux, and checks that every
-# text is translated. Modules are in the repository mirante-modules, so this
-# repository has none yet. Each build also makes its package and keeps it for a
-# week. The packages are not signed, and this repository makes no releases.
+# Builds and tests the core on Windows, macOS and Linux, with the modules that
+# ci/modules.json pins and with none, and checks that modules include only the
+# module API and that every text is translated. Each build also makes its
+# package and keeps it for a week. The packages are not signed, and this
+# repository makes no releases.
 # Qt comes from tools/setup-qt, as in local builds, into a cached folder
 # outside the checkout. ccache keeps compiled objects between runs, so builds
 # here use no precompiled headers, and the tests run in parallel. A pull request
@@ -227,6 +228,8 @@ jobs:
           git diff --exit-code translations/
           test -z "$(git status --porcelain translations/)"
 
+  # Checks the modules that ci/modules.json pins, as mirante-modules does for
+  # each change of its own.
   module-includes:
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
@@ -234,9 +237,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Find the pinned modules
+        id: modules
+        run: echo "ref=$(jq -r '.modules[0].ref' ci/modules.json)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
         with:
-          python-version: "3.x"
+          repository: rrgmc/mirante-modules
+          ref: ${{ steps.modules.outputs.ref }}
+          path: pinned-modules
+          persist-credentials: false
 
       - name: Check module includes
-        run: python tools/check-module-includes.py
+        run: python3 tools/check-module-includes.py pinned-modules

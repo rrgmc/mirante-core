@@ -220,7 +220,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
 
 ## GitHub
 
-Module `github`. All GitHub types talk to the GitHub server of the item's profile, set in its GitHub General Configuration: a web address, `https://github.com` by default, and a token. For any other host, such as GitHub Enterprise Server, the API is at `<web address>/api/v3`. In the item dialog, every `repository` field offers the repositories of that screen in an editable list. Another repository can still be typed. See [decision 0102](decisions/0102-github-module.md) and the [module's README](../src/modules/github/README.md).
+Module `github`. All GitHub types talk to the GitHub server of the item's profile, set in its GitHub General Configuration: a web address, `https://github.com` by default, and a token. For any other host, such as GitHub Enterprise Server, the API is at `<web address>/api/v3`. In the item dialog, every `repository` field offers the repositories of that screen in an editable list. Another repository can still be typed. See [decision 0102](decisions/0102-github-module.md) and the [module's README](https://github.com/rrgmc/mirante-modules/blob/master/github/README.md).
 
 The types follow the GitLab types. A pull request is GitLab's merge request, an Actions run is GitLab's pipeline, and the summaries, pages and lists have the same rules: fixed layouts with sections, "Loading…", plain text, local dates, "Open page" and the Web link. These rules differ:
 

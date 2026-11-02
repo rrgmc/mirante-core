@@ -11,6 +11,8 @@
 #   tools/build.ps1 -Package         after the tests, install into
 #                                    build/<preset>/install, check the install
 #                                    and make the setup with CPack
+#   tools/build.ps1 -Source <folder> build the presets of an app repository
+#                                    in that folder, instead of this one
 #
 # Downloads Qt with tools/setup-qt.ps1 if it is missing, and enters the
 # Visual Studio 2022 developer environment if the shell is not in one.
@@ -21,12 +23,13 @@ param(
     [string]$Target,
     [string]$Version,
     [switch]$NoPch,
-    [switch]$Package
+    [switch]$Package,
+    [string]$Source
 )
 
 $ErrorActionPreference = 'Stop'
 
-$Repo = Split-Path -Parent $PSScriptRoot
+$Repo = if ($Source) { (Resolve-Path $Source).Path } else { Split-Path -Parent $PSScriptRoot }
 
 # Windows locks a running program's file, so the build would fail near its end.
 # Closing the window can leave Mirante running, hidden in the tray.

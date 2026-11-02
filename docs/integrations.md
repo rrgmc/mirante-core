@@ -33,7 +33,7 @@ Main endpoints:
 | Latest issue notes | `GET /projects/:id/issues/:iid/notes?sort=desc&order_by=created_at` |
 | Current user | `GET /user`, to resolve "me" in presets and attention |
 
-Project and group paths such as `acme/backend` are URL-encoded and used as `:id`, as in `acme%2Fbackend`. The branch in `ref` is URL-encoded too. `GitLabClient` in the module has one method per endpoint; see the [module's README](../src/modules/gitlab/README.md#the-client).
+Project and group paths such as `acme/backend` are URL-encoded and used as `:id`, as in `acme%2Fbackend`. The branch in `ref` is URL-encoded too. `GitLabClient` in the module has one method per endpoint; see the [module's README](https://github.com/rrgmc/mirante-modules/blob/master/gitlab/README.md#the-client).
 
 What each item type asks for its status:
 
@@ -72,7 +72,7 @@ Main endpoints:
 | Jobs of a run | `GET /repos/:owner/:repo/actions/runs/:id/jobs?filter=latest` |
 | Re-run or cancel | `POST /repos/:owner/:repo/actions/runs/:id/rerun`, `.../rerun-failed-jobs`, `.../cancel`, `POST /repos/:owner/:repo/actions/jobs/:id/rerun` |
 
-The owner and the repository's name are URL-encoded each on its own. A branch in a query and the search query are URL-encoded too. `GitHubClient` in the module has one method per endpoint; see the [module's README](../src/modules/github/README.md#the-client).
+The owner and the repository's name are URL-encoded each on its own. A branch in a query and the search query are URL-encoded too. `GitHubClient` in the module has one method per endpoint; see the [module's README](https://github.com/rrgmc/mirante-modules/blob/master/github/README.md#the-client).
 
 What each item type asks for its status:
 
