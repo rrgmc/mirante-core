@@ -10,7 +10,6 @@ add_subdirectory(items)
 add_subdirectory(layout)
 add_subdirectory(platform)
 add_subdirectory(ui)
-add_subdirectory(modules)
 
 qt_add_executable(mirante WIN32 MACOSX_BUNDLE main.cpp)
 # The executable's icon and version on Windows, and the bundle's icon,

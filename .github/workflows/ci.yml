@@ -1,7 +1,7 @@
-# Builds and tests Mirante on Windows, macOS and Linux, with all modules and
-# with none, and checks that modules include only the module API and that every
-# text is translated. Each build also makes its package and keeps it for a
-# week. The packages are not signed; releases come from release.yml.
+# Builds and tests the core on Windows, macOS and Linux, and checks that every
+# text is translated. Modules are in the repository mirante-modules, so this
+# repository has none yet. Each build also makes its package and keeps it for a
+# week. The packages are not signed, and this repository makes no releases.
 # Qt comes from tools/setup-qt, as in local builds, into a cached folder
 # outside the checkout. ccache keeps compiled objects between runs, so builds
 # here use no precompiled headers, and the tests run in parallel. A pull request
@@ -18,8 +18,7 @@ run-name: ${{ github.event_name == 'pull_request' && format('#{0} {1}', github.e
 
 on:
   # Work branches are checked by their pull request, so a push to one does not
-  # start a second run of the same commit. Tags start release.yml, which builds
-  # and tests on its own.
+  # start a second run of the same commit.
   push:
     branches: [master]
   pull_request:

@@ -1,6 +1,8 @@
-# Mirante
+# Mirante core
 
-A personal "all work" desktop dashboard in Qt 6 (C++17, Qt Widgets, CMake) for Windows, macOS and Linux. Start with [docs/README.md](docs/README.md).
+The core and the module interface of Mirante, a personal "all work" desktop dashboard in Qt 6 (C++17, Qt Widgets, CMake) for Windows, macOS and Linux. Start with [docs/README.md](docs/README.md).
+
+This repository is part of the trial of custom builds, with `mirante-modules` and `mirante-app`. `mirante` stays the official app until the user approves the result. See [the code plan](docs/plans/custom-builds.md) and [decision 0116](docs/decisions/0116-custom-builds-in-separate-repositories.md).
 
 ## Git workflow
 
