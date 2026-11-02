@@ -61,7 +61,7 @@ task test PRESET=ci-no-modules
 
 - **The `ci` presets treat warnings as errors**, as CI does. The `dev` preset of `task check` lets
   some MSVC warnings through that fail the Windows job.
-- **`ci-no-modules` may be skipped** when the change touches nothing under `src/modules/` and no
+- **`ci-no-modules` may be skipped** when the change changes neither `ci/modules.json` nor
   code that modules use. Say so in the pull request.
 
 ```sh

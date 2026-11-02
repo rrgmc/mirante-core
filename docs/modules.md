@@ -18,12 +18,12 @@ A module is one folder of item types and the code they share. Modules are compil
 
 All modules are enabled by default. The item types are described in [item types](item-types.md). The gitlab, github and jira modules keep the server they talk to in their [settings screens](#settings-screens), one per profile; see [decision 0054](decisions/0054-module-settings-replace-connections.md).
 
-Built-in panels (`dash.panel`) belong to the core, not to a module in `src/modules/`, because the `dash://` scheme and its bridge are core code. The core registers them as its own module, `dash`, named "Built in", with `ItemTypeRegistry::registerBuiltInModule()` before the enabled modules. It is part of every build, and the item dialog offers its types no profile, since panels use the app profile. See [web views](web-views.md#built-in-panels) and [decision 0094](decisions/0094-built-in-panels-as-a-core-item-type.md).
+Built-in panels (`dash.panel`) belong to the core, not to a module repository, because the `dash://` scheme and its bridge are core code. The core registers them as its own module, `dash`, named "Built in", with `ItemTypeRegistry::registerBuiltInModule()` before the enabled modules. It is part of every build, and the item dialog offers its types no profile, since panels use the app profile. See [web views](web-views.md#built-in-panels) and [decision 0094](decisions/0094-built-in-panels-as-a-core-item-type.md).
 
 ## Folder layout
 
 ```
-src/modules/gitlab/
+gitlab/
   CMakeLists.txt         calls mirante_add_module()
   README.md              what the module does, its types and settings
   GitLabModule.cpp       the register function
@@ -422,7 +422,7 @@ The app speaks English and Brazilian Portuguese ([decision 0086](decisions/0086-
 
 ## Adding a module
 
-1. Create `src/modules/<id>/` with a `CMakeLists.txt` that calls `mirante_add_module()`.
+1. Create a folder `<id>/` in a module repository, with a `CMakeLists.txt` that calls `mirante_add_module()`, and list it in the manifest.
 2. Write `registerModule(ModuleRegistrar &)` in the namespace `mirante::modules::<id>`.
 3. Give the module a name with `setModuleName()`. Register the item types and any settings screens, settings and quick add handlers. Give each item type a short label with `shortName()`, such as "MR", for its cell headers. If a type shows something that has a web address, implement `fromUrl()`; see [items from a link](#items-from-a-link).
 4. Add tests and a `README.md`.

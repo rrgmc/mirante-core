@@ -8,7 +8,7 @@ With [Task](https://taskfile.dev) installed, the common commands are the same on
 task                         # lists the tasks
 task build                   # builds the dev preset
 task test PRESET=release     # builds and tests another preset
-task check                   # the include and translation checks, then tests with all modules and with none
+task check                   # the translation check, then tests with all modules and with none
 task translations            # updates translations/ after a text changed; see translations/README.md
 task run -- -Data <folder>   # starts the build, on Windows
 ```
@@ -49,7 +49,7 @@ cd build/release && cpack
 
 ## Building with modules
 
-The core alone has no modules. A manifest names the modules to build, and the core fetches them when it configures. See [decision 0125](docs/decisions/0125-how-modules-are-fetched.md). A manifest is usually in an app repository, but the core can also use one directly:
+The modules are in other repositories. A manifest names the modules to build, and the core fetches them when it configures, so the first configure needs the network. See [decision 0125](docs/decisions/0125-how-modules-are-fetched.md). The `dev`, `release` and `ci` presets use `ci/modules.json`, which pins `mirante-modules` to a commit. The `no-modules` and `ci-no-modules` presets use no manifest. Another manifest is chosen like this:
 
 ```sh
 cmake --preset dev -DMIRANTE_MANIFEST=<path to mirante.json>
@@ -58,10 +58,14 @@ cmake --preset dev -DMIRANTE_MANIFEST=<path to mirante.json>
 To use a checkout on disk in place of a pinned repository, without changing the manifest, name it with its `name` from the manifest in capitals:
 
 ```sh
-cmake --preset dev -DMIRANTE_MANIFEST=<path to mirante.json> -DFETCHCONTENT_SOURCE_DIR_MIRANTE_MODULES=<folder>
+cmake --preset dev -DFETCHCONTENT_SOURCE_DIR_MIRANTE_MODULES=<folder>
 ```
 
-An app repository does the same for the core, with `FETCHCONTENT_SOURCE_DIR_MIRANTE_CORE`.
+An app repository does the same for the core, with `FETCHCONTENT_SOURCE_DIR_MIRANTE_CORE`. On Windows, `tools/build.ps1 -Source <folder>` builds the presets of an app repository.
+
+`.github/workflows/build-app.yml` is the workflow that an app repository calls to build, test and package itself. Its only other requirement is a preset named `ci`.
+
+An interface change that breaks the modules takes these steps: a branch in `mirante-modules` with the fix, the core's pull request with `ci/modules.json` pinned to that branch, a new pin of the core in `mirante-modules`, and the merged commit in `ci/modules.json`.
 
 ## Compiling faster
 

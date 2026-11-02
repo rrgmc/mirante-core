@@ -121,7 +121,10 @@ Then, in `mirante-core`:
 - **`mirante-modules`** gets a top `CMakeLists.txt` for its own CI, which fetches the core and builds all folders, and a `tools/check-module-includes.py` run. The script moves to the core and takes the folder to scan as an argument, so it also covers external modules.
 - **`mirante-core`** gets `ci/modules.json`, a manifest that pins `mirante-modules` to a commit. The core's CI builds that manifest, so the split does not hide a break, as decision 0119 asks. A pull request that breaks the modules points the file at a branch of `mirante-modules` that holds the fix. The order for an interface change is therefore: a branch in `mirante-modules`, the core's pull request with the pin on that branch, a tag of the core, the modules' pull request, a tag of the modules, and the app's pins. Part 7 measures this cost.
 - **`mirante-app`** gets `mirante.json` and the `CMakeLists.txt` above. Local work uses `-DFETCHCONTENT_SOURCE_DIR_MIRANTE_CORE=<folder>`, and `BUILDING.md` in the core says how.
-- At the end of this part, `mirante-app` builds, tests and installs on Windows, and on Linux in CI.
+- **`.github/workflows/build-app.yml`** comes from part 6 to this part, without signing, so that `mirante-app` and `mirante-modules` need no copy of its steps.
+- At the end of this part, `mirante-app` and `mirante-modules` build, test and package on Windows, macOS and Linux in CI.
+
+`mirante-modules` is an app whose modules are its own folders: its `CMakeLists.txt` sets `FETCHCONTENT_SOURCE_DIR_MIRANTE_MODULES` to itself and uses `ci/manifest.json`. The `module-includes` check stays required in the core, and scans the modules that `ci/modules.json` pins.
 
 ## Part 4: Interface version, checks and Qt modules
 
@@ -163,7 +166,7 @@ Then, in `mirante-core`:
 
 ## Part 6: The reusable workflow and signing
 
-`mirante-core` publishes `.github/workflows/build-app.yml`, and `ci.yml` and `release.yml` use the same jobs where they can. An app's workflow is short:
+`mirante-core` publishes `.github/workflows/build-app.yml`, from part 3. This part adds the signing job. An app's workflow is short:
 
 ```yaml
 jobs:
@@ -171,9 +174,10 @@ jobs:
     uses: rrgmc/mirante-core/.github/workflows/build-app.yml@v0.7.0
 ```
 
-- **The core's pin is then in two places,** since GitHub needs a literal ref after `uses:`. `tools/check-app-pins.py` fails the build if the workflow's ref and the manifest's core ref differ. The update job in part 8 changes both.
-- **The workflow reads the manifest first** with Python, checks out the core at its pin, gets Qt from the manifest's list, and passes the core's folder with `FETCHCONTENT_SOURCE_DIR_MIRANTE_CORE`, so the core is not cloned twice.
+- **The core's pin is then in two places,** since GitHub needs a literal ref after `uses:`. The workflow's first step fails the build if the workflow's ref and the manifest's core ref differ. The update job in part 8 changes both.
+- **The workflow reads the manifest first** with `jq`, and checks out the core at its pin for its scripts. The build then fetches the core again, which is cheap, because it is a small repository. Part 4 makes it get Qt from the manifest's list.
 - **The build jobs hold no secrets,** on all three platforms. They build, test and package, as `ci.yml` does today.
+- **Making the disk image can fail by chance.** `hdiutil` failed once with `Resource busy` in the sample's first run, and passed when the job ran again. If it recurs, the macOS packaging step retries it.
 
 **macOS has two jobs:**
 

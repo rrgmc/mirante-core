@@ -12,13 +12,13 @@
       "name": "dev",
       "displayName": "Debug, all modules",
       "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "MIRANTE_MANIFEST": "${sourceDir}/ci/modules.json" }
     },
     {
       "name": "release",
       "displayName": "Release, all modules",
       "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "MIRANTE_MANIFEST": "${sourceDir}/ci/modules.json" }
     },
     {
       "name": "no-modules",
@@ -30,13 +30,13 @@
       "name": "ci",
       "displayName": "CI: Release, all modules, warnings as errors",
       "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "MIRANTE_WERROR": "ON" }
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "MIRANTE_WERROR": "ON", "MIRANTE_MANIFEST": "${sourceDir}/ci/modules.json" }
     },
     {
       "name": "ci-no-modules",
       "displayName": "CI: Release, no modules, warnings as errors",
       "inherits": "ci",
-      "cacheVariables": { "MIRANTE_MODULES": "" }
+      "cacheVariables": { "MIRANTE_MANIFEST": "" }
     }
   ],
   "buildPresets": [

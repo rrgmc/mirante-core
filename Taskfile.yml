@@ -44,14 +44,6 @@ tasks:
     cmds:
       - '{{.POWERSHELL}} tools/run.ps1 -Preset {{.PRESET}} {{.CLI_ARGS}}'
 
-  check-includes:
-    desc: Check that modules include only their own files and the module interface
-    cmds:
-      - cmd: python tools/check-module-includes.py
-        platforms: [windows]
-      - cmd: python3 tools/check-module-includes.py
-        platforms: [linux, darwin]
-
   translations:
     desc: Bring translations/ up to date with the sources (lupdate), with PRESET=dev's build folder
     cmds:
@@ -76,9 +68,8 @@ tasks:
         platforms: [linux, darwin]
 
   check:
-    desc: Run what a change must pass, all modules and none, the include check and the translations
+    desc: Run what a change must pass, all modules and none, and the translations
     cmds:
-      - task: check-includes
       - task: check-translations
       - task: test
         vars: { PRESET: dev }
