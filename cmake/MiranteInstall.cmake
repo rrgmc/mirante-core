@@ -197,23 +197,25 @@ endfunction()
 # in, so MiranteReadStartAtSignIn reads it first, at the start of .onInit.
 #
 # The setup's own pages follow Windows' language, and so do the two checkbox
-# texts, which MiranteFinishPre sets before the last page is made: Portuguese
-# for Portuguese (Brazil, 1046) and Portuguese (Portugal, 2070), else English.
-# The texts are ASCII, because CPack's template makes an ANSI setup, whose
-# script is read in the build machine's code page. A macro, so the variables
-# reach include(CPack) in the caller's scope.
+# texts: Portuguese for Portuguese (Brazil, 1046) and Portuguese (Portugal,
+# 2070), else English. The texts are ASCII, because CPack's template makes an
+# ANSI setup, whose script is read in the build machine's code page.
+#
+# CPack's template uses Modern UI 1, which writes the last page into
+# ioSpecial.ini, an InstallOptions page, before it calls the page's PRE
+# function, and creates the page from it after. So MiranteFinishPre changes the
+# checkboxes in that file: Field 4 is "Run Mirante", Field 5 the sign-in one.
+# A macro, so the variables reach include(CPack) in the caller's scope.
 macro(mirante_add_nsis_finish_options)
     file(TO_NATIVE_PATH "${MIRANTE_CORE_DIR}/resources/app/mirante.ico" _mirante_ico)
     set(_mirante_nsis_code [=[
 !define MUI_ICON "@ICO@"
 !define MUI_UNICON "@ICO@"
-Var MiranteRunText
-Var MiranteSignInText
 !define MUI_FINISHPAGE_RUN ""
-!define MUI_FINISHPAGE_RUN_TEXT "$MiranteRunText"
+!define MUI_FINISHPAGE_RUN_TEXT "Run Mirante"
 !define MUI_FINISHPAGE_RUN_FUNCTION MiranteRun
 !define MUI_FINISHPAGE_SHOWREADME ""
-!define MUI_FINISHPAGE_SHOWREADME_TEXT "$MiranteSignInText"
+!define MUI_FINISHPAGE_SHOWREADME_TEXT "Start Mirante when I sign in"
 !define MUI_FINISHPAGE_SHOWREADME_FUNCTION MiranteAutostart
 Var MiranteStartAtSignIn
 ; Ticked only on an upgrade of a version that started at sign-in.
@@ -230,13 +232,12 @@ done:
   Pop $0
 FunctionEnd
 Function MiranteFinishPre
-  StrCpy $MiranteRunText "Run Mirante"
-  StrCpy $MiranteSignInText "Start Mirante when I sign in"
+  !insertmacro INSTALLOPTIONS_WRITE "ioSpecial.ini" "Field 5" "State" $MiranteStartAtSignIn
   StrCmp $LANGUAGE 1046 portuguese
   StrCmp $LANGUAGE 2070 portuguese done
 portuguese:
-  StrCpy $MiranteRunText "Abrir o Mirante"
-  StrCpy $MiranteSignInText "Iniciar o Mirante ao entrar no Windows"
+  !insertmacro INSTALLOPTIONS_WRITE "ioSpecial.ini" "Field 4" "Text" "Abrir o Mirante"
+  !insertmacro INSTALLOPTIONS_WRITE "ioSpecial.ini" "Field 5" "Text" "Iniciar o Mirante ao entrar no Windows"
 done:
 FunctionEnd
 Function MiranteAutostart
@@ -262,8 +263,8 @@ FunctionEnd
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Mirante"
 ]=])
     # CPack's NSIS template has no hook in .onInit or on the finish page, so
-    # CPack gets a copy that calls MiranteReadStartAtSignIn and clears the
-    # sign-in checkbox when needed.
+    # CPack gets a copy that calls MiranteReadStartAtSignIn and
+    # MiranteFinishPre.
     file(READ "${CMAKE_ROOT}/Modules/Internal/CPack/NSIS.template.in" _mirante_template)
     set(_mirante_oninit "Function .onInit\n")
     set(_mirante_finish "!insertmacro MUI_PAGE_FINISH\n")
@@ -275,14 +276,8 @@ FunctionEnd
     endforeach()
     string(REPLACE "${_mirante_oninit}" "${_mirante_oninit}  Call MiranteReadStartAtSignIn\n"
         _mirante_template "${_mirante_template}")
-    string(REPLACE "${_mirante_finish}" [=[!define MUI_PAGE_CUSTOMFUNCTION_PRE MiranteFinishPre
-  !define MUI_PAGE_CUSTOMFUNCTION_SHOW MiranteFinishShow
-  !insertmacro MUI_PAGE_FINISH
-  Function MiranteFinishShow
-    StrCmp $MiranteStartAtSignIn 1 +2
-      SendMessage $mui.FinishPage.ShowReadme ${BM_SETCHECK} ${BST_UNCHECKED} 0
-  FunctionEnd
-]=] _mirante_template "${_mirante_template}")
+    string(REPLACE "${_mirante_finish}" "!define MUI_PAGE_CUSTOMFUNCTION_PRE MiranteFinishPre\n  ${_mirante_finish}"
+        _mirante_template "${_mirante_template}")
     file(WRITE "${PROJECT_BINARY_DIR}/cpack/NSIS.template.in" "${_mirante_template}")
     list(PREPEND CMAKE_MODULE_PATH "${PROJECT_BINARY_DIR}/cpack")
     # Pass the NSIS code above through unchanged; without this CPack strips its quotes.
