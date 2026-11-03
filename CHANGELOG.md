@@ -6,6 +6,10 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+### Changed
+
+- A list's filters, such as Status in the GitHub, GitLab and Jira lists, can choose several values. Clicking a value checks or unchecks it and leaves the list open; clicking "All" clears them.
+
 ## [0.8.4] - 2026-11-03
 
 ### Changed

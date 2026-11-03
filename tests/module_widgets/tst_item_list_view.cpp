@@ -3,6 +3,8 @@
 // pills, links on rows, pages and filters.
 #include <mirante/widgets/ItemListView.h>
 
+#include <QAbstractItemView>
+#include <QApplication>
 #include <QComboBox>
 #include <QHeaderView>
 #include <QItemSelectionModel>
@@ -886,6 +888,70 @@ private slots:
 
         box->setCurrentIndex(0);
         QCOMPARE(view.visibleKeys().size(), 4);
+    }
+
+    // Clicking values in the open list checks them and keeps it open; the
+    // table shows the rows with any checked value.
+    void aFilterChoosesSeveralValues()
+    {
+        ItemListView view;
+        view.setColumns(fourColumns(), UpdatedColumn);
+        view.setRows({authoredRow(QStringLiteral("a"), 1, QStringLiteral("carol")),
+                      authoredRow(QStringLiteral("b"), 2, QStringLiteral("Bob")),
+                      authoredRow(QStringLiteral("c"), 3, QStringLiteral("carol")),
+                      authoredRow(QStringLiteral("d"), 4, QStringLiteral("alice"))});
+        view.addFilter(AuthorColumn, QStringLiteral("Author"));
+        view.resize(800, 400);
+        view.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&view));
+
+        QComboBox *box = authorFilter(view);
+        box->showPopup();
+        QAbstractItemView *list = box->view();
+        QTRY_VERIFY(list->isVisible());
+        const auto click = [box, list](const QString &text) {
+            const QModelIndex index = list->model()->index(box->findText(text), 0);
+            QTest::mouseClick(list->viewport(), Qt::LeftButton, {}, list->visualRect(index).center());
+        };
+        const auto checked = [box](const QString &text) {
+            return box->itemData(box->findText(text), Qt::CheckStateRole).toInt() == Qt::Checked;
+        };
+
+        click(QStringLiteral("Bob"));
+        click(QStringLiteral("carol"));
+        QVERIFY(list->isVisible());
+        QCOMPARE(view.visibleKeys(), (QStringList{QStringLiteral("c"), QStringLiteral("b"), QStringLiteral("a")}));
+        QVERIFY(checked(QStringLiteral("Bob")));
+        QVERIFY(checked(QStringLiteral("carol")));
+        QVERIFY(!checked(QStringLiteral("All")));
+        QCOMPARE(box->toolTip(), QStringLiteral("Bob, carol"));
+
+        // A second click unchecks a value.
+        click(QStringLiteral("Bob"));
+        QCOMPARE(view.visibleKeys(), (QStringList{QStringLiteral("c"), QStringLiteral("a")}));
+        QCOMPARE(box->currentText(), QStringLiteral("carol"));
+        click(QStringLiteral("alice"));
+        QCOMPARE(view.visibleKeys().size(), 3);
+
+        // A value that goes is no longer chosen; the others stay.
+        view.setRows({authoredRow(QStringLiteral("a"), 1, QStringLiteral("carol")),
+                      authoredRow(QStringLiteral("b"), 2, QStringLiteral("Bob"))});
+        QCOMPARE(view.visibleKeys(), QStringList{QStringLiteral("a")});
+        QCOMPARE(box->currentText(), QStringLiteral("carol"));
+
+        // "All" unchecks them all and closes the list. The list ignores a
+        // release just after it opened, so wait that out.
+        QTest::qWait(QApplication::doubleClickInterval() + 50);
+        click(QStringLiteral("All"));
+        QTRY_VERIFY(!list->isVisible());
+        QCOMPARE(view.visibleKeys().size(), 2);
+        QVERIFY(checked(QStringLiteral("All")));
+        QVERIFY(!checked(QStringLiteral("carol")));
+
+        // Choosing an item another way chooses its value alone.
+        box->setCurrentIndex(box->findText(QStringLiteral("Bob")));
+        QCOMPARE(view.visibleKeys(), QStringList{QStringLiteral("b")});
+        QVERIFY(checked(QStringLiteral("Bob")));
     }
 
     void aFilterTreatsServerTextAsText()
