@@ -21,6 +21,7 @@
 #include "ui/AppStyle.h"
 #include "ui/MainWindow.h"
 #include "web/DashSchemeHandler.h"
+#include "web/ModuleSchemeHandler.h"
 #include "web/ProfileManager.h"
 #include "web/SingleInstance.h"
 
@@ -51,6 +52,9 @@ int main(int argc, char *argv[])
     // The built-in panels' scheme, which Qt WebEngine needs before the
     // application. See docs/web-views.md#built-in-panels.
     mirante::dash::registerScheme();
+    // The modules' own pages, each module with its own origin. See
+    // docs/web-views.md#module-pages.
+    mirante::modulepages::registerScheme();
     QApplication app(argc, argv);
     QApplication::setStyle(new mirante::AppStyle);
     // On macOS, dialogs stay attached to their window.

@@ -189,6 +189,10 @@
         <source>Programs cannot be started here.</source>
         <translation>Não é possível iniciar programas aqui.</translation>
     </message>
+    <message>
+        <source>This page uses a qrc: address, which items cannot show.</source>
+        <translation>Esta página usa um endereço qrc:, que os itens não podem mostrar.</translation>
+    </message>
 </context>
 <context>
     <name>Launcher</name>

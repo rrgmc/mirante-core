@@ -48,3 +48,11 @@ qt_add_resources(web_tst_dash_scheme dash_test_pages
     PREFIX /panels/test
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/web/dash"
     FILES web/dash/index.html web/dash/test.js)
+
+# The pages of two modules, test and other, that tst_module_scheme loads from
+# module://test/ and module://other/.
+qt_add_resources(web_tst_module_scheme module_test_pages
+    PREFIX /modules
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/web/modules"
+    FILES web/modules/test/web/index.html web/modules/test/web/page.js web/modules/test/web/data.json
+          web/modules/other/web/index.html)

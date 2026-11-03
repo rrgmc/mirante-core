@@ -174,6 +174,12 @@ QWidget *ItemContextImpl::createPage(const QUrl &url, QWidget *parent, QWidget *
     if (!webProfile)
         return createMessageView(QCoreApplication::translate("ItemContext", "Web pages are not available here."),
                                  parent);
+    // All qrc: pages share one origin, and so one storage. A module's pages
+    // use module://, where each module has its own. See decision 0128.
+    if (url.scheme() == QLatin1String("qrc"))
+        return createMessageView(
+            QCoreApplication::translate("ItemContext", "This page uses a qrc: address, which items cannot show."),
+            parent);
     auto *panel = new WebPanel(webProfile, url, parent);
     // Read on each key, so a change to the item applies at once. The model
     // outlives every view.
