@@ -72,9 +72,12 @@ public:
     QStringList visibleKeys() const;
 
     // A drop-down above the table for a column, filled from all rows' text in
-    // that column, with "All" first. The choice survives setRows() while its
-    // value exists, and otherwise falls back to "All". Its object name is
-    // filter.<column>.
+    // that column, with "All" first. Its values have check boxes, so several
+    // can be chosen; a row is shown when its cell has any of them. Choosing an
+    // item with setCurrentIndex() chooses that value alone, and index 0 is
+    // "All". A chosen value survives setRows() while it exists; with none
+    // left, the filter falls back to "All". Its object name is
+    // filter.<column>, and it is a QComboBox.
     void addFilter(int column, const QString &label);
 
     // A line above the table that says what the list shows, such as "Assigned

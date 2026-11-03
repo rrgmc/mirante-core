@@ -9,6 +9,7 @@ The changes to the module interface, and what a module must do about them, are i
 ### Changed
 
 - A new workspace starts with one group, "Default", so the first project has somewhere to go. See [menus](docs/ui.md#menus).
+- A list's filters, such as Status in the GitHub, GitLab and Jira lists, can choose several values. Clicking a value checks or unchecks it and leaves the list open; clicking "All" clears them.
 
 ### Fixed
 

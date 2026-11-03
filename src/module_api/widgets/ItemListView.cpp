@@ -20,12 +20,15 @@
 #include <QScrollBar>
 #include <QSet>
 #include <QSortFilterProxyModel>
+#include <QStyleOptionComboBox>
 #include <QStyledItemDelegate>
+#include <QStylePainter>
 #include <QTableView>
 #include <QTextDocument>
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <functional>
 #include <utility>
 
 namespace mirante::widgets {
@@ -190,19 +193,20 @@ private:
 };
 
 // Sorts the rows and keeps those that match the filters' choices. A choice
-// compares with a cell's text, as the drop-down shows it.
+// compares with a cell's text, as the drop-down shows it. A row matches a
+// filter when its cell has any of the chosen values.
 class ListProxy : public QSortFilterProxyModel
 {
 public:
     using QSortFilterProxyModel::QSortFilterProxyModel;
 
-    // An empty value takes the filter off.
-    void setChoice(int column, const QString &value)
+    // No values take the filter off.
+    void setChoice(int column, const QSet<QString> &values)
     {
-        if (value.isEmpty())
+        if (values.isEmpty())
             m_choices.remove(column);
         else
-            m_choices.insert(column, value);
+            m_choices.insert(column, values);
         invalidateFilter();
     }
 
@@ -211,14 +215,137 @@ protected:
     {
         for (auto choice = m_choices.cbegin(); choice != m_choices.cend(); ++choice) {
             const QModelIndex cell = sourceModel()->index(sourceRow, choice.key(), sourceParent);
-            if (cell.data().toString() != choice.value())
+            if (!choice.value().contains(cell.data().toString()))
                 return false;
         }
         return true;
     }
 
 private:
-    QHash<int, QString> m_choices;
+    QHash<int, QSet<QString>> m_choices;
+};
+
+// A filter's drop-down: "All" first, then each value with a check box.
+// Clicking a value in the open list checks or unchecks it and leaves the list
+// open, so several values can be chosen. Clicking "All" unchecks them all.
+// Choosing an item any other way, such as with the keyboard, chooses its value
+// alone. With nothing checked the filter is off, and "All" is checked.
+class FilterChoice : public QComboBox
+{
+public:
+    explicit FilterChoice(QWidget *parent)
+        : QComboBox(parent)
+    {
+        // The styled delegate draws check boxes in every style, where the
+        // combo box's own one may not.
+        setItemDelegate(new QStyledItemDelegate(this));
+        view()->viewport()->installEventFilter(this);
+        connect(this, &QComboBox::currentIndexChanged, this, [this](int index) {
+            choose(index > 0 ? QSet<QString>{itemData(index).toString()} : QSet<QString>());
+        });
+    }
+
+    // Called after the user changed the chosen values.
+    std::function<void()> changed;
+
+    QSet<QString> chosen() const { return m_chosen; }
+
+    QStringList values() const
+    {
+        QStringList values;
+        for (int item = 1; item < count(); ++item)
+            values.append(itemData(item).toString());
+        return values;
+    }
+
+    // Fills the list. Chosen values that are gone are no longer chosen, and do
+    // not come back with their value. It does not call changed.
+    void setValues(const QStringList &values)
+    {
+        const QSignalBlocker blocker(this);
+        clear();
+        addItem(ItemListView::tr("All"));
+        for (const QString &value : values)
+            addItem(value, value);
+        m_chosen.intersect(QSet<QString>(values.cbegin(), values.cend()));
+        showChosen();
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        // Runs before the popup's own filter, which would close it.
+        if (watched == view()->viewport() && event->type() == QEvent::MouseButtonRelease) {
+            const QModelIndex index = view()->indexAt(static_cast<QMouseEvent *>(event)->position().toPoint());
+            if (index.row() > 0) {
+                QSet<QString> next = m_chosen;
+                const QString value = itemData(index.row()).toString();
+                if (!next.remove(value))
+                    next.insert(value);
+                choose(next);
+                return true;
+            }
+        }
+        return QComboBox::eventFilter(watched, event);
+    }
+
+    // Shows several chosen values joined, as many as fit.
+    void paintEvent(QPaintEvent *) override
+    {
+        QStylePainter painter(this);
+        QStyleOptionComboBox option;
+        initStyleOption(&option);
+        if (m_chosen.size() > 1) {
+            const QRect field = style()->subControlRect(QStyle::CC_ComboBox, &option,
+                                                        QStyle::SC_ComboBoxEditField, this);
+            option.currentText = fontMetrics().elidedText(chosenText(), Qt::ElideRight, field.width());
+            option.currentIcon = QIcon();
+        }
+        painter.drawComplexControl(QStyle::CC_ComboBox, option);
+        painter.drawControl(QStyle::CE_ComboBoxLabel, option);
+    }
+
+private:
+    void choose(const QSet<QString> &values)
+    {
+        if (values == m_chosen)
+            return;
+        m_chosen = values;
+        showChosen();
+        if (changed)
+            changed();
+    }
+
+    // The chosen values in list order.
+    QString chosenText() const
+    {
+        QStringList names;
+        for (const QString &value : values()) {
+            if (m_chosen.contains(value))
+                names.append(value);
+        }
+        return names.join(QStringLiteral(", "));
+    }
+
+    void showChosen()
+    {
+        const QSignalBlocker blocker(this);
+        for (int item = 0; item < count(); ++item) {
+            const bool checked = item == 0 ? m_chosen.isEmpty() : m_chosen.contains(itemData(item).toString());
+            setItemData(item, checked ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
+        }
+        // Several values have no current item; paintEvent shows them.
+        if (m_chosen.isEmpty())
+            setCurrentIndex(0);
+        else if (m_chosen.size() == 1)
+            setCurrentIndex(findData(*m_chosen.cbegin()));
+        else
+            setCurrentIndex(-1);
+        setToolTip(m_chosen.size() > 1 ? chosenText() : QString());
+        update();
+    }
+
+    QSet<QString> m_chosen;
 };
 
 // Draws a cell with links as links, and a cell with a status role as a pill.
@@ -333,7 +460,7 @@ struct ItemListView::Private : public QObject
     struct Filter
     {
         int column = 0;
-        QComboBox *choice = nullptr;
+        FilterChoice *choice = nullptr;
     };
 
     ItemListView *q = nullptr;
@@ -456,23 +583,14 @@ struct ItemListView::Private : public QObject
     void updateFilters()
     {
         for (const Filter &filter : std::as_const(filters)) {
-            QStringList shown;
-            for (int item = 1; item < filter.choice->count(); ++item)
-                shown.append(filter.choice->itemText(item));
             const QStringList values = model->valuesOf(filter.column);
-            if (values == shown && filter.choice->count() > 0)
+            if (values == filter.choice->values() && filter.choice->count() > 0)
                 continue;
 
-            const QSignalBlocker blocker(filter.choice);
-            const QString chosen = filter.choice->currentData().toString();
-            filter.choice->clear();
-            filter.choice->addItem(ItemListView::tr("All"));
-            for (const QString &value : values)
-                filter.choice->addItem(value, value);
-            const int kept = chosen.isEmpty() ? 0 : filter.choice->findData(chosen);
-            filter.choice->setCurrentIndex(std::max(kept, 0));
-            if (kept < 0) {
-                proxy->setChoice(filter.column, QString());
+            const QSet<QString> chosen = filter.choice->chosen();
+            filter.choice->setValues(values);
+            if (filter.choice->chosen() != chosen) {
+                proxy->setChoice(filter.column, filter.choice->chosen());
                 page = 0;
             }
         }
@@ -788,7 +906,7 @@ void ItemListView::addFilter(int column, const QString &label)
     auto *caption = new QLabel(label, holder);
     caption->setTextFormat(Qt::PlainText);
     holderLayout->addWidget(caption);
-    auto *choice = new QComboBox(holder);
+    auto *choice = new FilterChoice(holder);
     choice->setObjectName(QStringLiteral("filter.%1").arg(column));
     caption->setBuddy(choice);
     holderLayout->addWidget(choice);
@@ -798,13 +916,13 @@ void ItemListView::addFilter(int column, const QString &label)
 
     d->filters.append({column, choice});
     d->updateFilters();
-    connect(choice, &QComboBox::currentIndexChanged, d.get(), [this, column, choice] {
+    choice->changed = [this, column, choice] {
         d->changeRows([this, column, choice] {
-            d->proxy->setChoice(column, choice->currentData().toString());
+            d->proxy->setChoice(column, choice->chosen());
             d->page = 0;
         });
         d->table->scrollToTop();
-    });
+    };
 }
 
 void ItemListView::setDescription(const QString &text)

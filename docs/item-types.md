@@ -192,7 +192,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
   - Started, compact and sorted by the date, or the time the pipeline was created when GitLab gives no start. A missing date sorts as the oldest;
   - the links of the row, which never hide.
 - **A narrow cell** hides columns in this order: Author, Started, Id, Status.
-- **Filter:** a Status drop-down above the table, filled from the fetched rows. The choice survives new rows and is not saved.
+- **Filter:** a Status drop-down above the table, filled from the fetched rows. Several values can be checked; a row shows when it has any of them. The choice survives new rows and is not saved.
 - **Links of a row:**
   - "Web" opens the row's `web_url` in the external browser;
   - "Open" shows that page in the same cell, or in the external browser if you hold `Shift`;
@@ -371,7 +371,7 @@ A project can set its Jira project key in the project dialog's Jira section, sto
   - `recentlyUpdated`: `project = "<key>" AND updated >= -7d ORDER BY updated DESC`.
 
   The key is quoted, so a value cannot change the query.
-- **Shows:** a sortable table with the columns Key, Summary, Status, Assignee, Updated, the extra fields and links, sorted on Updated, newest first. The extra fields hide first in a narrow cell. The status is a pill: green for the category `done`, amber for `indeterminate`, grey otherwise. Updated reads like `10-30 14:32`, or `2025-10-30` for another year, and sorts by the real date. The Web link above the table opens `<baseUrl>/issues/?jql=<query>` in the external browser. Previous and Next page through the fetched rows, and a drop-down filters them by status. See [decision 0071](decisions/0071-lists-link-out-without-a-preview.md).
+- **Shows:** a sortable table with the columns Key, Summary, Status, Assignee, Updated, the extra fields and links, sorted on Updated, newest first. The extra fields hide first in a narrow cell. The status is a pill: green for the category `done`, amber for `indeterminate`, grey otherwise. Updated reads like `10-30 14:32`, or `2025-10-30` for another year, and sorts by the real date. The Web link above the table opens `<baseUrl>/issues/?jql=<query>` in the external browser. Previous and Next page through the fetched rows, and a drop-down filters them by one or more statuses. See [decision 0071](decisions/0071-lists-link-out-without-a-preview.md).
 - **Row links:** "Web", the issue's page in the external browser; "Open", the page in the cell, or the external browser with `Shift`; and "Add", which adds a `jira.issue.summary` item for the issue to the task. The column never hides.
 - **Row menu:** the same, and "Copy link".
 - **Status:** the rows, up to `limit`, and their number, in one search. The status line reads like "12 issues", "1 issue", or "100+ issues" at the limit, which is the item's `limit`. A list raises no attention, and never counts as closed. See [decision 0067](decisions/0067-lists-report-status.md).
