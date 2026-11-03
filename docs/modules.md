@@ -440,6 +440,17 @@ Everything is written back exactly as it was loaded. See [sync](sync.md#the-data
 - Each module's `README.md` lists its item types, settings and settings screens.
 - Texts follow [texts](#texts).
 
+## Reviewing a module
+
+A module is trusted code, so it can reach anything the app can ([decision 0121](decisions/0121-modules-are-trusted-code.md)). `tools/scan-module-apis.py` helps a reviewer choose what to read first. It lists, for each module, the files that use the keychain, the network, processes or web storage, by the names it finds in them, such as `QNetworkAccessManager`, `startProgram` or `createWebView`.
+
+```
+python tools/scan-module-apis.py <module folder>...
+python tools/scan-module-apis.py --build build/ci
+```
+
+With `--build`, it scans the modules that the build's manifest added. `build-app.yml` runs it on Linux and puts the report on the run's summary page. It never fails a build. It finds names in the text only, so it misses code that hides what it does, and it lists the module interface's own safe paths too.
+
 ## Texts
 
 The app speaks English and Brazilian Portuguese ([decision 0086](decisions/0086-english-and-brazilian-portuguese.md)).

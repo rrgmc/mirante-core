@@ -129,6 +129,8 @@ function(_mirante_add_manifest_repository entry where)
                 set_property(GLOBAL PROPERTY MIRANTE_MODULE_COMMIT_${module} "${commit}")
             endif()
         endforeach()
+        # For tools/scan-module-apis.py --build.
+        file(APPEND "${CMAKE_BINARY_DIR}/mirante-module-folders.txt" "${name}/${folder}\t${folder_dir}\n")
     endforeach()
 endfunction()
 
@@ -160,6 +162,9 @@ function(mirante_add_manifest_modules)
     # A module in a listed folder is built, whatever its DEFAULT says.
     # mirante_add_module() reads this. A folder's scope inherits it.
     set(MIRANTE_LISTED_MODULE ON)
+
+    # Each configuration writes the list of module folders again.
+    file(WRITE "${CMAKE_BINARY_DIR}/mirante-module-folders.txt" "")
 
     string(JSON count LENGTH "${repositories}")
     if(count EQUAL 0)
