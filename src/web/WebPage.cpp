@@ -1,6 +1,7 @@
 #include "web/WebPage.h"
 
 #include "web/LoginDialog.h"
+#include "web/ModuleSchemeHandler.h"
 #include "web/WebPanel.h"
 
 #include <QDesktopServices>
@@ -19,6 +20,14 @@ constexpr int kCaptureLifetimeMs = 30 * 1000;
 bool isBlank(const QUrl &url)
 {
     return url.isEmpty() || url == QUrl(QStringLiteral("about:blank"));
+}
+
+// The external browser cannot open a module's page, so a new window for one
+// opens nothing.
+void openExternally(const QUrl &url)
+{
+    if (!modulepages::isModulePage(url))
+        QDesktopServices::openUrl(url);
 }
 
 // A hidden page for a new window that goes to the external browser but has no
@@ -45,7 +54,7 @@ protected:
             return true;
         if (!m_opened) {
             m_opened = true;
-            QDesktopServices::openUrl(url);
+            openExternally(url);
             deleteLater();
         }
         return false;
@@ -86,7 +95,7 @@ void WebPage::handleNewWindow(QWebEngineNewWindowRequest &request)
     const QUrl url = request.requestedUrl();
     if (!isBlank(url)) {
         // The request is left unhandled, so no page is made for it.
-        QDesktopServices::openUrl(url);
+        openExternally(url);
         return;
     }
     request.openIn(new CapturePage(profile(), this));

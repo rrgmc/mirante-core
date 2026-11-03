@@ -175,3 +175,21 @@ The bridge never exposes tokens, server settings, profiles or raw API calls.
 **The pages.** Each panel is a folder under `resources/panels/` with `index.html`, `panel.js` and `panel.css`, in plain HTML, CSS and JavaScript, with no framework and no build step. They share `common/dash.js` and `common/dash.css`. `dash.js` connects the channel, sets the colours and the font as CSS custom properties, and calls the panel's `render()` on start, on `changed`, and once a minute, so ages stay right. Pages set text with `textContent`, never as markup.
 
 There are two panels in the first version: task summary and group overview. They are described in [item types](item-types.md#built-in-panels).
+
+## Module pages
+
+A module can ship web pages of its own and show them in its items. Each module's pages have their own origin, so one module's pages cannot read another's storage. See [decision 0128](decisions/0128-module-pages-have-their-own-origin.md) and [the research on web content in modules](research/module-web-content.md).
+
+- **The `module://` scheme.** `modulepages::registerScheme()` registers it before `QApplication`, beside `dash://`. It has host syntax, and is secure and local, so sites cannot load it, and its pages may use `fetch`. `module://<module id>/<path>` is the resource `:/modules/<module id>/web/<path>`, which the module ships in its `RESOURCES` under `web/`. A module shows a page with `context.createWebView(QUrl("module://acme/index.html"), parent)`.
+- **What is served.** `ModuleSchemeHandler` answers `GET` only. A host that is not a module id, a path with an empty part, `.` or `..`, a folder, or a file other than HTML, JavaScript, CSS, JSON, SVG, PNG, JPEG, WebP or WOFF2 fails as not found. A request from a page of another origin, such as another module's page, is refused. A top-level load has no origin and is answered.
+- **The profiles.** Each profile of the list installs the handler, in `ProfileManager::profile()`, so a module's page has the item's logins. A cleared profile is made again and installs it again. The app profile has no handler.
+- **The headers.** Every response sends the headers of `dash://`, with this policy:
+
+  ```text
+  Content-Security-Policy: default-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'
+  ```
+
+  A module's page loads its own files and calls its own origin only. It cannot run inline scripts or load remote code.
+- **What is not there yet.** Pages are static files. A module cannot answer a request from code, and cookies do not work on the scheme. A page keeps data in `localStorage`, which survives a restart.
+- **The external browser.** It cannot open a `module://` address, so the toolbar hides **Open in browser** on these pages, and a link that would open a new window opens nothing.
+- **`qrc:` pages.** All `qrc:` pages share one origin, so an item's web view refuses a `qrc:` address and shows a message instead.

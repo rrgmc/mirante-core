@@ -2,6 +2,7 @@
 
 #include "web/AddressField.h"
 #include "web/PageArea.h"
+#include "web/ModuleSchemeHandler.h"
 #include "web/WebPage.h"
 
 #include <QDesktopServices>
@@ -51,6 +52,7 @@ struct WebPanel::Private
     QPointer<QWidget> toolbar;
     QToolButton *back = nullptr;
     AddressField *address = nullptr;
+    QToolButton *open = nullptr;
 
     void buildToolbar()
     {
@@ -67,8 +69,8 @@ struct WebPanel::Private
         address = new AddressField(toolbar);
         address->setObjectName(QStringLiteral("address"));
 
-        QToolButton *open = toolButton(toolbar, QStringLiteral("openInBrowserButton"), tr("Open in browser"),
-                                       tr("Open this page in the external browser"));
+        open = toolButton(toolbar, QStringLiteral("openInBrowserButton"), tr("Open in browser"),
+                          tr("Open this page in the external browser"));
         open->setIcon(appIcon(QStringLiteral("open-in-browser"), QStyle::SP_DirLinkIcon, toolbar));
 
         auto *layout = new QHBoxLayout(toolbar);
@@ -94,6 +96,8 @@ struct WebPanel::Private
         QWebEngineView *view = area->view();
         back->setEnabled(view->history()->canGoBack());
         address->setAddress(view->url().toDisplayString());
+        // The external browser cannot open a module's page.
+        open->setVisible(!modulepages::isModulePage(view->url()));
     }
 };
 

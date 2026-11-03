@@ -36,7 +36,8 @@ public:
 
     // The profile with this id, made when first asked for. An empty id means
     // the id "default". The manager does not check that the workspace lists the id;
-    // profiles::effective() does that.
+    // profiles::effective() does that. It serves module:// once the scheme is
+    // registered; see modulepages::registerScheme().
     QWebEngineProfile *profile(const QString &profileId);
     // "app", for built-in panels. It serves dash:// once the scheme is
     // registered; see dash::registerScheme().

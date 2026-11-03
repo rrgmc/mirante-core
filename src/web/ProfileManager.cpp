@@ -2,6 +2,7 @@
 
 #include "core/Entities.h"
 #include "web/DashSchemeHandler.h"
+#include "web/ModuleSchemeHandler.h"
 
 #include <QApplication>
 #include <QCryptographicHash>
@@ -233,7 +234,12 @@ QWebEngineProfile *ProfileManager::profile(const QString &profileId)
         return d->standIn;
     }
     const QString qtName = d->workspace.isEmpty() ? name : d->workspace + QLatin1Char('_') + name;
-    return profileAt(this, d->profiles, path, qtName);
+    QWebEngineProfile *profile = profileAt(this, d->profiles, path, qtName);
+    // The modules' pages use the item's profile. A cleared profile is made
+    // again, and gets the handler again here.
+    if (modulepages::isRegistered() && !profile->urlSchemeHandler(modulepages::schemeName()))
+        profile->installUrlSchemeHandler(modulepages::schemeName(), new ModuleSchemeHandler(profile));
+    return profile;
 }
 
 QWebEngineProfile *ProfileManager::appProfile()
