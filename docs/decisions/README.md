@@ -140,6 +140,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0133](0133-work-modules-in-their-own-repository.md) | The work modules move to a repository of their own | Accepted |
 | [0134](0134-release-tags-from-a-version-file.md) | Release tags from a version file, and apps pin tags | Accepted |
 | [0135](0135-mirante-is-a-custom-build.md) | Mirante is built from a manifest, like every app | Accepted |
+| [0136](0136-github-releases-from-the-changelog.md) | GitHub releases from the changelog | Accepted |
 
 ## Template
 

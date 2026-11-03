@@ -1,6 +1,7 @@
 # Publishes the packages that build-app.yml made in the same run, for a tag vX.Y.Z,
 # or vX.Y.Z-rc.N as a prerelease. If the tag does not exist, the release makes it
-# on the commit of the run. It is separate from build-app.yml because only
+# on the commit of the run. Its notes are the version's section of the app's
+# CHANGELOG.md, when it has one, or else GitHub's list of merged pull requests. It is separate from build-app.yml because only
 # this job may write to the repository, and GitHub refuses a whole workflow whose
 # caller does not grant what any of its jobs asks for. It builds nothing. An app's
 # tag workflow calls it after build-app.yml:
@@ -47,6 +48,14 @@ jobs:
           merge-multiple: true
           path: packages
 
+      # Only the changelog, for the release's notes. Nothing of the app runs.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: CHANGELOG.md
+          sparse-checkout-cone-mode: false
+          path: app
+          persist-credentials: false
+
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -69,6 +78,28 @@ jobs:
             else
               flags+=(--target "$GITHUB_SHA")
             fi
-            gh release create "$TAG" --generate-notes --title "$title" "${flags[@]}"
+            # The notes are the version's section of the app's changelog, in
+            # the format of Keep a Changelog, or else GitHub's list of the
+            # merged pull requests. A prerelease vX.Y.Z-rc.N takes the section
+            # of X.Y.Z.
+            version="${TAG#v}"
+            version="${version%%-*}"
+            notes="$RUNNER_TEMP/notes.md"
+            if [ -f app/CHANGELOG.md ]; then
+              awk -v heading="## [$version]" '
+                index($0, heading) == 1 { on = 1; next }
+                on && /^## \[/ { exit }
+                on && /^\[[^]]+\]: / { next }
+                on { print }
+              ' app/CHANGELOG.md |
+                perl -pe 's#\]\((?!https?://|\#)([^)]+)\)#](https://github.com/'"$GH_REPO"'/blob/'"$TAG"'/$1)#g' \
+                > "$notes"
+            fi
+            if [ -s "$notes" ] && grep -q '[^[:space:]]' "$notes"; then
+              flags+=(--notes-file "$notes")
+            else
+              flags+=(--generate-notes)
+            fi
+            gh release create "$TAG" --title "$title" "${flags[@]}"
           fi
           gh release upload "$TAG" packages/* --clobber

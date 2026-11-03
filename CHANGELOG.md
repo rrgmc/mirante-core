@@ -6,6 +6,13 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-03
+
+### Added
+
+- `tag-release.yml` publishes a GitHub release for each tag it makes, with the version's section of the changelog as its notes, and gives a release to a tag that has none. See [decision 0136](docs/decisions/0136-github-releases-from-the-changelog.md).
+- `release-app.yml` takes a release's notes from the version's section of the app's `CHANGELOG.md`, when it has one.
+
 ## [0.8.0] - 2026-11-03
 
 The first release of the core on its own, after it was split from `mirante` for [custom builds](docs/plans/custom-builds.md).
@@ -37,5 +44,6 @@ The first release of the core on its own, after it was split from `mirante` for 
 
 - `qrc:` addresses in item web views, which shared one origin among all pages.
 
-[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/rrgmc/mirante-core/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/rrgmc/mirante-core/tree/v0.8.0
