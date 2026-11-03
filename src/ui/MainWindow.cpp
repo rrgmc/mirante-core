@@ -2485,6 +2485,16 @@ bool MainWindow::createWorkspace(const QString &folder, const QString &name)
         return false;
     }
     openWorkspace(folder);
+    // A new workspace starts with one group, "Default", so the first project
+    // has somewhere to go. A folder of earlier data keeps the groups it has.
+    if (d->workspace == QDir(folder).absolutePath() && !d->store->readOnly() && d->model->groups().empty()) {
+        Group group;
+        group.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        group.name = tr("Default");
+        group.order = 0;
+        group.colour = groupcolours::next(*d->model);
+        d->model->setGroup(group);
+    }
     // A new workspace starts with one empty root dashboard, open as a tab, so
     // the content area is not empty. A folder of earlier data that is made a
     // workspace keeps the root dashboards it has.
