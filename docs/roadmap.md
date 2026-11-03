@@ -192,6 +192,7 @@ Started after M13, and builds on the packaging from M10 ([decision 0098](decisio
 - **Module interface.** It has a version, compatibility rules and checks. It is published as 0.x with no promise of stability. See [decision 0119](decisions/0119-module-interface-versions-and-checks.md).
 - **Trust.** Modules are trusted code, without a sandbox. See [decision 0121](decisions/0121-modules-are-trusted-code.md).
 - **Qt.** The pinned core decides the Qt version.
+- **Before the switch.** The manifest gains local modules, folder options, optional modules, editions and extension points, and the work modules move to `mirante-modules-work`. See [the manifest plan](plans/custom-builds-manifest.md).
 
 **The user approves replacing `mirante` when:**
 
