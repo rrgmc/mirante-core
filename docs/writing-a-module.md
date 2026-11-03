@@ -312,7 +312,21 @@ In the app's `mirante.json`, add your repository with a pin and the folder:
 }
 ```
 
-Pin a tag to give apps only your releases. The template's update job moves a tag pin to your newest release tag, `vX.Y.Z`, and a commit pin to the newest commit of your default branch. If your module needs Qt modules beyond the core's, the app adds them to its `qt` list.
+Pin a tag to give apps only your releases. The template's update job moves a tag pin to your newest release tag, `vX.Y.Z`, and a commit pin to the newest commit of your default branch. The first-party repositories make their tags from a `VERSION` file, with the core's `tag-release.yml`, and your repository can call it too:
+
+```yaml
+on:
+  push:
+    branches: [master]
+  pull_request:
+jobs:
+  tag:
+    permissions:
+      contents: write
+    uses: rrgmc/mirante-core/.github/workflows/tag-release.yml@<the core ref in ci/manifest.json>
+```
+
+A merged pull request that raises `VERSION` then makes the tag. See [decision 0134](decisions/0134-release-tags-from-a-version-file.md). If your module needs Qt modules beyond the core's, the app adds them to its `qt` list.
 
 ## When the interface changes
 

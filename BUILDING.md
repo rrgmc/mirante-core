@@ -73,6 +73,10 @@ An app repository does the same for the core, with `FETCHCONTENT_SOURCE_DIR_MIRA
 
 `.github/workflows/build-app.yml` is the workflow that an app repository calls to build, test and package itself. Its only other requirement is a preset named `ci`. `release-app.yml` publishes what it built, and `update-app.yml` opens a pull request that moves the pins to the newest versions, with `tools/update-pins.py`. See [decision 0127](docs/decisions/0127-automatic-pin-updates.md).
 
+## Releases of the core
+
+The core's version is in `VERSION`, as `X.Y.Z`. A merged pull request that raises it makes the release tag `vX.Y.Z`, through `.github/workflows/tag-release.yml`, which repositories of modules call too. Apps pin these tags. Raise the minor version for a change to the module interface. Each change goes under Unreleased in [CHANGELOG.md](CHANGELOG.md), and the pull request that raises `VERSION` moves those entries under a section for the new version, which the workflow requires. See [decision 0134](docs/decisions/0134-release-tags-from-a-version-file.md).
+
 An interface change that breaks the modules takes these steps: a branch in `mirante-modules` with the fix, the core's pull request with `ci/modules.json` pinned to that branch, a new pin of the core in `mirante-modules`, and the merged commit in `ci/modules.json`.
 
 ## Compiling faster

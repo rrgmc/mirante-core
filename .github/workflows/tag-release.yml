@@ -1,0 +1,85 @@
+# Makes the release tag of a library repository, such as the core or a
+# repository of modules, from the version in a file. A push to the default
+# branch whose version has no tag yet makes the annotated tag vX.Y.Z on that
+# commit, and the changelog must have a section for that version. On a pull
+# request, it only checks the files. Apps pin these tags. A
+# repository calls it with one short workflow:
+#
+#   on:
+#     push:
+#       branches: [master]
+#     pull_request:
+#   jobs:
+#     tag:
+#       permissions:
+#         contents: write
+#       uses: rrgmc/mirante-core/.github/workflows/tag-release.yml@<the core's ref>
+#
+# See docs/decisions/0134-release-tags-from-a-version-file.md.
+
+name: Tag release
+
+on:
+  workflow_call:
+    inputs:
+      version-file:
+        description: The file that holds the version, X.Y.Z
+        type: string
+        default: VERSION
+      changelog:
+        description: The changelog, in the format of Keep a Changelog, which must have a section "## [X.Y.Z]" for a version that has no tag yet
+        type: string
+        default: CHANGELOG.md
+
+permissions:
+  contents: read
+
+jobs:
+  tag:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The tags, to tell whether the version has one.
+          fetch-depth: 0
+
+      - name: Tag the version
+        env:
+          VERSION_FILE: ${{ inputs.version-file }}
+          CHANGELOG: ${{ inputs.changelog }}
+          ON_DEFAULT_BRANCH: ${{ github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+        run: |
+          if [ ! -f "$VERSION_FILE" ]; then
+            echo "::error::$VERSION_FILE does not exist."
+            exit 1
+          fi
+          version=$(tr -d ' \t\r\n' < "$VERSION_FILE")
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::$VERSION_FILE holds '$version', not X.Y.Z."
+            exit 1
+          fi
+          tag="v$version"
+          if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
+            echo "$tag exists, at $(git rev-list -n 1 "$tag"), so nothing is tagged."
+            exit 0
+          fi
+          # A new version needs its notes.
+          if [ ! -f "$CHANGELOG" ]; then
+            echo "::error::$CHANGELOG does not exist, so $tag would have no notes."
+            exit 1
+          fi
+          if ! grep -qE "^## \[$(printf '%s' "$version" | sed 's/\./\\./g')\]" "$CHANGELOG"; then
+            echo "::error::$CHANGELOG has no section '## [$version]' for $tag."
+            exit 1
+          fi
+          if [ "$ON_DEFAULT_BRANCH" != true ]; then
+            echo "Merging this makes the tag $tag."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "Release $tag" "$GITHUB_SHA"
+          git push origin "refs/tags/$tag"
+          echo "Tagged $GITHUB_SHA as $tag."

@@ -1,0 +1,20 @@
+# Tags a release of the core when a merged pull request raises VERSION, with
+# the workflow that repositories of modules call too. Apps pin these tags. See
+# docs/decisions/0134-release-tags-from-a-version-file.md.
+
+name: Release tag
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    paths: [VERSION, CHANGELOG.md]
+
+permissions:
+  contents: read
+
+jobs:
+  tag:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/tag-release.yml
