@@ -209,6 +209,14 @@ The user can stop here and keep `mirante` as it is. The work in part 8 has value
 - **Web page origins.** Each module's web pages get their own origin, in place of the shared `qrc:` origin. No module uses `qrc:` pages in code today, so this is a change to the core's scheme handling. See [the research on web content in modules](../research/module-web-content.md). This part writes its own detail when it starts.
 - **Documentation.** How to choose an id, what a third-party module can reach, narrow tokens, licences, and unsigned builds, as the roadmap lists. A person who has not seen the code then builds one module by following only that documentation, which is the third approval condition.
 
+**Where part 8 stands.** All five pieces are built:
+
+- **The template** is `mirante-app-template`, a GitHub template repository. Its own builds never publish a release. Its first CI run passed on Windows, macOS and Linux.
+- **Automatic updates** are `update-app.yml` and `tools/update-pins.py`, with the release on merge in `build-app.yml` and `release-app.yml` ([decision 0127](../decisions/0127-automatic-pin-updates.md)). The script was tried on a copy of `mirante-app`. The job has not yet opened a pull request, and no release has been published on merge, because both need an app made from the template with the `MIRANTE_UPDATE_TOKEN` secret. The roadmap's item stays open until that runs.
+- **The scan** is `tools/scan-module-apis.py`, which `build-app.yml` runs on Linux.
+- **Web page origins** use the `module://` scheme, for static files only ([decision 0128](../decisions/0128-module-pages-have-their-own-origin.md)). `mirante-modules-samples` holds a sample module, `rrgmcwebpages`, that uses it.
+- **The documentation** is [writing a module](../writing-a-module.md). A fresh agent with no knowledge of the code built a module by following it alone, and its findings were fixed. That stands in for the third approval condition, which asks for a person.
+
 ## Part 9: Replacing `mirante`
 
 After the user approves, and only then:
