@@ -113,9 +113,9 @@ Decision 0131 records this.
 
 With the user's choice: an extension is a folder that the manifest names, compiled into the module.
 
-- **A module declares an extension point** in `mirante_add_module()`: `EXTENSION runlayout DEFAULT RunLayoutDefault.cpp`. The name has lowercase letters and digits. The default is the sources that implement it when the app gives none.
+- **A module declares an extension point** in `mirante_add_module()`: `EXTENSIONS runlayout=RunLayoutDefault.cpp`, with several default files separated by commas. This replaced the form `EXTENSION runlayout DEFAULT ...` when part 4 was built, because CMake cannot repeat a keyword with its own arguments. The name has lowercase letters and digits. The default is the sources that implement it when the app gives none.
 - **The interface** is the module's own: a header in the module's folder that declares what an extension implements, such as a class `RunLayout` and a function `std::unique_ptr<RunLayout> makeRunLayout()`. The default sources define that function, and so does an extension. The module's README documents each extension point. The core does not know the interface.
-- **The manifest** gives an extension in the folder entry: `"extensions": { "runlayout": { "local": "<folder>" } }`, or with `repo` and `ref` and `folder` to fetch it from another repository. An extension point the module does not declare stops configuration.
+- **The manifest** gives an extension in the folder entry: `"extensions": { "runlayout": { "local": "<folder>" } }`, or with `name`, `repo`, `ref` and `folder` to fetch it from another repository. The `name` lets a checkout on disk stand in, as for repositories of modules. An extension point the module does not declare stops configuration.
 - **The build.** The core compiles the extension folder's `.cpp` and `.h` files into the module's target in place of the default sources. They see the module's folder on the include path, the module interface and Qt, and nothing else. An extension that needs resources lists them in a `resources.txt` in its folder, one path per line.
 - **Checks.** The include check runs on extension folders. `-Werror=suggest-override` applies, as to modules.
 - **The About dialog** shows each extension under its module, with its source and commit.
