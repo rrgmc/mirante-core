@@ -11,7 +11,7 @@ set(MIRANTE_PCH OFF)
 # Holds cmake/enabled_modules.cpp.in, a stub of the core's.
 set(MIRANTE_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 get_filename_component(repo "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
-list(APPEND CMAKE_MODULE_PATH "${repo}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${repo}/cmake" "${repo}/src/module_api/cmake")
 include(MiranteTargets)
 include(MiranteModule)
 
@@ -25,6 +25,9 @@ add_subdirectory(beta)
 add_subdirectory(alpha)
 if(WITH_GAMMA)
     add_subdirectory(gamma)
+endif()
+if(WITH_DELTA)
+    add_subdirectory(delta)
 endif()
 
 add_executable(depends_app main.cpp)

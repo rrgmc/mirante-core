@@ -128,6 +128,8 @@ Then, in `mirante-core`:
 
 ## Part 4: Interface version, checks and Qt modules
 
+This part is itself an interface change, since each module must now state a version. It went across the repositories in this order: a branch in `mirante-modules` with the change, the core's pull request pinning that branch's commit, then the merged core's commit pinned in the modules' pull request and in the app. The core pins a commit, not the branch, because a merge deletes the branch and keeps the commit.
+
 **Interface version** (decision 0119):
 
 - `src/module_api/mirante/ModuleApiVersion.h` holds `MIRANTE_MODULE_API_VERSION_MAJOR` and `_MINOR`. CMake reads them from this one file, as `MIRANTE_MODULE_API_VERSION`.

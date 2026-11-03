@@ -83,5 +83,11 @@ expect_refusal(no_such_folder "[{ ${modules_repo}, \"folders\": [\"missing\"] }]
     "folder \"missing\", which has no CMakeLists.txt")
 expect_refusal(no_module "[{ ${modules_repo}, \"folders\": [\"empty\"] }]"
     "folder \"empty\", which adds no module")
+expect_refusal(qt_not_listed "[{ ${modules_repo}, \"folders\": [\"needsqt\"] }]"
+    "Module needsqt needs the Qt module Pdf, which the manifest does not list")
+expect_refusal(wrong_version "[{ ${modules_repo}, \"folders\": [\"wrongapi\"] }]"
+    "Module wrongapi needs version 0.9999 of the module interface")
+expect_refusal(no_version "[{ ${modules_repo}, \"folders\": [\"noapi\"] }]"
+    "Module noapi states no version of the module interface")
 expect_refusal(bad_name "[{ \"name\": \"Bad-Name\", \"repo\": \"unused\", \"ref\": \"unused\", \"folders\": [\"listed\"] }]"
     "name \"Bad-Name\"")

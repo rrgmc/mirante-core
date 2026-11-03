@@ -91,13 +91,19 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         if: env.CODE != 'false'
 
+      - name: Qt modules of the manifest
+        id: qt
+        if: env.CODE != 'false'
+        shell: bash
+        run: echo "modules=$(jq -r '.qt | join("-")' ci/modules.json | tr -d '\r')" >> "$GITHUB_OUTPUT"
+
       - name: Cache Qt
         if: env.CODE != 'false'
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/qt
-          # Change the last part when setup-qt installs other archives.
-          key: qt-${{ runner.os }}-${{ env.QT_VERSION }}-qtbase-qtsvg-qtdeclarative-qttools-qttranslations-icu-webengine-imageformats-pdf
+          # Change the fixed part when setup-qt installs other archives.
+          key: qt-${{ runner.os }}-${{ env.QT_VERSION }}-qtbase-qtsvg-qtdeclarative-qttools-qttranslations-icu-webengine-imageformats-${{ steps.qt.outputs.modules }}
 
       # CMakeLists.txt compiles through ccache when it finds it. Only runs on
       # master save the cache: a pull request's cache would be visible to that
@@ -158,7 +164,7 @@ jobs:
         if: env.CODE != 'false' && runner.os != 'Windows'
         run: |
           cmake --install build/ci --component Mirante --prefix "$PWD/build/ci/install"
-          python3 tools/check-package.py build/ci/install
+          python3 tools/check-package.py build/ci/install ci/modules.json
           cd build/ci && cpack
 
       - uses: actions/upload-artifact@v4
@@ -183,11 +189,15 @@ jobs:
 
       - uses: astral-sh/setup-uv@v6
 
+      - name: Qt modules of the manifest
+        id: qt
+        run: echo "modules=$(jq -r '.qt | join("-")' ci/modules.json)" >> "$GITHUB_OUTPUT"
+
       - name: Cache Qt
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/qt
-          key: qt-${{ runner.os }}-${{ env.QT_VERSION }}-qtbase-qtsvg-qtdeclarative-qttools-qttranslations-icu-webengine-imageformats-pdf
+          key: qt-${{ runner.os }}-${{ env.QT_VERSION }}-qtbase-qtsvg-qtdeclarative-qttools-qttranslations-icu-webengine-imageformats-${{ steps.qt.outputs.modules }}
 
       - name: Cache compiling
         uses: hendrikmuhs/ccache-action@v1.2
@@ -227,6 +237,24 @@ jobs:
           python3 tools/check-translations.py
           git diff --exit-code translations/
           test -z "$(git status --porcelain translations/)"
+
+  # An interface change must say what a module has to do about it. Only pull
+  # requests have a list of changed files to compare. See decision 0119.
+  interface-changelog:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check the changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          files=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/files" --jq '.[].filename')
+          if echo "$files" | grep -q '^src/module_api/' && ! echo "$files" | grep -qx 'src/module_api/CHANGELOG.md'; then
+            echo "::error::This pull request changes src/module_api, so src/module_api/CHANGELOG.md must say what changed."
+            exit 1
+          fi
 
   # Checks the modules that ci/modules.json pins, as mirante-modules does for
   # each change of its own.

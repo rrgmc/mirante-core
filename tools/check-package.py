@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """Checks that an installed Mirante holds what a package needs.
 
-    python tools/check-package.py <install folder>
+    python tools/check-package.py <install folder> [manifest]
 
 The folder is the prefix given to `cmake --install --component Mirante`. The
 script finds the layout from what is there: a Mirante.app bundle on macOS,
 bin/mirante.exe on Windows, or opt/mirante on Linux. It fails, naming each
 missing file, if the app lacks its executable, Qt's Portuguese translation
 where QLibraryInfo::TranslationsPath points, the WebP image plugin, the SVG
-plugins for the icons, or Qt WebEngine's helper and resources. See docs/plans/m10-packaging.md.
+plugins for the icons, Qt WebEngine's helper and resources, or a Qt library in the
+"qt" list of the manifest. See docs/plans/m10-packaging.md.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -80,16 +82,22 @@ def linux(root: Path) -> list[str]:
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
+    if len(sys.argv) not in (2, 3):
         print(__doc__.strip(), file=sys.stderr)
         return 2
     root = Path(sys.argv[1])
+    qt_modules = []
+    if len(sys.argv) == 3:
+        qt_modules = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))["qt"]
     if (root / "mirante.app").is_dir():
         layout, expected = "macOS", macos(root)
+        expected += [f"mirante.app/Contents/Frameworks/Qt{module}.framework" for module in qt_modules]
     elif (root / "bin/mirante.exe").is_file():
         layout, expected = "Windows", windows(root)
+        expected += [f"bin/Qt6{module}.dll" for module in qt_modules]
     elif (root / "opt/mirante").is_dir():
         layout, expected = "Linux", linux(root)
+        expected += [f"opt/mirante/lib/libQt6{module}.so.6" for module in qt_modules]
     else:
         print(f"{root} holds no installed Mirante", file=sys.stderr)
         return 1

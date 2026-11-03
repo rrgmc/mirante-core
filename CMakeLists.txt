@@ -44,9 +44,14 @@ if(MIRANTE_CCACHE)
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/src/module_api/cmake")
+include(MiranteManifest)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets Network Svg WebChannel WebEngineWidgets Pdf PdfWidgets Test LinguistTools)
+# What the core uses, and what the manifest adds for its modules.
+mirante_manifest_qt_modules(manifest_qt)
+set(MIRANTE_QT_MODULES Core Gui Widgets Network Svg WebChannel WebEngineWidgets Test LinguistTools ${manifest_qt}
+    CACHE INTERNAL "The Qt modules that a module may name in QT_LIBS")
+find_package(Qt6 6.8 REQUIRED COMPONENTS ${MIRANTE_QT_MODULES})
 # The source texts are English. Brazilian Portuguese is the one translation.
 # See docs/decisions/0086-english-and-brazilian-portuguese.md.
 qt_standard_project_setup(I18N_SOURCE_LANGUAGE en I18N_TRANSLATED_LANGUAGES pt_BR)
@@ -87,7 +92,6 @@ endif()
 include(MiranteTargets)
 include(Dependencies)
 include(MiranteModule)
-include(MiranteManifest)
 include(MiranteDeploy)
 include(MiranteInstall)
 

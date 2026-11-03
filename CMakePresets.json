@@ -30,7 +30,7 @@
       "name": "ci",
       "displayName": "CI: Release, all modules, warnings as errors",
       "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "MIRANTE_WERROR": "ON", "MIRANTE_MANIFEST": "${sourceDir}/ci/modules.json" }
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "MIRANTE_WERROR": "ON", "MIRANTE_MODULES_WERROR": "ON", "MIRANTE_MANIFEST": "${sourceDir}/ci/modules.json" }
     },
     {
       "name": "ci-no-modules",

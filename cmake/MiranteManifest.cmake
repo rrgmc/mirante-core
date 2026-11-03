@@ -3,6 +3,31 @@
 
 include(FetchContent)
 
+# mirante_manifest_qt_modules(<out>)
+#
+# Reads the "qt" list of MIRANTE_MANIFEST, which comes before find_package(Qt6).
+function(mirante_manifest_qt_modules out)
+    set(modules "")
+    if(MIRANTE_MANIFEST)
+        if(NOT EXISTS "${MIRANTE_MANIFEST}")
+            message(FATAL_ERROR "The manifest ${MIRANTE_MANIFEST} does not exist.")
+        endif()
+        file(READ "${MIRANTE_MANIFEST}" manifest)
+        string(JSON count ERROR_VARIABLE error LENGTH "${manifest}" qt)
+        if(error)
+            message(FATAL_ERROR "${MIRANTE_MANIFEST} has no \"qt\" list: ${error}")
+        endif()
+        if(count GREATER 0)
+            math(EXPR last "${count} - 1")
+            foreach(index RANGE ${last})
+                string(JSON module GET "${manifest}" qt ${index})
+                list(APPEND modules "${module}")
+            endforeach()
+        endif()
+    endif()
+    set(${out} "${modules}" PARENT_SCOPE)
+endfunction()
+
 # Stops configuration if a JSON object has a field that is not in <known>. A
 # misspelt field would otherwise build the wrong thing without saying so.
 function(_mirante_manifest_check_fields json where known)

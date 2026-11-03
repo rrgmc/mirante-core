@@ -13,6 +13,9 @@
 #                                    and make the setup with CPack
 #   tools/build.ps1 -Source <folder> build the presets of an app repository
 #                                    in that folder, instead of this one
+#   tools/build.ps1 -Manifest <file> take the Qt modules from this manifest. The
+#                                    default is mirante.json in -Source, or
+#                                    ci/modules.json here
 #
 # Downloads Qt with tools/setup-qt.ps1 if it is missing, and enters the
 # Visual Studio 2022 developer environment if the shell is not in one.
@@ -24,7 +27,8 @@ param(
     [string]$Version,
     [switch]$NoPch,
     [switch]$Package,
-    [string]$Source
+    [string]$Source,
+    [string]$Manifest
 )
 
 $ErrorActionPreference = 'Stop'
@@ -39,7 +43,9 @@ if ($running) {
     throw "Mirante is still running from $($running[0].Path) (process $($running.Id -join ', ')), so the build cannot replace it. Quit it with File > Quit, or from its tray icon, then build again."
 }
 
-$QtDir = & (Join-Path $PSScriptRoot 'setup-qt.ps1') | Select-Object -Last 1
+if (-not $Manifest) { $Manifest = if ($Source) { Join-Path $Repo 'mirante.json' } else { Join-Path $Repo 'ci\modules.json' } }
+$Manifest = (Resolve-Path $Manifest).Path
+$QtDir = & (Join-Path $PSScriptRoot 'setup-qt.ps1') -Manifest $Manifest | Select-Object -Last 1
 
 if (-not $env:VSCMD_VER) {
     $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
@@ -85,7 +91,7 @@ try {
         $installDir = Join-Path $BuildDir 'install'
         if (Test-Path $installDir) { Remove-Item -Recurse -Force $installDir }
         Invoke-Tool cmake --install $BuildDir --component Mirante --prefix $installDir
-        Invoke-Tool python (Join-Path $PSScriptRoot 'check-package.py') $installDir
+        Invoke-Tool python (Join-Path $PSScriptRoot 'check-package.py') $installDir $Manifest
         Push-Location $BuildDir
         try { Invoke-Tool cpack } finally { Pop-Location }
     }

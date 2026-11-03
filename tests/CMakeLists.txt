@@ -31,6 +31,18 @@ add_test(NAME cmake_module_manifest
         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/manifest/run_test.cmake")
 set_tests_properties(cmake_module_manifest PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 
+# The module interface without the core, with a module that implements only the
+# required methods.
+add_test(NAME cmake_module_standalone
+    COMMAND "${CMAKE_COMMAND}"
+        "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/cmake/standalone"
+        "-DBINARY=${CMAKE_CURRENT_BINARY_DIR}/cmake_module_standalone"
+        "-DGENERATOR=${CMAKE_GENERATOR}"
+        "-DCOMPILER=${CMAKE_CXX_COMPILER}"
+        "-DPREFIX=${CMAKE_PREFIX_PATH}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/standalone/run_test.cmake")
+set_tests_properties(cmake_module_standalone PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+
 # The pages that tst_dash_scheme loads from dash://panels/test/.
 qt_add_resources(web_tst_dash_scheme dash_test_pages
     PREFIX /panels/test
