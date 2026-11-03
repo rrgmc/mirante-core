@@ -212,7 +212,11 @@ The user can stop here and keep `mirante` as it is. The work in part 8 has value
 **Where part 8 stands.** All five pieces are built:
 
 - **The template** is `mirante-app-template`, a GitHub template repository. Its own builds never publish a release. Its first CI run passed on Windows, macOS and Linux.
-- **Automatic updates** are `update-app.yml` and `tools/update-pins.py`, with the release on merge in `build-app.yml` and `release-app.yml` ([decision 0127](../decisions/0127-automatic-pin-updates.md)). The script was tried on a copy of `mirante-app`. The job has not yet opened a pull request, and no release has been published on merge, because both need an app made from the template with the `MIRANTE_UPDATE_TOKEN` secret. The roadmap's item stays open until that runs.
+- **Automatic updates** are `update-app.yml` and `tools/update-pins.py`, with the release on merge in `build-app.yml` and `release-app.yml` ([decision 0127](../decisions/0127-automatic-pin-updates.md)). They were proven in `mirante-app-trial`, a public app made from the template with the `MIRANTE_UPDATE_TOKEN` secret:
+  - Its first build on `master` published `v0.1.0`, and the release made its own tag.
+  - The update job, started by hand, opened a pull request that moved the core's pin in the manifest and the three workflow refs and raised the version to `0.1.1`. CI ran on it with the token.
+  - Merging it published `v0.1.1`, tagged on the merge commit.
+  - A failed update was not tried. The release job runs only after every build job passes, so a failed build publishes nothing.
 - **The scan** is `tools/scan-module-apis.py`, which `build-app.yml` runs on Linux.
 - **Web page origins** use the `module://` scheme, for static files only ([decision 0128](../decisions/0128-module-pages-have-their-own-origin.md)). `mirante-modules-samples` holds a sample module, `rrgmcwebpages`, that uses it.
 - **The documentation** is [writing a module](../writing-a-module.md). A fresh agent with no knowledge of the code built a module by following it alone, and its findings were fixed. That stands in for the third approval condition, which asks for a person.
