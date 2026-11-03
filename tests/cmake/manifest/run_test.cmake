@@ -2,9 +2,11 @@
 # only listed folders run, a repository's top file does not, modules see Qt and
 # AUTOMOC from the core's scope, and ctest in the top folder finds their tests.
 # DEPENDS reaches a module of another repository, whichever is listed first.
-# Folder entries set a module's options and make it optional.
+# Folder entries set a module's options and make it optional. A "local"
+# repository is a folder of the app itself.
 # Mistakes in the manifest stop configuration. Nothing is downloaded: every
-# repository comes from a folder here, through FETCHCONTENT_SOURCE_DIR_<NAME>.
+# repository comes from a folder here, through FETCHCONTENT_SOURCE_DIR_<NAME>,
+# or from app/ itself.
 #
 #   cmake -DSOURCE=<this folder> -DBINARY=<a folder> -DGENERATOR=<generator>
 #         -DCOMPILER=<compiler> -DPREFIX=<Qt> -P run_test.cmake
@@ -154,6 +156,34 @@ expect_refusal(optional_not_boolean "[{ ${modules_repo}, \"folders\": [{ \"folde
     "which must be true")
 expect_refusal(entry_not_object "[{ ${modules_repo}, \"folders\": [42] }]"
     "must be a folder name")
+
+# A local repository: app/modules, with no fetch. The About dialog's source is
+# the app repository and its commit. See decision 0130.
+configure_app(local "[
+    { \"name\": \"app_modules\", \"local\": \"modules\", \"folders\": [\"localmod\"] },
+    { ${modules_repo}, \"folders\": [\"listed\"] }
+  ]")
+if(NOT result EQUAL 0 OR NOT output MATCHES "Module localmod: on")
+    message(FATAL_ERROR "A local module is not on:\n${output}")
+endif()
+file(READ "${BINARY}/local/_deps/mirante_core-build/generated/enabled_modules.cpp" generated)
+if(NOT generated MATCHES "QStringLiteral\\(\"localmod\"\\), QStringLiteral\\(\"[^\"]+\"\\), QStringLiteral\\(\"[0-9a-f]+\"\\)")
+    message(FATAL_ERROR "The generated code has no repository and commit for the local module:\n${generated}")
+endif()
+execute_process(COMMAND "${CMAKE_COMMAND}" --build "${BINARY}/local"
+    RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE output)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "The app with a local module did not build:\n${output}")
+endif()
+
+expect_refusal(local_with_repo "[{ \"name\": \"app_modules\", \"local\": \"modules\", \"repo\": \"unused\", \"folders\": [\"localmod\"] }]"
+    "takes no \"repo\"")
+expect_refusal(local_outside "[{ \"name\": \"app_modules\", \"local\": \"../modules\", \"folders\": [\"listed\"] }]"
+    "which leaves the")
+expect_refusal(local_absolute "[{ \"name\": \"app_modules\", \"local\": \"/modules\", \"folders\": [\"localmod\"] }]"
+    "which must be a")
+expect_refusal(local_missing "[{ \"name\": \"app_modules\", \"local\": \"nothere\", \"folders\": [\"localmod\"] }]"
+    "which is not a")
 
 # Without the other repository's module, configuration says what is missing.
 expect_refusal(missing_dependency "[{ ${other_repo}, \"folders\": [\"uses\"] }]"

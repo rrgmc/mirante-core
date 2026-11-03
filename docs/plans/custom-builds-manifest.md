@@ -87,7 +87,7 @@ Decision 0129 records this.
 
 An app repository can hold modules of its own.
 
-- **`local`** in place of `repo` and `ref`: a folder relative to the manifest's folder, such as `"local": "modules"`. `"."` is the app repository's top. `local` with `repo` or `ref` stops configuration.
+- **`local`** in place of `repo` and `ref`: a folder relative to the app repository's top, such as `"local": "modules"`, not to the manifest's folder, since a manifest can be in `ci/`. `"."` is the app repository's top. `local` with `repo` or `ref` stops configuration.
 - The core adds the listed folders from there, with no FetchContent. A path that leaves the app repository, with `..` or an absolute path, stops configuration.
 - **The About dialog** shows the app repository and its commit for a local module, read with `git rev-parse` as for fetched ones. Without Git, it shows "local".
 - **Checks.** `build-app.yml` runs the include check on the app repository's local folders, as `check-modules` does for a modules repository, so a local module cannot include core headers either.

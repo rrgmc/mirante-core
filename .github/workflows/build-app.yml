@@ -155,6 +155,17 @@ jobs:
         if: inputs.check-modules && runner.os == 'Linux'
         run: python3 .mirante-core/tools/check-module-includes.py .
 
+      # The app repository's own modules, from "local" in the manifest. See
+      # decision 0130.
+      - name: Check local module includes
+        if: runner.os == 'Linux'
+        run: |
+          jq -r '.modules[] | select(.local) | .local as $local | .folders[]
+                 | (if type == "string" then . else .folder end) | "\($local)/\(.)"' "$MANIFEST" |
+            while read -r folder; do
+              python3 .mirante-core/tools/check-module-includes.py "$folder"
+            done
+
       - uses: astral-sh/setup-uv@v6
 
       - name: Cache Qt
