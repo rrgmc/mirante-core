@@ -1617,6 +1617,10 @@
         <source>Modules:</source>
         <translation>Módulos:</translation>
     </message>
+    <message>
+        <source>Default</source>
+        <translation>Padrão</translation>
+    </message>
 </context>
 <context>
     <name>mirante::ModuleSettingsDialog</name>
