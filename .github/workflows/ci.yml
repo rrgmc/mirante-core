@@ -267,7 +267,9 @@ jobs:
 
       - name: Find the pinned modules
         id: modules
-        run: echo "ref=$(jq -r '.modules[0].ref' ci/modules.json)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "ref=$(jq -r '.modules[] | select(.name == "mirante_modules") | .ref' ci/modules.json)" >> "$GITHUB_OUTPUT"
+          echo "work-ref=$(jq -r '.modules[] | select(.name == "mirante_modules_work") | .ref' ci/modules.json)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
@@ -276,5 +278,14 @@ jobs:
           path: pinned-modules
           persist-credentials: false
 
+      - uses: actions/checkout@v4
+        with:
+          repository: rrgmc/mirante-modules-work
+          ref: ${{ steps.modules.outputs.work-ref }}
+          path: pinned-modules-work
+          persist-credentials: false
+
       - name: Check module includes
-        run: python3 tools/check-module-includes.py pinned-modules
+        run: |
+          python3 tools/check-module-includes.py pinned-modules
+          python3 tools/check-module-includes.py pinned-modules-work

@@ -49,7 +49,7 @@ cd build/release && cpack
 
 ## Building with modules
 
-The modules are in other repositories. A manifest names the modules to build, and the core fetches them when it configures, so the first configure needs the network. See [decision 0125](docs/decisions/0125-how-modules-are-fetched.md). The `dev`, `release` and `ci` presets use `ci/modules.json`, which pins `mirante-modules` to a commit. The `no-modules` and `ci-no-modules` presets use no manifest. Another manifest is chosen like this:
+The modules are in other repositories. A manifest names the modules to build, and the core fetches them when it configures, so the first configure needs the network. See [decision 0125](docs/decisions/0125-how-modules-are-fetched.md). The `dev`, `release` and `ci` presets use `ci/modules.json`, which pins `mirante-modules` and `mirante-modules-work` to a commit each. See [decision 0133](docs/decisions/0133-work-modules-in-their-own-repository.md). The `no-modules` and `ci-no-modules` presets use no manifest. Another manifest is chosen like this:
 
 ```sh
 cmake --preset dev -DMIRANTE_MANIFEST=<path to mirante.json>
