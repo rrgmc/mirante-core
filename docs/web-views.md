@@ -75,6 +75,12 @@ A heavy page such as claude.ai uses a few hundred MB.
 - **Load failure.** When a page fails to load, a message with the error and a Reload button takes the place of the page. Chromium's own error page is turned off. A server's error page, such as a 404 page, is shown as it is: only network errors, which Chromium gives negative codes, show the message. Every failed load is logged with its error domain and code.
 - **A page that stops.** If a page's process ends, for example because it crashed, the page is replaced by "The page stopped" and a Reload button, and the end is logged. In a debug build this happens to some sites that work in a release build; see [debug builds](#debug-builds).
 
+## The window and its first web view
+
+Qt WebEngine draws through the graphics API. A window that holds only plain widgets draws without it, and Qt switches the window when its first web view appears. On Windows, that makes the window's native surface again, which looks as if the window closed and opened again, as on opening a tab with a web page from one without.
+
+So on Windows, `main.cpp` calls `platform::composeWindowsThroughTheGraphicsApi()` before the application is made. It sets `QT_WIDGETS_RHI=1`, unless the user set it, and every window draws through the graphics API from the start. `tests/ui/tst_window_surface.cpp` checks that a window keeps its surface. It needs a real window system, so CTest's offscreen platform skips it; run it with `QT_QPA_PLATFORM=windows` and `QT_FORCE_STDERR_LOGGING=1`. macOS and Linux keep Qt's default, since this has not been tried there.
+
 ## Debug builds
 
 A debug build links Qt WebEngine's debug libraries, such as `Qt6WebEngineCored.dll` on Windows. They run Chromium's internal checks, which the release libraries leave out. When a check fails, Chromium stops the process it runs in on purpose. Windows reports this as an app crash with the exception code `0x80000003`, a breakpoint, in the WebEngine library.

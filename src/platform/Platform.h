@@ -20,4 +20,12 @@ QString systemName();
 // drawn on the macOS icon grid, and windows have no icon. See decision 0092.
 void setAppIcon(const QIcon &icon);
 
+// Has windows draw through the graphics API from the start, as they must once
+// they hold a web view. Without it, Windows makes a window's native surface
+// again when its first web view appears, which looks as if the window closed
+// and opened again. Call it before QApplication is made. It does nothing on
+// macOS and Linux, where it has not been tried, and keeps a value the user
+// set in QT_WIDGETS_RHI.
+void composeWindowsThroughTheGraphicsApi();
+
 } // namespace mirante::platform
