@@ -56,3 +56,20 @@ endif()
 if(NOT output MATCHES "Module beta depends on the module alpha, which is disabled")
     message(FATAL_ERROR "A disabled dependency gave the wrong message:\n${output}")
 endif()
+
+# A method that overrides without saying override stops the build on GCC and
+# Clang. MSVC has no such warning.
+if(NOT COMPILER MATCHES "cl(\\.exe)?$")
+    configure_project("${BINARY}/no_override" -DWITH_DELTA=ON)
+    if(NOT result EQUAL 0)
+        message(FATAL_ERROR "Configuring with delta failed:\n${output}")
+    endif()
+    execute_process(COMMAND "${CMAKE_COMMAND}" --build "${BINARY}/no_override" --target mirante_module_delta
+        RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE output)
+    if(result EQUAL 0)
+        message(FATAL_ERROR "A module without override compiled.")
+    endif()
+    if(NOT output MATCHES "suggest-override")
+        message(FATAL_ERROR "delta failed for another reason than the missing override:\n${output}")
+    endif()
+endif()
