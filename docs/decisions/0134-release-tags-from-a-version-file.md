@@ -14,6 +14,7 @@ Every manifest pinned the core and the modules by commit. The core and the repos
 - **Apps and the template pin tags.** With the user's choice, `mirante-app`, and so `mirante` after part 9, and `mirante-app-template` pin the core and each repository of modules to `vX.Y.Z`. The update job moves a tag pin to the newest release tag ([decision 0127](0127-automatic-pin-updates.md)), so an app takes only releases.
 - **Development pins stay commits.** The core's `ci/modules.json` and each repository of modules' own `ci/manifest.json` keep commit pins. An interface change is built across the repositories before anything is tagged, by the order in the custom builds plan.
 - **A release is a reviewed pull request** that raises `VERSION`, with the changes since the last tag. A change to the module interface raises the minor version while the interface is 0.x.
+- **Each library repository keeps a `CHANGELOG.md`** in the format of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), with an Unreleased section on top. The workflow refuses a new version whose changelog has no section `## [X.Y.Z]`, on the pull request and on the push, so no tag is made without its notes. The core's interface keeps its own changelog in `src/module_api/CHANGELOG.md`.
 
 ## Alternatives
 

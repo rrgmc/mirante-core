@@ -1,7 +1,8 @@
 # Makes the release tag of a library repository, such as the core or a
 # repository of modules, from the version in a file. A push to the default
 # branch whose version has no tag yet makes the annotated tag vX.Y.Z on that
-# commit. On a pull request, it only checks the file. Apps pin these tags. A
+# commit, and the changelog must have a section for that version. On a pull
+# request, it only checks the files. Apps pin these tags. A
 # repository calls it with one short workflow:
 #
 #   on:
@@ -25,6 +26,10 @@ on:
         description: The file that holds the version, X.Y.Z
         type: string
         default: VERSION
+      changelog:
+        description: The changelog, in the format of Keep a Changelog, which must have a section "## [X.Y.Z]" for a version that has no tag yet
+        type: string
+        default: CHANGELOG.md
 
 permissions:
   contents: read
@@ -43,6 +48,7 @@ jobs:
       - name: Tag the version
         env:
           VERSION_FILE: ${{ inputs.version-file }}
+          CHANGELOG: ${{ inputs.changelog }}
           ON_DEFAULT_BRANCH: ${{ github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
         run: |
           if [ ! -f "$VERSION_FILE" ]; then
@@ -58,6 +64,15 @@ jobs:
           if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
             echo "$tag exists, at $(git rev-list -n 1 "$tag"), so nothing is tagged."
             exit 0
+          fi
+          # A new version needs its notes.
+          if [ ! -f "$CHANGELOG" ]; then
+            echo "::error::$CHANGELOG does not exist, so $tag would have no notes."
+            exit 1
+          fi
+          if ! grep -qE "^## \[$(printf '%s' "$version" | sed 's/\./\\./g')\]" "$CHANGELOG"; then
+            echo "::error::$CHANGELOG has no section '## [$version]' for $tag."
+            exit 1
           fi
           if [ "$ON_DEFAULT_BRANCH" != true ]; then
             echo "Merging this makes the tag $tag."
