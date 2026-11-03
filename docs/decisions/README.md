@@ -138,6 +138,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0131](0131-editions.md) | Editions name an app repository's build, which stays the same app | Accepted |
 | [0132](0132-extension-points.md) | Extension points: a module lets an app replace part of its code | Accepted |
 | [0133](0133-work-modules-in-their-own-repository.md) | The work modules move to a repository of their own | Accepted |
+| [0134](0134-release-tags-from-a-version-file.md) | Release tags from a version file, and apps pin tags | Accepted |
 
 ## Template
 
