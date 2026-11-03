@@ -1,0 +1,88 @@
+# Opens a pull request that moves an app repository's pins to the newest
+# versions of the core and the modules, with tools/update-pins.py. An app calls
+# it from a scheduled workflow:
+#
+#   on:
+#     schedule:
+#       - cron: '0 6 * * 1'
+#     workflow_dispatch:
+#   jobs:
+#     update:
+#       uses: rrgmc/mirante-core/.github/workflows/update-app.yml@<the manifest's core ref>
+#       secrets:
+#         token: ${{ secrets.MIRANTE_UPDATE_TOKEN }}
+#
+# A pull request opened with the workflow's own token starts no CI, so the
+# caller passes a token of its own, which may change workflows: the core's pin
+# is in them too. Without one, the job only warns. See
+# docs/decisions/0127-automatic-pin-updates.md.
+
+name: Update app
+
+on:
+  workflow_call:
+    secrets:
+      token:
+        description: A token that can push branches, change workflows and open pull requests in the app repository
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check the token
+        id: token
+        env:
+          TOKEN: ${{ secrets.token }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::warning::No token was passed, so no pull request is opened. See the README of mirante-app-template."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.ok == 'true'
+        with:
+          persist-credentials: false
+
+      - name: Find the core's pin
+        if: steps.token.outputs.ok == 'true'
+        id: core
+        run: |
+          echo "repo=$(jq -r .core.repo mirante.json | sed -e 's#^https://github.com/##' -e 's#\.git$##')" >> "$GITHUB_OUTPUT"
+          echo "ref=$(jq -r .core.ref mirante.json)" >> "$GITHUB_OUTPUT"
+
+      # The script comes from the core at the current pin. Only the app's own
+      # files below are committed.
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.ok == 'true'
+        with:
+          repository: ${{ steps.core.outputs.repo }}
+          ref: ${{ steps.core.outputs.ref }}
+          path: .mirante-core
+          persist-credentials: false
+
+      - name: Move the pins
+        if: steps.token.outputs.ok == 'true'
+        id: pins
+        run: python3 .mirante-core/tools/update-pins.py --body "$RUNNER_TEMP/body.md"
+
+      - name: Open or update the pull request
+        if: steps.pins.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.token }}
+          branch: mirante-update
+          delete-branch: true
+          add-paths: |
+            mirante.json
+            CMakeLists.txt
+            .github/workflows/*.yml
+          commit-message: Move the pins to the newest versions
+          title: Move the pins to the newest versions
+          body-path: ${{ runner.temp }}/body.md
