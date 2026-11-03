@@ -3,7 +3,7 @@
 # AUTOMOC from the core's scope, and ctest in the top folder finds their tests.
 # DEPENDS reaches a module of another repository, whichever is listed first.
 # Folder entries set a module's options and make it optional. A "local"
-# repository is a folder of the app itself.
+# repository is a folder of the app itself. The edition is read and checked.
 # Mistakes in the manifest stop configuration. Nothing is downloaded: every
 # repository comes from a folder here, through FETCHCONTENT_SOURCE_DIR_<NAME>,
 # or from app/ itself.
@@ -20,12 +20,14 @@ if(WIN32 AND NOT DEFINED ENV{VCToolsInstallDir})
 endif()
 
 # Writes a manifest with these entries in "modules" and configures the app.
-# Further arguments go to CMake, such as -DMIRANTE_MODULE_<ID>=ON.
+# Further arguments go to CMake, such as -DMIRANTE_MODULE_<ID>=ON. The
+# variable manifest_top, if set, holds more top-level fields, each followed
+# by a comma.
 function(configure_app name modules_json)
     set(binary "${BINARY}/${name}")
     file(REMOVE_RECURSE "${binary}")
     set(manifest "${BINARY}/${name}.json")
-    file(WRITE "${manifest}" "{
+    file(WRITE "${manifest}" "{ ${manifest_top}
   \"qt\": [],
   \"core\": { \"repo\": \"unused\", \"ref\": \"unused\" },
   \"modules\": ${modules_json}
@@ -184,6 +186,18 @@ expect_refusal(local_absolute "[{ \"name\": \"app_modules\", \"local\": \"/modul
     "which must be a")
 expect_refusal(local_missing "[{ \"name\": \"app_modules\", \"local\": \"nothere\", \"folders\": [\"localmod\"] }]"
     "which is not a")
+
+# The edition, and a name it may not have. See decision 0131.
+set(manifest_top "\"edition\": \"work-2\",")
+configure_app(edition "[{ ${modules_repo}, \"folders\": [\"listed\"] }]")
+if(NOT result EQUAL 0 OR NOT output MATCHES "Edition: \"work-2\"")
+    message(FATAL_ERROR "The edition was not read:\n${output}")
+endif()
+set(manifest_top "\"edition\": \"Work\",")
+expect_refusal(edition_capitals "[{ ${modules_repo}, \"folders\": [\"listed\"] }]" "has the edition \"Work\"")
+set(manifest_top "\"edition\": \"-work\",")
+expect_refusal(edition_dash "[{ ${modules_repo}, \"folders\": [\"listed\"] }]" "has the edition \"-work\"")
+unset(manifest_top)
 
 # Without the other repository's module, configuration says what is missing.
 expect_refusal(missing_dependency "[{ ${other_repo}, \"folders\": [\"uses\"] }]"

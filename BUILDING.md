@@ -55,6 +55,8 @@ The modules are in other repositories. A manifest names the modules to build, an
 cmake --preset dev -DMIRANTE_MANIFEST=<path to mirante.json>
 ```
 
+A manifest's `"edition": "<name>"` names the build's packages, such as `mirante-work-0.1.0-win64.exe`, and shows in the About dialog. It is still the same app. See [decision 0131](docs/decisions/0131-editions.md).
+
 An app repository can also hold modules of its own: a repository entry with `"local": "<folder>"` in place of `repo` and `ref` adds folders of the app repository, relative to its top. See [decision 0130](docs/decisions/0130-local-modules-in-the-app-repository.md).
 
 A folder entry in the manifest can set a module's options and make it optional. An optional module is built only when asked for, with `-DMIRANTE_MODULE_<ID>=ON`, or on Windows with `tools/build.ps1 -EnableModules <id>,<id>`. See [decision 0129](docs/decisions/0129-folder-entries-options-and-optional-modules.md).

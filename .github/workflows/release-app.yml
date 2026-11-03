@@ -17,6 +17,7 @@
 #       uses: rrgmc/mirante-core/.github/workflows/release-app.yml@<the same ref>
 #       with:
 #         tag: ${{ github.ref_name }}
+#         edition: ${{ needs.build.outputs.edition }}
 #
 # See docs/decisions/0126-macos-signing-is-a-separate-job.md.
 
@@ -29,6 +30,10 @@ on:
         description: The tag to publish a release for, which build-app.yml has checked
         type: string
         required: true
+      edition:
+        description: The manifest's edition, from build-app.yml's output edition, for the release's title. Empty for none
+        type: string
+        default: ''
 
 jobs:
   publish:
@@ -47,7 +52,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ inputs.tag }}
+          EDITION: ${{ inputs.edition }}
         run: |
+          title="Mirante${EDITION:+ $EDITION} $TAG"
           rm -f packages/mirante-bundle.tar packages/version.txt
           ls -l packages
           if ! gh release view "$TAG" > /dev/null 2>&1; then
@@ -62,6 +69,6 @@ jobs:
             else
               flags+=(--target "$GITHUB_SHA")
             fi
-            gh release create "$TAG" --generate-notes --title "Mirante $TAG" "${flags[@]}"
+            gh release create "$TAG" --generate-notes --title "$title" "${flags[@]}"
           fi
           gh release upload "$TAG" packages/* --clobber

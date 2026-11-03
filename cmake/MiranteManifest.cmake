@@ -28,6 +28,31 @@ function(mirante_manifest_qt_modules out)
     set(${out} "${modules}" PARENT_SCOPE)
 endfunction()
 
+# mirante_manifest_edition(<out>)
+#
+# Reads the "edition" of MIRANTE_MANIFEST, or empty for a build with none: a
+# name of lowercase letters, digits and "-", from 1 to 32 characters, which
+# starts and ends with a letter or a digit. See decision 0131.
+function(mirante_manifest_edition out)
+    set(edition "")
+    if(MIRANTE_MANIFEST AND EXISTS "${MIRANTE_MANIFEST}")
+        file(READ "${MIRANTE_MANIFEST}" manifest)
+        string(JSON type ERROR_VARIABLE missing TYPE "${manifest}" edition)
+        if(NOT missing)
+            if(type STREQUAL "STRING")
+                string(JSON edition GET "${manifest}" edition)
+            endif()
+            string(LENGTH "${edition}" length)
+            if(NOT type STREQUAL "STRING" OR length GREATER 32
+               OR NOT edition MATCHES "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")
+                message(FATAL_ERROR "${MIRANTE_MANIFEST} has the edition \"${edition}\", which must have "
+                    "lowercase letters, digits and \"-\" only, up to 32, and start and end with a letter or a digit.")
+            endif()
+        endif()
+    endif()
+    set(${out} "${edition}" PARENT_SCOPE)
+endfunction()
+
 # Stops configuration if a JSON object has a field that is not in <known>. A
 # misspelt field would otherwise build the wrong thing without saying so.
 function(_mirante_manifest_check_fields json where known)
@@ -244,7 +269,7 @@ function(mirante_add_manifest_modules)
     if(error OR NOT type STREQUAL "OBJECT")
         message(FATAL_ERROR "${MIRANTE_MANIFEST} is not a JSON object: ${error}")
     endif()
-    _mirante_manifest_check_fields("${manifest}" "the manifest" "qt;core;modules")
+    _mirante_manifest_check_fields("${manifest}" "the manifest" "edition;qt;core;modules")
     _mirante_manifest_get(core "${manifest}" "the manifest" core)
     _mirante_manifest_check_fields("${core}" "the core entry" "repo;ref")
     _mirante_manifest_get(repositories "${manifest}" "the manifest" modules)
