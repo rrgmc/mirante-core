@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """Checks that every text of the app has its translation.
 
+    python tools/check-translations.py [folder]
+
+Without a folder, it checks the core's translations/. With one, it checks a
+repository of modules: <module>/translations/ for each module, or translations/
+for a repository of one module.
+
 Run it after lupdate, which `task translations` runs, so the translation files
 hold every text of the sources. It fails when:
 
-- a message in translations/*.ts is unfinished or empty;
+- a message in a .ts file is unfinished or empty;
 - a translation lacks a placeholder of its source, such as %1 or %n, or has
   one the source has not;
 - a translation lacks the keyboard accelerator (&) or the trailing ellipsis
@@ -75,26 +81,36 @@ def check_ts(path, problems):
     return count
 
 
-def check_modules(problems):
-    for path in sorted((REPO / "src" / "modules").rglob("*")):
-        if path.suffix not in (".cpp", ".h", ".mm") or "tests" in path.parts:
+def is_skipped(path, root):
+    """Returns whether a path is in a build folder or a folder that starts with a dot."""
+    return any(part == "build" or part.startswith(".") for part in path.relative_to(root).parts[:-1])
+
+
+def check_modules(root, problems):
+    for path in sorted(root.rglob("*")):
+        if path.suffix not in (".cpp", ".h", ".mm") or "tests" in path.parts or is_skipped(path, root):
             continue
         for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if BARE_TR.search(line):
-                problems.append(f"{path.relative_to(REPO)}:{number}: module code calls tr(); use "
+                problems.append(f"{path.relative_to(root)}:{number}: module code calls tr(); use "
                                 f"QCoreApplication::translate(\"<module id>\", ...)")
 
 
 def main():
+    if len(sys.argv) > 2:
+        print(__doc__.strip(), file=sys.stderr)
+        return 2
+    root = Path(sys.argv[1]).resolve() if len(sys.argv) == 2 else REPO
     problems = []
-    files = sorted((REPO / "translations").glob("*.ts"))
+    files = sorted(p for p in root.rglob("translations/*.ts") if not is_skipped(p, root))
     if not files:
-        print("No translation files in translations/.")
+        print(f"No translation files in {root}.")
         return 1
     for path in files:
         count = check_ts(path, problems)
-        print(f"{path.relative_to(REPO)}: {count} texts")
-    check_modules(problems)
+        print(f"{path.relative_to(root)}: {count} texts")
+    if len(sys.argv) == 2:
+        check_modules(root, problems)
     for problem in problems:
         print(problem)
     if problems:

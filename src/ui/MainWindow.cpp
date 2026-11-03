@@ -1264,6 +1264,7 @@ struct MainWindow::Private
 
     static inline const QString focusTabId = QStringLiteral("focus");
 
+    QList<ModuleSource> moduleSources;
     QString workspace;              // the open data folder; empty for the sample data
     QAction *showSidebarAction = nullptr;
     QAction *fullScreenAction = nullptr;
@@ -2556,8 +2557,17 @@ QString MainWindow::workspace() const { return d->workspace; }
 
 QStringList MainWindow::recentWorkspaces() const { return d->settings->recentWorkspaces(); }
 
+void MainWindow::setModuleSources(const QList<ModuleSource> &sources) { d->moduleSources = sources; }
+
 void MainWindow::showAbout()
 {
+    // Every build is the same app, so the modules tell builds apart. See
+    // docs/decisions/0118-all-builds-are-one-app.md.
+    QString modules;
+    for (const ModuleSource &source : d->moduleSources)
+        modules += QStringLiteral("<br>%1: %2 (%3)").arg(source.id, source.repository, source.commit);
+    if (!modules.isEmpty())
+        modules = QStringLiteral("<p>") + tr("Modules:") + modules + QStringLiteral("</p>");
     // The versions of Qt and of the browser engine help when a login fails.
     QMessageBox::about(
         this, tr("About %1").arg(QStringLiteral(MIRANTE_APP_NAME)),
@@ -2568,7 +2578,8 @@ void MainWindow::showAbout()
                      QStringLiteral(MIRANTE_AUTHOR_EMAIL), QStringLiteral(MIRANTE_HOMEPAGE))
             + tr("<p>Qt %1, Qt WebEngine %2, Chromium %3</p>")
                   .arg(QString::fromLatin1(qVersion()), QString::fromLatin1(qWebEngineVersion()),
-                       QString::fromLatin1(qWebEngineChromiumVersion())));
+                       QString::fromLatin1(qWebEngineChromiumVersion()))
+            + modules);
 }
 
 void MainWindow::openTaskPreview(const QString &taskId, const QString &chosenDashboardId)

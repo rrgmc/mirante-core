@@ -84,6 +84,23 @@ function(_mirante_add_manifest_repository entry where)
     FetchContent_MakeAvailable(${name})
     FetchContent_GetProperties(${name} SOURCE_DIR source_dir)
 
+    # What the About dialog shows. A checkout on disk has no pin to show.
+    string(TOUPPER "${name}" upper_name)
+    set(commit "unknown")
+    if(FETCHCONTENT_SOURCE_DIR_${upper_name})
+        set(commit "local")
+    else()
+        find_package(Git QUIET)
+        if(GIT_EXECUTABLE)
+            execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse --short=12 HEAD
+                WORKING_DIRECTORY "${source_dir}"
+                OUTPUT_VARIABLE head OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+            if(head)
+                set(commit "${head}")
+            endif()
+        endif()
+    endif()
+
     math(EXPR last "${folder_count} - 1")
     foreach(index RANGE ${last})
         string(JSON folder GET "${folders}" ${index})
@@ -106,6 +123,12 @@ function(_mirante_add_manifest_repository entry where)
             message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${where} lists the folder \"${folder}\", "
                 "which adds no module.")
         endif()
+        foreach(module IN LISTS modules_after)
+            if(NOT module IN_LIST modules_before)
+                set_property(GLOBAL PROPERTY MIRANTE_MODULE_REPOSITORY_${module} "${repo}")
+                set_property(GLOBAL PROPERTY MIRANTE_MODULE_COMMIT_${module} "${commit}")
+            endif()
+        endforeach()
     endforeach()
 endfunction()
 

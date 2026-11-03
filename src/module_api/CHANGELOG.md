@@ -8,6 +8,8 @@ While the version is 0.x, any minor version may break modules, so a module must 
 
 Changes that do not affect modules are listed here too.
 
+- A module with a folder `translations/` carries its own texts, as `<id>_<language>.ts`. The core loads them for the enabled modules. A module without them keeps working, in English.
+
 ## 0.1
 
 The first version with a number.

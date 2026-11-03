@@ -161,8 +161,8 @@ This part is itself an interface change, since each module must now state a vers
 
 - `mirante_add_module()` compiles a module's `translations/<id>_<language>.ts` files, where they exist, into its resources under `/i18n`.
 - `main.cpp` installs a translator for each enabled module. A module with no file for the language shows English, without a warning.
-- A script splits today's `mirante_pt_BR.ts` once, by running `lupdate` on each module and copying the translated texts by context and source text. The texts stay the same.
-- `tools/check-translations.py` and `tools/translation-glossary.py` take a folder, so they run in each repository. The glossary and the translation rules live in the core, and `mirante-modules` runs the core's copy from its pin.
+- A one-off script split the file once, taking each module's context from `mirante_pt_BR.ts` in `mirante` at the tag `custom-builds-split`. Each module's context is its id, so nothing else was needed. The texts stay the same.
+- `tools/check-translations.py` takes a folder, and `build-app.yml` runs it with `lupdate` when an app asks with `check-modules`. The glossary and the translation rules stay in the core, so `tools/translation-glossary.py` still writes only the core's file.
 
 **About dialog:** the core writes each module's repository and commit into `enabled_modules.cpp` at configure time, with `git rev-parse` on the fetched folder. A folder from `FETCHCONTENT_SOURCE_DIR_<NAME>` adds "local". The dialog lists them. Decision 0118 relies on this to tell builds apart.
 

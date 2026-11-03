@@ -4,10 +4,12 @@ Mirante speaks English, the language of the source, and Brazilian Portuguese. Se
 
 | File | Contents |
 |---|---|
-| `mirante_pt_BR.ts` | Every text of the app and of all modules, in Brazilian Portuguese |
+| `mirante_pt_BR.ts` | Every text of the core, in Brazilian Portuguese |
 | `mirante_en.ts` | The English plural forms of the texts that use `%n`, made by `lupdate` |
 
 The build compiles both into the app's resources, under `:/i18n`. Qt's own texts, such as the buttons of standard dialogs, come from Qt's `qtbase` translations.
+
+Each module carries its own files, `<id>_pt_BR.ts` and `<id>_en.ts`, in a folder `translations/` beside its `CMakeLists.txt`. An empty folder is enough to start: `update_translations` makes them. The build compiles them into the module's resources, and the app loads them for the enabled modules. A module without files for a language shows its source texts. The steps below are the same for a module, and `tools/check-translations.py <folder>` checks a repository of modules. The terms below apply to every module, and the list is at the top of the core's file only.
 
 ## Adding or changing a text
 

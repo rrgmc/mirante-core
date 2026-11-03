@@ -18,4 +18,10 @@ QStringList enabledModuleIds()
     return {@MIRANTE_MODULE_IDS@};
 }
 
+QList<ModuleSource> enabledModuleSources()
+{
+    return {
+@MIRANTE_MODULE_SOURCES@    };
+}
+
 } // namespace mirante

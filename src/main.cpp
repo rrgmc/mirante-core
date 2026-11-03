@@ -36,6 +36,7 @@
 #include <QTranslator>
 
 #include <memory>
+#include <vector>
 
 int main(int argc, char *argv[])
 {
@@ -126,6 +127,16 @@ int main(int argc, char *argv[])
             qWarning("Qt's own translation for %s was not found in %s", qPrintable(language),
                      qPrintable(QLibraryInfo::path(QLibraryInfo::TranslationsPath)));
     }
+    // A module without a file for this language shows its source texts, so a
+    // missing file is not an error.
+    std::vector<std::unique_ptr<QTranslator>> moduleTranslators;
+    for (const QString &moduleId : mirante::enabledModuleIds()) {
+        auto translator = std::make_unique<QTranslator>();
+        if (translator->load(QStringLiteral(":/i18n/") + moduleId + QLatin1Char('_') + language)) {
+            QCoreApplication::installTranslator(translator.get());
+            moduleTranslators.push_back(std::move(translator));
+        }
+    }
 
     // --- One instance per web data folder -------------------------------
     // Two processes must not use the same web logins at once. A later start
@@ -197,6 +208,7 @@ int main(int argc, char *argv[])
     api.status = &status;
     api.attention = &attention;
     window.setApiServices(api);
+    window.setModuleSources(mirante::enabledModuleSources());
 
     // Pending writes reach the disk before the app quits.
     QObject::connect(&app, &QCoreApplication::aboutToQuit, &store, &mirante::Store::flush);

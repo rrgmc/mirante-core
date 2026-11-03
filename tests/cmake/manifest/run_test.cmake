@@ -67,6 +67,12 @@ if(NOT result EQUAL 0)
     message(FATAL_ERROR "The app did not build:\n${output}")
 endif()
 
+# The generated code says where each module came from.
+file(READ "${BINARY}/good/_deps/mirante_core-build/generated/enabled_modules.cpp" generated)
+if(NOT generated MATCHES "QStringLiteral\\(\"listed\"\\), QStringLiteral\\(\"unused\"\\), QStringLiteral\\(\"local\"\\)")
+    message(FATAL_ERROR "The generated code has no source for the module listed:\n${generated}")
+endif()
+
 # ctest in the top folder runs the tests of a fetched module.
 execute_process(COMMAND "${CMAKE_CTEST_COMMAND}" --test-dir "${BINARY}/good" --output-on-failure
     RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE output)
