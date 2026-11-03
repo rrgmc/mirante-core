@@ -1012,6 +1012,50 @@ private slots:
         QCOMPARE(view.visibleKeys().size(), 2);
     }
 
+    void aFilterDefaultIsChosenOnceARowHasIt()
+    {
+        ItemListView view;
+        view.setColumns(fourColumns(), UpdatedColumn);
+        view.addFilter(AuthorColumn, QStringLiteral("Author"));
+        view.setFilterDefault(AuthorColumn, {QStringLiteral("carol"), QStringLiteral("dave")});
+        QComboBox *box = authorFilter(view);
+
+        // No row has a default yet, so the filter is off.
+        view.setRows({authoredRow(QStringLiteral("b"), 2, QStringLiteral("bob"))});
+        QCOMPARE(box->currentIndex(), 0);
+        QCOMPARE(view.visibleKeys(), QStringList{QStringLiteral("b")});
+
+        // Each default is chosen when a row has it.
+        view.setRows({authoredRow(QStringLiteral("a"), 1, QStringLiteral("carol")),
+                      authoredRow(QStringLiteral("b"), 2, QStringLiteral("bob"))});
+        QCOMPARE(box->currentText(), QStringLiteral("carol"));
+        QCOMPARE(view.visibleKeys(), QStringList{QStringLiteral("a")});
+        view.setRows({authoredRow(QStringLiteral("a"), 1, QStringLiteral("carol")),
+                      authoredRow(QStringLiteral("b"), 2, QStringLiteral("bob")),
+                      authoredRow(QStringLiteral("d"), 3, QStringLiteral("dave"))});
+        QCOMPARE(view.visibleKeys(), (QStringList{QStringLiteral("d"), QStringLiteral("a")}));
+
+        // Once the user chooses, the defaults no longer apply.
+        box->setCurrentIndex(0);
+        QCOMPARE(view.visibleKeys().size(), 3);
+        view.setRows({authoredRow(QStringLiteral("a"), 1, QStringLiteral("carol")),
+                      authoredRow(QStringLiteral("b"), 2, QStringLiteral("bob"))});
+        QCOMPARE(box->currentIndex(), 0);
+        QCOMPARE(view.visibleKeys().size(), 2);
+    }
+
+    void aFilterDefaultAppliesToRowsAlreadyShown()
+    {
+        ItemListView view;
+        view.setColumns(fourColumns(), UpdatedColumn);
+        view.addFilter(AuthorColumn, QStringLiteral("Author"));
+        view.setRows({authoredRow(QStringLiteral("a"), 1, QStringLiteral("carol")),
+                      authoredRow(QStringLiteral("b"), 2, QStringLiteral("bob"))});
+        view.setFilterDefault(AuthorColumn, {QStringLiteral("bob")});
+        QCOMPARE(authorFilter(view)->currentText(), QStringLiteral("bob"));
+        QCOMPARE(view.visibleKeys(), QStringList{QStringLiteral("b")});
+    }
+
     void filtersAndPagesWorkTogether()
     {
         ItemListView view;

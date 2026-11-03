@@ -6,6 +6,10 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+### Added
+
+- A list's filter can start with chosen values, which a module takes from the item's settings. The user's own choice replaces them.
+
 ### Changed
 
 - A new workspace starts with one group, "Default", so the first project has somewhere to go. See [menus](docs/ui.md#menus).

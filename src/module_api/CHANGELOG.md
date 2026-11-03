@@ -8,6 +8,7 @@ While the version is 0.x, any minor version may break modules, so a module must 
 
 Changes that do not affect modules are listed here too.
 
+- `ItemListView::setFilterDefault()` gives a filter the values it chooses at the start, such as those of an item's field. Each is chosen once a row has it, until the user changes the filter. Modules need no change.
 - `ItemListView::addFilter()` lets the user choose several values: each has a check box, and a row is shown when its cell has any of them. The drop-down is still a `QComboBox` named `filter.<column>`, and `setCurrentIndex()` still chooses one value alone, so modules and their tests need no change.
 - `mirante_finish_modules()` writes each module's release, from its manifest pin, into the generated list of modules, for the About dialog. Modules need no change.
 - `mirante_add_module()` takes `OPTIONS NAME=default...`, build options that the manifest's folder entry can set. Each is the variable and the compile definition `MIRANTE_OPTION_<NAME>`. A folder entry can also make a module optional. See decision 0129.

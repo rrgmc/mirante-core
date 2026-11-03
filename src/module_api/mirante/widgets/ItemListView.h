@@ -79,6 +79,11 @@ public:
     // left, the filter falls back to "All". Its object name is
     // filter.<column>, and it is a QComboBox.
     void addFilter(int column, const QString &label);
+    // The values that the column's filter chooses at the start, such as
+    // "failure" for a Status filter. Each is chosen once a row has it, until
+    // the user changes the filter; then the defaults no longer apply. Call it
+    // after addFilter().
+    void setFilterDefault(int column, const QStringList &values);
 
     // A line above the table that says what the list shows, such as "Assigned
     // to me · acme/backend". Empty hides it.
