@@ -1,6 +1,6 @@
 # 0013. Item types in compiled-in modules, chosen at build time
 
-- Status: Accepted
+- Status: Accepted; the place and choice of module folders superseded by 0135
 - Date: 2026-10-28
 
 ## Context
