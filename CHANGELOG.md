@@ -6,6 +6,8 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-11-03
+
 ### Added
 
 - A list's filter can start with chosen values, which a module takes from the item's settings. The user's own choice replaces them.
@@ -80,7 +82,8 @@ The first release of the core on its own, after it was split from `mirante` for 
 
 - `qrc:` addresses in item web views, which shared one origin among all pages.
 
-[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.4...HEAD
+[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.5...HEAD
+[0.8.5]: https://github.com/rrgmc/mirante-core/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/rrgmc/mirante-core/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/rrgmc/mirante-core/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/rrgmc/mirante-core/compare/v0.8.1...v0.8.2
