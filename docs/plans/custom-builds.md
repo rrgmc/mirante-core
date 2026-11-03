@@ -225,6 +225,8 @@ The user can stop here and keep `mirante` as it is. The work in part 8 has value
 
 ## Part 9: Replacing `mirante`
 
+Before this part, [the manifest plan](custom-builds-manifest.md) adds local modules, folder options, optional modules, editions and extension points, and moves the work modules to `mirante-modules-work`, as the user asked.
+
 After the user approves, and only then:
 
 1. The code of `mirante-app` replaces the code of `mirante`, in a pull request.
