@@ -18,6 +18,9 @@ struct ModuleSource
     QString repository;
     // A short commit, or "local" for a checkout on disk.
     QString commit;
+    // What the About dialog shows: the release X.Y.Z of a tag pin, or else the
+    // commit.
+    QString release;
 };
 
 // Registers every module in this build, in alphabetical order of module id.

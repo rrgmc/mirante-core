@@ -2562,11 +2562,16 @@ void MainWindow::setModuleSources(const QList<ModuleSource> &sources) { d->modul
 
 void MainWindow::showAbout()
 {
-    // Every build is the same app, so the modules tell builds apart. See
-    // docs/decisions/0118-all-builds-are-one-app.md.
+    // Every build is the same app, so the modules' releases tell builds apart.
+    // Each module shows its name, and an extension its module's name and its
+    // point. See docs/decisions/0118-all-builds-are-one-app.md.
     QString modules;
-    for (const ModuleSource &source : d->moduleSources)
-        modules += QStringLiteral("<br>%1: %2 (%3)").arg(source.id, source.repository, source.commit);
+    for (const ModuleSource &source : d->moduleSources) {
+        const qsizetype slash = source.id.indexOf(QLatin1Char('/'));
+        const QString name = slash < 0 ? d->types->moduleName(source.id)
+                                       : d->types->moduleName(source.id.left(slash)) + source.id.mid(slash);
+        modules += QStringLiteral("<br>%1: %2").arg(name.toHtmlEscaped(), source.release.toHtmlEscaped());
+    }
     if (!modules.isEmpty())
         modules = QStringLiteral("<p>") + tr("Modules:") + modules + QStringLiteral("</p>");
     // The versions of Qt and of the browser engine help when a login fails.

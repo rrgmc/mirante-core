@@ -79,11 +79,27 @@ if(NOT result EQUAL 0)
     message(FATAL_ERROR "The app did not build:\n${output}")
 endif()
 
-# The generated code says where each module came from.
+# The generated code says where each module came from, and what the About
+# dialog shows as its version: a checkout on disk is "local".
 file(READ "${BINARY}/good/_deps/mirante_core-build/generated/enabled_modules.cpp" generated)
-if(NOT generated MATCHES "QStringLiteral\\(\"listed\"\\), QStringLiteral\\(\"unused\"\\), QStringLiteral\\(\"local\"\\)")
+if(NOT generated MATCHES "QStringLiteral\\(\"listed\"\\), QStringLiteral\\(\"unused\"\\), QStringLiteral\\(\"local\"\\), QStringLiteral\\(\"local\"\\)")
     message(FATAL_ERROR "The generated code has no source for the module listed:\n${generated}")
 endif()
+
+# The version from a pin: a release tag gives X.Y.Z, anything else the commit.
+include("${SOURCE}/../../../cmake/MiranteRelease.cmake")
+foreach(case IN ITEMS "v0.8.1|abc123|0.8.1" "v1.2.0-rc.3|abc123|1.2.0-rc.3" "v0.8.1|local|local"
+                      "3af6fa2495252b75065a8111745546eea60a0102|3af6fa249525|3af6fa249525" "main|abc123|abc123"
+                      "v0.8|abc123|abc123")
+    string(REPLACE "|" ";" parts "${case}")
+    list(GET parts 0 ref)
+    list(GET parts 1 commit)
+    list(GET parts 2 expected)
+    mirante_release_of(release "${ref}" "${commit}")
+    if(NOT release STREQUAL expected)
+        message(FATAL_ERROR "The release of the pin ${ref} at ${commit} is \"${release}\", not \"${expected}\".")
+    endif()
+endforeach()
 
 # ctest in the top folder runs the tests of a fetched module.
 execute_process(COMMAND "${CMAKE_CTEST_COMMAND}" --test-dir "${BINARY}/good" --output-on-failure

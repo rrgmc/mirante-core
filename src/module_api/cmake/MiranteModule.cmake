@@ -384,8 +384,13 @@ function(mirante_finish_modules target)
     foreach(id IN LISTS enabled)
         get_property(repository GLOBAL PROPERTY MIRANTE_MODULE_REPOSITORY_${id})
         get_property(commit GLOBAL PROPERTY MIRANTE_MODULE_COMMIT_${id})
+        get_property(release GLOBAL PROPERTY MIRANTE_MODULE_RELEASE_${id})
+        if(NOT release)
+            set(release "${commit}")
+        endif()
         string(APPEND MIRANTE_MODULE_SOURCES
-            "        {QStringLiteral(\"${id}\"), QStringLiteral(\"${repository}\"), QStringLiteral(\"${commit}\")},\n")
+            "        {QStringLiteral(\"${id}\"), QStringLiteral(\"${repository}\"), QStringLiteral(\"${commit}\"), "
+            "QStringLiteral(\"${release}\")},\n")
         # Each extension under its module, as <id>/<point>. See decision 0132.
         get_property(extensions GLOBAL PROPERTY MIRANTE_MODULE_EXTENSION_SOURCES_${id})
         foreach(extension IN LISTS extensions)
@@ -393,9 +398,10 @@ function(mirante_finish_modules target)
             list(GET parts 0 point)
             list(GET parts 1 extension_repository)
             list(GET parts 2 extension_commit)
+            list(GET parts 3 extension_release)
             string(APPEND MIRANTE_MODULE_SOURCES
                 "        {QStringLiteral(\"${id}/${point}\"), QStringLiteral(\"${extension_repository}\"), "
-                "QStringLiteral(\"${extension_commit}\")},\n")
+                "QStringLiteral(\"${extension_commit}\"), QStringLiteral(\"${extension_release}\")},\n")
         endforeach()
         string(APPEND MIRANTE_MODULE_DECLARATIONS
             "namespace mirante::modules::${id} {\n"
