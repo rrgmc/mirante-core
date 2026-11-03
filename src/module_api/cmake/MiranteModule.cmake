@@ -161,9 +161,11 @@ function(mirante_add_module id)
 
     # A module with a folder translations/ carries its own texts, as
     # :/i18n/<id>_<language>, which main.cpp loads. update_translations runs
-    # lupdate on them. See translations/README.md in mirante-core.
+    # lupdate on them, on this module's sources only: without SOURCE_TARGETS it
+    # reads every target in the build. See translations/README.md in mirante-core.
     if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/translations" AND QT_I18N_TRANSLATED_LANGUAGES)
         qt_add_translations(${target}
+            SOURCE_TARGETS ${target}
             TS_FILE_BASE ${id}
             TS_FILE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/translations"
             RESOURCE_PREFIX /i18n
