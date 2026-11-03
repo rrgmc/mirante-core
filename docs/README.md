@@ -11,6 +11,7 @@ Mirante is a personal desktop dashboard for all of one person's work, built with
 | [User interface](ui.md) | Navigation, dashboards, layout editing, Focus, keyboard, tray |
 | [Item types](item-types.md) | Every type of panel: configuration, display, actions |
 | [Modules](modules.md) | How item types are grouped, built, enabled and contributed |
+| [Writing a module](writing-a-module.md) | A guide for authors outside this project, from an empty repository to an app that lists the module |
 | [Integrations](integrations.md) | GitLab, GitHub, Jira, Claude, polling, terminal launch |
 | [Web views](web-views.md) | Login profiles, live copies, memory, built-in panels |
 | [Sync](sync.md) | Data folder, conflict copies, device settings, secrets |
