@@ -1,6 +1,7 @@
 # Tests the manifest with an app as the top project, as in an app repository:
 # only listed folders run, a repository's top file does not, modules see Qt and
 # AUTOMOC from the core's scope, and ctest in the top folder finds their tests.
+# DEPENDS reaches a module of another repository, whichever is listed first.
 # Mistakes in the manifest stop configuration. Nothing is downloaded: every
 # repository comes from a folder here, through FETCHCONTENT_SOURCE_DIR_<NAME>.
 #
@@ -32,6 +33,7 @@ function(configure_app name modules_json)
             "-DFETCHCONTENT_SOURCE_DIR_MIRANTE_CORE=${SOURCE}/core"
             "-DFETCHCONTENT_SOURCE_DIR_TEST_MODULES=${SOURCE}/modules"
             "-DFETCHCONTENT_SOURCE_DIR_TEST_SINGLE=${SOURCE}/single"
+            "-DFETCHCONTENT_SOURCE_DIR_TEST_OTHER=${SOURCE}/other"
         RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE output)
     set(result "${result}" PARENT_SCOPE)
     set(output "${output}" PARENT_SCOPE)
@@ -50,6 +52,7 @@ endfunction()
 
 set(modules_repo "\"name\": \"test_modules\", \"repo\": \"unused\", \"ref\": \"unused\"")
 set(single_repo "\"name\": \"test_single\", \"repo\": \"unused\", \"ref\": \"unused\"")
+set(other_repo "\"name\": \"test_other\", \"repo\": \"unused\", \"ref\": \"unused\"")
 
 configure_app(good "[
     { ${modules_repo}, \"folders\": [\"listed\"] },
@@ -79,6 +82,30 @@ execute_process(COMMAND "${CMAKE_CTEST_COMMAND}" --test-dir "${BINARY}/good" --o
 if(NOT result EQUAL 0 OR NOT output MATCHES "module_listed_tst_listed")
     message(FATAL_ERROR "ctest did not run the module's test:\n${output}")
 endif()
+
+# A module that DEPENDS on a module of another repository includes its header
+# and links it, though its own repository comes first in the manifest.
+configure_app(across "[
+    { ${other_repo}, \"folders\": [\"uses\"] },
+    { ${modules_repo}, \"folders\": [\"listed\"] }
+  ]")
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Configuring across repositories failed:\n${output}")
+endif()
+execute_process(COMMAND "${CMAKE_COMMAND}" --build "${BINARY}/across"
+    RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE output)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "The app with a dependency across repositories did not build:\n${output}")
+endif()
+execute_process(COMMAND "${CMAKE_CTEST_COMMAND}" --test-dir "${BINARY}/across" --output-on-failure
+    RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE output)
+if(NOT result EQUAL 0 OR NOT output MATCHES "module_uses_tst_uses")
+    message(FATAL_ERROR "The dependent module's test did not pass:\n${output}")
+endif()
+
+# Without the other repository's module, configuration says what is missing.
+expect_refusal(missing_dependency "[{ ${other_repo}, \"folders\": [\"uses\"] }]"
+    "Module uses depends on the module \"listed\", which does not exist")
 
 expect_refusal(unknown_field "[{ ${modules_repo}, \"folder\": [\"listed\"], \"folders\": [\"listed\"] }]"
     "unknown field \"folder\"")

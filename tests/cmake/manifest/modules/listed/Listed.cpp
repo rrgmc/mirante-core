@@ -1,3 +1,5 @@
+#include "Listed.h"
+
 #include <QString>
 
 namespace mirante {
@@ -8,5 +10,7 @@ void registerModule(ModuleRegistrar &)
     // Uses Qt, which a module reaches only from the core's scope.
     (void)QString();
 }
+
+int answer() { return 42; }
 }
 }
