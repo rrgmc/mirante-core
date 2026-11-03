@@ -105,7 +105,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0098](0098-packages-from-cmake-install.md) | Packages are made by `cmake --install` and CPack, and take their version from the tag | Accepted |
 | [0099](0099-linux-package-in-opt.md) | The Linux package installs into `/opt/mirante`, with its own Qt and an AppArmor profile | Accepted |
 | [0100](0100-item-types-in-a-module-tree.md) | A new item picks its type in a tree of modules, with a description | Accepted |
-| [0101](0101-macos-release-signing.md) | The macOS release is a universal bundle, signed with a Developer ID and notarised | Accepted; bundle identifier superseded by 0103 |
+| [0101](0101-macos-release-signing.md) | The macOS release is a universal bundle, signed with a Developer ID and notarised | Accepted; bundle identifier superseded by 0103; one job that builds and signs by 0126 |
 | [0102](0102-github-module.md) | A GitHub module, shaped like the GitLab module | Accepted |
 | [0103](0103-bundle-identifier-rrgmc.md) | The macOS bundle identifier is `com.rrgmc.mirante` | Accepted |
 | [0104](0104-document-items.md) | Document items show a file from a web address, the workspace or a project folder | Accepted |
@@ -130,6 +130,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0123](0123-tokens-stay-on-their-origin.md) | A token goes only to the origin of its server | Accepted |
 | [0124](0124-the-core-owns-the-app.md) | The core owns the app | Accepted |
 | [0125](0125-how-modules-are-fetched.md) | How the core fetches modules, and the fields of the manifest | Accepted |
+| [0126](0126-macos-signing-is-a-separate-job.md) | macOS signing is a separate job | Accepted |
 
 ## Template
 

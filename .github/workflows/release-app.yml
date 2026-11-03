@@ -1,0 +1,59 @@
+# Publishes the packages that build-app.yml made in the same run, for a tag vX.Y.Z,
+# or vX.Y.Z-rc.N as a prerelease. It is separate from build-app.yml because only
+# this job may write to the repository, and GitHub refuses a whole workflow whose
+# caller does not grant what any of its jobs asks for. It builds nothing. An app's
+# tag workflow calls it after build-app.yml:
+#
+#   jobs:
+#     build:
+#       uses: rrgmc/mirante-core/.github/workflows/build-app.yml@<the manifest's core ref>
+#       with:
+#         release-tag: ${{ github.ref_name }}
+#     publish:
+#       needs: build
+#       permissions:
+#         contents: write
+#       uses: rrgmc/mirante-core/.github/workflows/release-app.yml@<the same ref>
+#       with:
+#         tag: ${{ github.ref_name }}
+#
+# See docs/decisions/0126-macos-signing-is-a-separate-job.md.
+
+name: Release app
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: The tag to publish a release for, which build-app.yml has checked
+        type: string
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mirante-*
+          merge-multiple: true
+          path: packages
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          rm -f packages/mirante-bundle.tar packages/version.txt
+          ls -l packages
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            flags=()
+            if [[ "$TAG" == *-rc.* ]]; then
+              flags+=(--prerelease)
+            fi
+            gh release create "$TAG" --verify-tag --generate-notes --title "Mirante $TAG" "${flags[@]}"
+          fi
+          gh release upload "$TAG" packages/* --clobber
