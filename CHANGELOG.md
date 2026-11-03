@@ -6,6 +6,12 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-11-03
+
+### Fixed
+
+- On Windows, the window no longer seems to close and open again when the first web view in it appears, such as on opening a tab with a web page. Windows draw through the graphics API from the start. See [web views](docs/web-views.md#the-window-and-its-first-web-view).
+
 ## [0.8.2] - 2026-11-03
 
 ### Changed
@@ -55,7 +61,8 @@ The first release of the core on its own, after it was split from `mirante` for 
 
 - `qrc:` addresses in item web views, which shared one origin among all pages.
 
-[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.2...HEAD
+[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.3...HEAD
+[0.8.3]: https://github.com/rrgmc/mirante-core/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/rrgmc/mirante-core/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/rrgmc/mirante-core/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/rrgmc/mirante-core/tree/v0.8.0

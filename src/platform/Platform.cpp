@@ -24,4 +24,12 @@ void setAppIcon(const QIcon &icon)
 #endif
 }
 
+void composeWindowsThroughTheGraphicsApi()
+{
+#if defined(Q_OS_WIN)
+    if (!qEnvironmentVariableIsSet("QT_WIDGETS_RHI"))
+        qputenv("QT_WIDGETS_RHI", "1");
+#endif
+}
+
 } // namespace mirante::platform

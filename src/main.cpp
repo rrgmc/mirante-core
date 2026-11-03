@@ -49,6 +49,9 @@ int main(int argc, char *argv[])
 
     // Qt WebEngine asks for shared OpenGL contexts, set before the application.
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+    // So the window does not seem to close and open again when its first web
+    // view appears.
+    mirante::platform::composeWindowsThroughTheGraphicsApi();
     // The built-in panels' scheme, which Qt WebEngine needs before the
     // application. See docs/web-views.md#built-in-panels.
     mirante::dash::registerScheme();
