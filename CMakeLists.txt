@@ -52,6 +52,12 @@ mirante_manifest_qt_modules(manifest_qt)
 set(MIRANTE_QT_MODULES Core Gui Widgets Network Svg WebChannel WebEngineWidgets Test LinguistTools ${manifest_qt}
     CACHE INTERNAL "The Qt modules that a module may name in QT_LIBS")
 find_package(Qt6 6.8 REQUIRED COMPONENTS ${MIRANTE_QT_MODULES})
+# The app repository's edition, for package names and the About dialog. Every
+# edition is the same app. See docs/decisions/0131-editions.md.
+mirante_manifest_edition(MIRANTE_EDITION)
+if(MIRANTE_EDITION)
+    message(STATUS "Edition: ${MIRANTE_EDITION}")
+endif()
 # The source texts are English. Brazilian Portuguese is the one translation.
 # See docs/decisions/0086-english-and-brazilian-portuguese.md.
 qt_standard_project_setup(I18N_SOURCE_LANGUAGE en I18N_TRANSLATED_LANGUAGES pt_BR)

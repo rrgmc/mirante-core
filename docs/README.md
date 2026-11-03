@@ -50,6 +50,8 @@ The app speaks English and Brazilian Portuguese. Every text the user sees is wri
 
 **Local module.** A module in a folder of the app repository itself, listed with `"local"` in place of a repository and a pin. See [decision 0130](decisions/0130-local-modules-in-the-app-repository.md).
 
+**Edition.** The name of one app repository's build, such as `work`, set in its manifest. It appears in package names and in the About dialog. Every edition is still the same app. See [decision 0131](decisions/0131-editions.md).
+
 **Settings screen.** A configuration screen of a whole module, such as GitLab's "General Configuration", opened from a profile's Modules submenu in the Profiles menu. Its values are the module's settings. Each profile has its own, kept in the workspace and synced. See [settings screens](modules.md#settings-screens).
 
 

@@ -131,10 +131,16 @@ function(mirante_add_package)
     set(CPACK_RESOURCE_FILE_LICENSE "${MIRANTE_CORE_DIR}/LICENSE")
     # The component Mirante only, in one package.
     set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_BINARY_DIR};${PROJECT_NAME};Mirante;/")
+    # An edition names the files only: the package inside stays mirante, the
+    # same app. See docs/decisions/0131-editions.md.
+    set(file_prefix mirante)
+    if(MIRANTE_EDITION)
+        set(file_prefix "mirante-${MIRANTE_EDITION}")
+    endif()
 
     if(WIN32)
         set(CPACK_GENERATOR NSIS)
-        set(CPACK_PACKAGE_FILE_NAME "mirante-${PROJECT_VERSION}-win64")
+        set(CPACK_PACKAGE_FILE_NAME "${file_prefix}-${PROJECT_VERSION}-win64")
         set(CPACK_NSIS_PACKAGE_NAME Mirante)
         set(CPACK_NSIS_DISPLAY_NAME Mirante)
         set(CPACK_NSIS_INSTALLED_ICON_NAME [=[bin\mirante.exe]=])
@@ -144,15 +150,25 @@ function(mirante_add_package)
         mirante_add_nsis_finish_options()
     elseif(APPLE)
         set(CPACK_GENERATOR DragNDrop)
-        set(CPACK_PACKAGE_FILE_NAME "mirante-${PROJECT_VERSION}-macos")
+        set(CPACK_PACKAGE_FILE_NAME "${file_prefix}-${PROJECT_VERSION}-macos")
         set(CPACK_DMG_VOLUME_NAME Mirante)
     else()
         set(CPACK_GENERATOR DEB)
         set(CPACK_PACKAGING_INSTALL_PREFIX /)
         # CPack stages the package in a folder of this name. The .deb itself
-        # gets Debian's name, mirante_<version>_amd64.deb.
-        set(CPACK_PACKAGE_FILE_NAME "mirante-${PROJECT_VERSION}-linux")
-        set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+        # gets Debian's name, mirante_<version>_amd64.deb, or with an edition
+        # mirante-<edition>_<version>_amd64.deb.
+        set(CPACK_PACKAGE_FILE_NAME "${file_prefix}-${PROJECT_VERSION}-linux")
+        if(MIRANTE_EDITION)
+            execute_process(COMMAND dpkg --print-architecture
+                OUTPUT_VARIABLE deb_architecture OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+            if(NOT deb_architecture)
+                set(deb_architecture amd64)
+            endif()
+            set(CPACK_DEBIAN_FILE_NAME "${file_prefix}_${PROJECT_VERSION}_${deb_architecture}.deb")
+        else()
+            set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+        endif()
         set(CPACK_DEBIAN_PACKAGE_SECTION utils)
         set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
         # dpkg-shlibdeps finds the bundled Qt libraries here, and leaves them

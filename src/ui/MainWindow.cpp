@@ -6,6 +6,7 @@
 #include "api/SecretStore.h"
 #include "api/ServerClient.h"
 #include "api/StatusCache.h"
+#include "core/AppVersion.h"
 #include "core/DeviceSettings.h"
 #include "core/GitStatusReader.h"
 #include "core/GroupColours.h"
@@ -2573,7 +2574,8 @@ void MainWindow::showAbout()
         this, tr("About %1").arg(QStringLiteral(MIRANTE_APP_NAME)),
         tr("<h3>%1 %2</h3><p>%3</p><p>%4 &lt;<a href=\"mailto:%5\">%5</a>&gt;</p>"
            "<p><a href=\"%6\">%6</a></p><p>Released under the MIT License.</p>")
-                .arg(QStringLiteral(MIRANTE_APP_NAME), QStringLiteral(MIRANTE_VERSION),
+                .arg(QStringLiteral(MIRANTE_APP_NAME),
+                     displayVersion(QStringLiteral(MIRANTE_VERSION), QStringLiteral(MIRANTE_EDITION)),
                      QStringLiteral(MIRANTE_DESCRIPTION), QStringLiteral(MIRANTE_AUTHOR),
                      QStringLiteral(MIRANTE_AUTHOR_EMAIL), QStringLiteral(MIRANTE_HOMEPAGE))
             + tr("<p>Qt %1, Qt WebEngine %2, Chromium %3</p>")

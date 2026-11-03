@@ -11,6 +11,8 @@ list(APPEND CMAKE_MODULE_PATH "${repo}/cmake" "${repo}/src/module_api/cmake")
 include(MiranteManifest)
 
 mirante_manifest_qt_modules(manifest_qt)
+mirante_manifest_edition(edition)
+message(STATUS "Edition: \"${edition}\"")
 set(MIRANTE_QT_MODULES Core Gui Widgets Test ${manifest_qt} CACHE INTERNAL "")
 find_package(Qt6 6.8 REQUIRED COMPONENTS ${MIRANTE_QT_MODULES})
 qt_standard_project_setup()

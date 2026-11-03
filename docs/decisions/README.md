@@ -135,6 +135,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0128](0128-module-pages-have-their-own-origin.md) | Module pages have their own origin, on a `module://` scheme | Accepted |
 | [0129](0129-folder-entries-options-and-optional-modules.md) | Folder entries with build options, and optional modules | Accepted |
 | [0130](0130-local-modules-in-the-app-repository.md) | Local modules in the app repository | Accepted |
+| [0131](0131-editions.md) | Editions name an app repository's build, which stays the same app | Accepted |
 
 ## Template
 

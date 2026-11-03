@@ -4,6 +4,8 @@
 #define MIRANTE_APP_NAME "Mirante"
 #define MIRANTE_ORGANISATION "Mirante"
 #define MIRANTE_VERSION "@PROJECT_VERSION@"
+// The app repository's edition, or empty. See docs/decisions/0131-editions.md.
+#define MIRANTE_EDITION "@MIRANTE_EDITION@"
 #define MIRANTE_DESCRIPTION "@PROJECT_DESCRIPTION@"
 #define MIRANTE_HOMEPAGE "@PROJECT_HOMEPAGE_URL@"
 #define MIRANTE_AUTHOR "Rangel Reale"

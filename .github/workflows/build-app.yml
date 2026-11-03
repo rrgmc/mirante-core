@@ -51,6 +51,9 @@ on:
       release-tag:
         description: The tag this run built for, or empty
         value: ${{ jobs.prepare.outputs.release-tag }}
+      edition:
+        description: The manifest's edition, or empty. release-app.yml takes it for the release's title
+        value: ${{ jobs.prepare.outputs.edition }}
 
 permissions:
   contents: read
@@ -70,6 +73,7 @@ jobs:
       qt: ${{ steps.core.outputs.qt }}
       version: ${{ steps.version.outputs.version }}
       release-tag: ${{ steps.version.outputs.tag }}
+      edition: ${{ steps.core.outputs.edition }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,6 +93,14 @@ jobs:
           echo "repo=$repo" >> "$GITHUB_OUTPUT"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "qt=$(jq -r '.qt | join("-")' "$MANIFEST")" >> "$GITHUB_OUTPUT"
+          # The build checks it too. It goes into file names, so it is checked
+          # here before any job uses it.
+          edition=$(jq -r '.edition // ""' "$MANIFEST")
+          if [ -n "$edition" ] && [[ ! "$edition" =~ ^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$ ]]; then
+            echo "::error::$MANIFEST has the edition '$edition', which must have lowercase letters, digits and - only."
+            exit 1
+          fi
+          echo "edition=$edition" >> "$GITHUB_OUTPUT"
 
       - name: Check the modules to enable
         run: |
@@ -272,7 +284,7 @@ jobs:
           name: mirante-${{ runner.os }}
           path: |
             build/ci/mirante-*-win64.exe
-            build/ci/mirante_*.deb
+            build/ci/mirante*_*.deb
           if-no-files-found: error
           retention-days: 7
 
@@ -294,6 +306,7 @@ jobs:
     environment: ${{ inputs.macos-signing == 'developer-id' && 'release' || '' }}
     env:
       SIGNING: ${{ inputs.macos-signing }}
+      EDITION: ${{ needs.prepare.outputs.edition }}
     steps:
       # Pinned to commits: this job can hold the signing secrets.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -315,7 +328,7 @@ jobs:
             echo "::error::The build gave the version '$version'"
             exit 1
           fi
-          echo "DMG=mirante-$version-macos.dmg" >> "$GITHUB_ENV"
+          echo "DMG=mirante${EDITION:+-$EDITION}-$version-macos.dmg" >> "$GITHUB_ENV"
           mkdir install
           tar -xf bundle/mirante-bundle.tar -C install
 
