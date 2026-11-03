@@ -137,6 +137,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0130](0130-local-modules-in-the-app-repository.md) | Local modules in the app repository | Accepted |
 | [0131](0131-editions.md) | Editions name an app repository's build, which stays the same app | Accepted |
 | [0132](0132-extension-points.md) | Extension points: a module lets an app replace part of its code | Accepted |
+| [0133](0133-work-modules-in-their-own-repository.md) | The work modules move to a repository of their own | Accepted |
 
 ## Template
 

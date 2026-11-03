@@ -5,8 +5,14 @@
     {
       "name": "mirante_modules",
       "repo": "https://github.com/rrgmc/mirante-modules",
-      "ref": "6dc382b3519174610bd1a835b2dcd1d3a9962660",
-      "folders": ["claude", "document", "folder", "github", "gitlab", "image", "jira", "notes", "web"]
+      "ref": "45e2f521bdc371fdc84201f09ea5803f7163c691",
+      "folders": ["document", "folder", "image", "notes", "web"]
+    },
+    {
+      "name": "mirante_modules_work",
+      "repo": "https://github.com/rrgmc/mirante-modules-work",
+      "ref": "3471fd11350ff94d8e832c20a5bc170e72633b53",
+      "folders": ["claude", "github", "gitlab", "jira"]
     }
   ]
 }
