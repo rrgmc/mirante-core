@@ -133,6 +133,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0126](0126-macos-signing-is-a-separate-job.md) | macOS signing is a separate job | Accepted |
 | [0127](0127-automatic-pin-updates.md) | Automatic pin updates, and a release for each merged update | Accepted |
 | [0128](0128-module-pages-have-their-own-origin.md) | Module pages have their own origin, on a `module://` scheme | Accepted |
+| [0129](0129-folder-entries-options-and-optional-modules.md) | Folder entries with build options, and optional modules | Accepted |
 
 ## Template
 

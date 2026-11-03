@@ -54,6 +54,48 @@ function(_mirante_check_api_version id wanted)
     endif()
 endfunction()
 
+# Reads a module's OPTIONS, NAME=default each, and the manifest's values for
+# them, a JSON object or empty. Sets option_names and option_value_<NAME> in the
+# caller's scope.
+function(_mirante_module_options id declared manifest_values)
+    set(names "")
+    foreach(declaration IN LISTS declared)
+        if(NOT declaration MATCHES "^([A-Z][A-Z0-9_]*)=(.*)$")
+            message(FATAL_ERROR "Module ${id}: the option \"${declaration}\" must be NAME=default, "
+                "with a name of capital letters, digits and underscores.")
+        endif()
+        list(APPEND names "${CMAKE_MATCH_1}")
+        set(value_${CMAKE_MATCH_1} "${CMAKE_MATCH_2}")
+    endforeach()
+    if(manifest_values)
+        string(JSON count LENGTH "${manifest_values}")
+        if(count GREATER 0)
+            math(EXPR last "${count} - 1")
+            foreach(index RANGE ${last})
+                string(JSON name MEMBER "${manifest_values}" ${index})
+                if(NOT name IN_LIST names)
+                    set(takes "none")
+                    if(names)
+                        string(REPLACE ";" ", " takes "${names}")
+                    endif()
+                    message(FATAL_ERROR "${MIRANTE_MANIFEST}: module ${id} has no option \"${name}\". "
+                        "Its options are: ${takes}")
+                endif()
+                string(JSON type TYPE "${manifest_values}" "${name}")
+                if(NOT type STREQUAL "STRING")
+                    message(FATAL_ERROR "${MIRANTE_MANIFEST}: the option ${name} of module ${id} "
+                        "must be a text, such as \"50\".")
+                endif()
+                string(JSON value_${name} GET "${manifest_values}" "${name}")
+            endforeach()
+        endif()
+    endif()
+    set(option_names "${names}" PARENT_SCOPE)
+    foreach(name IN LISTS names)
+        set(option_value_${name} "${value_${name}}" PARENT_SCOPE)
+    endforeach()
+endfunction()
+
 # mirante_add_module(<id>
 #     API       <major.minor>       the version of the module interface it needs
 #     SOURCES   <files...>
@@ -61,13 +103,21 @@ endfunction()
 #     RESOURCES <files...>
 #     DEPENDS   <module ids...>     links them and makes their headers available
 #     QT_LIBS   <Qt components...>
+#     OPTIONS   <NAME=default...>   build options that the manifest can set
 #     DEFAULT   ON|OFF)
 #
 # QT_LIBS links further Qt components, such as PdfWidgets for the document
 # module. Each must be in MIRANTE_QT_MODULES: what the core uses, and the "qt"
 # list of the manifest.
+#
+# OPTIONS declares the module's build options. The "options" of its folder entry
+# in the manifest replace the defaults, and an option the module does not
+# declare stops configuration. Each option becomes the variable
+# MIRANTE_OPTION_<NAME> in the module's folder and the compile definition
+# MIRANTE_OPTION_<NAME>="<value>" on the module and its tests. See
+# docs/decisions/0129-folder-entries-options-and-optional-modules.md.
 function(mirante_add_module id)
-    cmake_parse_arguments(ARG "" "DEFAULT;API" "SOURCES;TESTS;RESOURCES;DEPENDS;QT_LIBS" ${ARGN})
+    cmake_parse_arguments(ARG "" "DEFAULT;API" "SOURCES;TESTS;RESOURCES;DEPENDS;QT_LIBS;OPTIONS" ${ARGN})
     if(ARG_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "Module ${id}: unknown arguments: ${ARG_UNPARSED_ARGUMENTS}")
     endif()
@@ -103,6 +153,13 @@ function(mirante_add_module id)
     set_property(GLOBAL APPEND PROPERTY MIRANTE_ALL_MODULES ${id})
     set_property(GLOBAL PROPERTY MIRANTE_MODULE_DEPENDS_${id} ${ARG_DEPENDS})
 
+    # The options, checked whether the module is on or off, so a mistake in the
+    # manifest shows at once.
+    _mirante_module_options(${id} "${ARG_OPTIONS}" "${MIRANTE_LISTED_OPTIONS}")
+    foreach(option IN LISTS option_names)
+        set(MIRANTE_OPTION_${option} "${option_value_${option}}" PARENT_SCOPE)
+    endforeach()
+
     # MIRANTE_MODULES, when set, is the exact list of enabled modules.
     string(TOUPPER "${id}" upper_id)
     set(option_name MIRANTE_MODULE_${upper_id})
@@ -113,6 +170,9 @@ function(mirante_add_module id)
         else()
             set(${option_name} OFF CACHE BOOL "${option_help}" FORCE)
         endif()
+    elseif(MIRANTE_LISTED_MODULE AND MIRANTE_LISTED_OPTIONAL)
+        # Listed but optional: off unless the build turns it on.
+        option(${option_name} "${option_help}" OFF)
     elseif(MIRANTE_LISTED_MODULE)
         set(${option_name} ON)
     else()
@@ -137,6 +197,10 @@ function(mirante_add_module id)
     target_link_libraries(${target} PUBLIC mirante::module_api Qt6::Core Qt6::Gui Qt6::Widgets)
     foreach(qt_lib IN LISTS ARG_QT_LIBS)
         target_link_libraries(${target} PUBLIC Qt6::${qt_lib})
+    endforeach()
+    # PUBLIC, so the module's tests see the same values.
+    foreach(option IN LISTS option_names)
+        target_compile_definitions(${target} PUBLIC "MIRANTE_OPTION_${option}=\"${option_value_${option}}\"")
     endforeach()
     set(no_werror NO_WERROR)
     if(MIRANTE_MODULES_WERROR)

@@ -27,6 +27,10 @@ on:
         description: The path of the manifest
         type: string
         default: mirante.json
+      enable-modules:
+        description: The ids of optional modules of the manifest to build too, separated by spaces
+        type: string
+        default: ''
       check-modules:
         description: Check that the repository's modules include only their own files and the module interface, and that their texts are translated
         type: boolean
@@ -55,6 +59,7 @@ env:
   QT_VERSION: 6.8.3
   CTEST_PARALLEL_LEVEL: 4
   MANIFEST: ${{ inputs.manifest }}
+  ENABLE_MODULES: ${{ inputs.enable-modules }}
 
 jobs:
   prepare:
@@ -84,6 +89,15 @@ jobs:
           echo "repo=$repo" >> "$GITHUB_OUTPUT"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "qt=$(jq -r '.qt | join("-")' "$MANIFEST")" >> "$GITHUB_OUTPUT"
+
+      - name: Check the modules to enable
+        run: |
+          for module in $ENABLE_MODULES; do
+            if [[ ! "$module" =~ ^[a-z0-9]+$ ]]; then
+              echo "::error::enable-modules names '$module', which is not a module id."
+              exit 1
+            fi
+          done
 
       - name: Version from the release tag
         id: version
@@ -181,7 +195,9 @@ jobs:
         shell: pwsh
         env:
           MIRANTE_QT_ROOT: ${{ runner.temp }}/qt
-        run: ./.mirante-core/tools/build.ps1 -Source . -Manifest "$env:MANIFEST" -Version "$env:VERSION" -Preset ci -NoPch -Package
+        run: |
+          $enable = @(-split "$env:ENABLE_MODULES")
+          ./.mirante-core/tools/build.ps1 -Source . -Manifest "$env:MANIFEST" -Version "$env:VERSION" -Preset ci -NoPch -Package -EnableModules $enable
 
       # Universal on macOS, for Apple silicon and Intel. See decision 0101.
       - name: Build and test (macOS, Linux)
@@ -198,6 +214,9 @@ jobs:
           else
             set --
           fi
+          for module in $ENABLE_MODULES; do
+            set -- "$@" "-DMIRANTE_MODULE_$(echo "$module" | tr '[:lower:]' '[:upper:]')=ON"
+          done
           cmake --preset ci -DCMAKE_PREFIX_PATH="$QT_DIR" -DMIRANTE_PCH=OFF \
             ${VERSION:+"-DMIRANTE_VERSION=$VERSION"} "$@"
           cmake --build --preset ci
