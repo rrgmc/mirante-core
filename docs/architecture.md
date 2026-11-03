@@ -14,9 +14,9 @@ src/
   api/           API client base, status cache, secrets
   platform/      code that differs between Windows, macOS and Linux
   ui/            main window, sidebar, Focus, switcher, dialogs
-  modules/       one folder per module of item types; see modules.md
+  module_api/    the module interface, with mirante_add_module() in cmake/; see modules.md
 cmake/
-  MiranteModule.cmake   mirante_add_module() and the generated registration
+  MiranteManifest.cmake reads the manifest and fetches the modules
 resources/
   panels/        HTML, JavaScript and CSS of the built-in panels
 tests/           Qt Test

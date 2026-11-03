@@ -6,6 +6,9 @@
 # or into .qt/ in the repository if it is not set. Several projects can share
 # one Qt by setting MIRANTE_QT_ROOT to the same folder.
 #
+# The Qt modules that the build's modules need come from the "qt" list of a
+# manifest: the path given as the first argument, or ci/modules.json.
+#
 # Prints the Qt folder to pass to CMake as CMAKE_PREFIX_PATH.
 
 set -eu
@@ -27,11 +30,35 @@ QT_DIR=$QT_ROOT/$QT_VERSION/$QT_ARCH_DIR
 # Qt WebEngine shows web items; it needs qtdeclarative, qtwebchannel and
 # qtpositioning. qttools has lupdate and lrelease for the translations, and
 # qttranslations has Qt's own texts in other languages. qtimageformats has the
-# WebP plugin for dropped images. qtpdf shows the PDF files of document items.
-# Each part has a file that shows it is there, so an older Qt without one of
-# them is completed.
+# WebP plugin for dropped images. Each part has a file that shows it is there,
+# so an older Qt without one of them is completed.
+markers="lib/cmake/Qt6WebEngineWidgets bin/lupdate translations/qtbase_pt_BR.qm plugins/imageformats/libqwebp.$PLUGIN_SUFFIX"
+
+# The Qt modules that the manifest asks for, each with the archive that holds it.
+MANIFEST=${1:-$REPO/ci/modules.json}
+QT_MODULES=
+if [ -e "$MANIFEST" ]; then
+    QT_MODULES=$(python3 -c 'import json, sys; print(" ".join(json.load(open(sys.argv[1], encoding="utf-8"))["qt"]))' "$MANIFEST")
+fi
+extra_archives=
+for module in $QT_MODULES; do
+    case "$module" in
+        Pdf|PdfWidgets) archive=qtpdf ;;
+        Charts) archive=qtcharts ;;
+        Multimedia|MultimediaWidgets) archive=qtmultimedia ;;
+        SerialPort) archive=qtserialport ;;
+        Core|Gui|Widgets|Network|Svg|WebChannel|WebEngineWidgets|Test|Positioning|Sql|Xml|Concurrent|PrintSupport) archive= ;;
+        *) echo "$MANIFEST names the Qt module $module, which tools/setup-qt.sh does not know. Add it to the script." >&2; exit 1 ;;
+    esac
+    markers="$markers lib/cmake/Qt6$module"
+    case " $extra_archives " in
+        *" $archive "*) ;;
+        *) extra_archives="$extra_archives $archive" ;;
+    esac
+done
+
 missing=
-for marker in lib/cmake/Qt6WebEngineWidgets bin/lupdate translations/qtbase_pt_BR.qm         "plugins/imageformats/libqwebp.$PLUGIN_SUFFIX" lib/cmake/Qt6PdfWidgets; do
+for marker in $markers; do
     [ -e "$QT_DIR/$marker" ] || missing=yes
 done
 if [ -n "$missing" ]; then
@@ -40,7 +67,7 @@ if [ -n "$missing" ]; then
         exit 1
     fi
     echo "Installing Qt $QT_VERSION into $QT_ROOT" >&2
-    uvx --from aqtinstall aqt install-qt "$QT_HOST" desktop "$QT_VERSION" "$QT_ARCH" -O "$QT_ROOT" --archives qtbase qtsvg qtdeclarative qttools qttranslations $QT_EXTRA_ARCHIVES -m qtwebengine qtwebchannel qtpositioning qtimageformats qtpdf >&2
+    uvx --from aqtinstall aqt install-qt "$QT_HOST" desktop "$QT_VERSION" "$QT_ARCH" -O "$QT_ROOT" --archives qtbase qtsvg qtdeclarative qttools qttranslations $QT_EXTRA_ARCHIVES -m qtwebengine qtwebchannel qtpositioning qtimageformats $extra_archives >&2
 fi
 
 echo "$QT_DIR"

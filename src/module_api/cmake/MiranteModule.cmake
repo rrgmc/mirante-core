@@ -8,7 +8,52 @@
 #   MIRANTE_ENABLED_MODULES      the enabled modules
 #   MIRANTE_MODULE_DEPENDS_<id>  the DEPENDS of one module
 
+# Warnings in a module fail the build only where the module's owner builds it.
+# An app leaves this off, so a newer compiler cannot stop someone else's module.
+option(MIRANTE_MODULES_WERROR "Treat compiler warnings in modules as errors" OFF)
+
+# The version of the module interface, from the header that modules see. See
+# docs/decisions/0119-module-interface-versions-and-checks.md.
+set(_mirante_api_header "${CMAKE_CURRENT_LIST_DIR}/../mirante/ModuleApiVersion.h")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_mirante_api_header}")
+file(STRINGS "${_mirante_api_header}" _mirante_api_major REGEX "define MIRANTE_MODULE_API_VERSION_MAJOR")
+file(STRINGS "${_mirante_api_header}" _mirante_api_minor REGEX "define MIRANTE_MODULE_API_VERSION_MINOR")
+string(REGEX REPLACE ".* ([0-9]+)$" "\\1" _mirante_api_major "${_mirante_api_major}")
+string(REGEX REPLACE ".* ([0-9]+)$" "\\1" _mirante_api_minor "${_mirante_api_minor}")
+set(MIRANTE_MODULE_API_VERSION "${_mirante_api_major}.${_mirante_api_minor}" CACHE INTERNAL
+    "The version of the module interface")
+
+# Stops configuration if a module needs another version of the interface. While
+# the interface is 0.x, any minor version may break modules, so it must match
+# exactly. From 1.0, a minor version only adds things.
+function(_mirante_check_api_version id wanted)
+    if(NOT wanted MATCHES "^([0-9]+)\\.([0-9]+)$")
+        message(FATAL_ERROR "Module ${id}: API is \"${wanted}\", not major.minor.")
+    endif()
+    set(wanted_major "${CMAKE_MATCH_1}")
+    set(wanted_minor "${CMAKE_MATCH_2}")
+    string(REPLACE "." ";" have "${MIRANTE_MODULE_API_VERSION}")
+    list(GET have 0 have_major)
+    list(GET have 1 have_minor)
+    if(have_major EQUAL 0)
+        set(fits OFF)
+        if(wanted_major EQUAL 0 AND wanted_minor EQUAL have_minor)
+            set(fits ON)
+        endif()
+    elseif(wanted_major EQUAL have_major AND NOT wanted_minor GREATER have_minor)
+        set(fits ON)
+    else()
+        set(fits OFF)
+    endif()
+    if(NOT fits STREQUAL "ON")
+        message(FATAL_ERROR "Module ${id} needs version ${wanted} of the module interface, "
+            "but this core has version ${MIRANTE_MODULE_API_VERSION}. "
+            "See src/module_api/CHANGELOG.md in mirante-core for what changed.")
+    endif()
+endfunction()
+
 # mirante_add_module(<id>
+#     API       <major.minor>       the version of the module interface it needs
 #     SOURCES   <files...>
 #     TESTS     <files...>
 #     RESOURCES <files...>
@@ -17,12 +62,24 @@
 #     DEFAULT   ON|OFF)
 #
 # QT_LIBS links further Qt components, such as PdfWidgets for the document
-# module.
+# module. Each must be in MIRANTE_QT_MODULES: what the core uses, and the "qt"
+# list of the manifest.
 function(mirante_add_module id)
-    cmake_parse_arguments(ARG "" "DEFAULT" "SOURCES;TESTS;RESOURCES;DEPENDS;QT_LIBS" ${ARGN})
+    cmake_parse_arguments(ARG "" "DEFAULT;API" "SOURCES;TESTS;RESOURCES;DEPENDS;QT_LIBS" ${ARGN})
     if(ARG_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "Module ${id}: unknown arguments: ${ARG_UNPARSED_ARGUMENTS}")
     endif()
+    if(NOT ARG_API)
+        message(FATAL_ERROR "Module ${id} states no version of the module interface. "
+            "Add API ${MIRANTE_MODULE_API_VERSION} to its mirante_add_module().")
+    endif()
+    _mirante_check_api_version(${id} "${ARG_API}")
+    foreach(qt_lib IN LISTS ARG_QT_LIBS)
+        if(NOT qt_lib IN_LIST MIRANTE_QT_MODULES)
+            message(FATAL_ERROR "Module ${id} needs the Qt module ${qt_lib}, which the manifest does not list. "
+                "Add \"${qt_lib}\" to its \"qt\" list.")
+        endif()
+    endforeach()
 
     if(NOT id MATCHES "^[a-z0-9]+$")
         message(FATAL_ERROR "Module id \"${id}\" must have lowercase letters and digits only.")
@@ -79,7 +136,16 @@ function(mirante_add_module id)
     foreach(qt_lib IN LISTS ARG_QT_LIBS)
         target_link_libraries(${target} PUBLIC Qt6::${qt_lib})
     endforeach()
-    mirante_set_warnings(${target})
+    set(no_werror NO_WERROR)
+    if(MIRANTE_MODULES_WERROR)
+        set(no_werror "")
+    endif()
+    mirante_set_warnings(${target} ${no_werror})
+    # Without override, a changed signature in the interface leaves a method that
+    # still compiles but is never called, so this is an error in every build.
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${target} PRIVATE -Werror=suggest-override)
+    endif()
     mirante_precompile_headers(${target})
     mirante_autogen_tracks_sources(${target})
 
@@ -99,7 +165,8 @@ function(mirante_add_module id)
         mirante_add_test(module_${id}_${test_name}
             SOURCES "${test_source}"
             LIBS ${target} mirante::module_api_testing
-            PCH_FROM ${pch_from})
+            PCH_FROM ${pch_from}
+            ${no_werror})
         if(NOT pch_from)
             set(pch_from "module_${id}_${test_name}")
         endif()

@@ -5,7 +5,7 @@
     {
       "name": "mirante_modules",
       "repo": "https://github.com/rrgmc/mirante-modules",
-      "ref": "339db81921680b1ec0871f00927b730cf48a501a",
+      "ref": "cb670e671833cb6089b9a09f508358cd86f4cc6d",
       "folders": ["claude", "document", "folder", "github", "gitlab", "image", "jira", "notes", "web"]
     }
   ]

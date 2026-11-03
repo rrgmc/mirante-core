@@ -48,10 +48,11 @@ The prefix tells the core which module an unknown id belongs to, so a placeholde
 
 ## Building
 
-Each module's `CMakeLists.txt` calls one function, defined in `cmake/MiranteModule.cmake`:
+Each module's `CMakeLists.txt` calls one function, defined in `src/module_api/cmake/MiranteModule.cmake`:
 
 ```cmake
 mirante_add_module(gitlab
+    API     0.1      # the version of the module interface it needs
     SOURCES GitLabModule.cpp GitLabClient.cpp ...
     TESTS   tests/tst_urls.cpp tests/tst_attention.cpp
     RESOURCES icons/gitlab.svg
@@ -93,6 +94,36 @@ void registerEnabledModules(ItemTypeRegistry &registry)
 `main.cpp` calls `registerEnabledModules()` once at startup. The generated file also lists the enabled module ids, which the About dialog shows.
 
 Modules do not register themselves through static objects. The linker drops unreferenced objects from static libraries, so such registration fails silently on some platforms.
+
+**The interface version.** The interface has a version, `major.minor`, in `<mirante/ModuleApiVersion.h>`. Each module states the version it needs with `API`. While the interface is 0.x, any minor version may break modules, so the versions must match exactly. A mismatch stops configuration with a message that names the module. [The interface changelog](../src/module_api/CHANGELOG.md) says what changed, and [decision 0119](decisions/0119-module-interface-versions-and-checks.md) gives the rules.
+
+**Further Qt modules.** A module names them in `QT_LIBS`, and the manifest must list them in `qt`, because Qt is installed before any module is fetched. Configuration stops if the list lacks one. `tools/setup-qt` knows which archive holds each one, so a Qt module that it does not know yet is added there too.
+
+**Warnings.** Modules are built with `-Werror=suggest-override` on GCC and Clang. Without `override`, a changed signature in the interface leaves a method that still compiles but is never called. Other warnings fail the build only with `MIRANTE_MODULES_WERROR`, which a module's own CI turns on and an app leaves off.
+
+### Building a module alone
+
+`src/module_api` configures without the rest of the core, so a module can compile and run its tests on its own. Its repository holds this, with its `mirante_add_module()` below it or in the same file. A test in `tests/cmake/standalone/` covers this.
+
+```cmake
+cmake_minimum_required(VERSION 3.21)
+project(acmetickets LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets Network Test)
+qt_standard_project_setup()
+enable_testing()
+
+include(FetchContent)
+FetchContent_Declare(mirante_core
+    GIT_REPOSITORY https://github.com/rrgmc/mirante-core
+    GIT_TAG        <a tag or commit>
+    SOURCE_SUBDIR  src/module_api)
+FetchContent_MakeAvailable(mirante_core)
+```
+
+A module with further Qt modules adds them to `find_package()`, and sets `MIRANTE_MODULE_QT` to the same list before fetching.
 
 ## The module interface
 

@@ -1,15 +1,23 @@
 # Helpers for Mirante's own libraries and tests.
 
-# Applies the project's warning flags to a target.
+# mirante_set_warnings(<target> [NO_WERROR])
+#
+# Applies the project's warning flags to a target. MIRANTE_WERROR makes them
+# errors, unless NO_WERROR says that this target is not the project's to fix.
 function(mirante_set_warnings target)
+    cmake_parse_arguments(ARG "NO_WERROR" "" "" ${ARGN})
+    set(werror OFF)
+    if(MIRANTE_WERROR AND NOT ARG_NO_WERROR)
+        set(werror ON)
+    endif()
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8)
-        if(MIRANTE_WERROR)
+        if(werror)
             target_compile_options(${target} PRIVATE /WX)
         endif()
     else()
         target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
-        if(MIRANTE_WERROR)
+        if(werror)
             target_compile_options(${target} PRIVATE -Werror)
         endif()
     endif()
@@ -76,14 +84,14 @@ function(mirante_precompile_headers target)
     endif()
 endfunction()
 
-# mirante_add_test(<name> SOURCES <files...> LIBS <targets...> [PCH_FROM <test>])
+# mirante_add_test(<name> SOURCES <files...> LIBS <targets...> [PCH_FROM <test>] [NO_WERROR])
 #
 # Adds one Qt Test executable as a CTest test. Tests run with the offscreen
 # platform, so they need no display and open no windows, also when started by
 # hand. With PCH_FROM, the test uses the precompiled header of that test, which
 # must link the same libraries; otherwise it makes its own.
 function(mirante_add_test name)
-    cmake_parse_arguments(ARG "" "PCH_FROM" "SOURCES;LIBS" ${ARGN})
+    cmake_parse_arguments(ARG "NO_WERROR" "PCH_FROM" "SOURCES;LIBS" ${ARGN})
     # Every test links the same OffscreenByDefault.cpp, so it is compiled once.
     if(NOT TARGET mirante_test_support)
         add_library(mirante_test_support OBJECT "${MIRANTE_CORE_DIR}/tests/support/OffscreenByDefault.cpp")
@@ -98,7 +106,11 @@ function(mirante_add_test name)
     # which ccache can change.
     target_compile_definitions(${name} PRIVATE
         MIRANTE_FIXTURES_DIR="${MIRANTE_CORE_DIR}/resources/fixtures")
-    mirante_set_warnings(${name})
+    if(ARG_NO_WERROR)
+        mirante_set_warnings(${name} NO_WERROR)
+    else()
+        mirante_set_warnings(${name})
+    endif()
     # QSKIP and other Qt Test macros are variadic. Called with one argument,
     # they trip this pedantic Clang warning in C++17.
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
