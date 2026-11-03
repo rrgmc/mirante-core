@@ -1,52 +1,43 @@
-# <img src="resources/icons/mirante.svg" alt="" width="40" height="40"> Mirante
+# <img src="resources/icons/mirante.svg" alt="" width="40" height="40"> Mirante core
 
-Mirante is a personal desktop dashboard for all of one person's work. Work is organised in groups, projects and tasks. Each task collects its items on dashboards that the user can arrange freely. An item can be anything a module provides; the [modules](#modules) below are included. It is built with Qt 6 for Windows, macOS and Linux.
-
-A workspace is stored as ordinary files and folders in the filesystem. This makes it compatible with file syncing apps such as Dropbox or Google Drive, so the same workspace can be used on several computers without a server.
-
-The design is in [docs/README.md](docs/README.md).
-
-> This repository is the core of Mirante, split from [`mirante`](https://github.com/rrgmc/mirante) to try [custom builds](docs/roadmap.md#future-custom-builds). It is a trial: it is not usable yet, and `mirante` stays the official app. The modules are in [`mirante-modules`](https://github.com/rrgmc/mirante-modules), and [`mirante-app`](https://github.com/rrgmc/mirante-app) builds them together.
+The core of [Mirante](https://github.com/rrgmc/mirante), a personal desktop dashboard for all of one person's work, in Qt 6 for Windows, macOS and Linux. It holds the app itself, the interface that modules use, the build, and the design documents. To use Mirante, download it from [its releases](https://github.com/rrgmc/mirante/releases).
 
 ![Mirante's main window. The sidebar lists groups, projects and tasks. A root dashboard shows a task's web page and notes above tabs from other tasks.](docs/images/root-dashboard.png)
 
-## Modules
+## How Mirante is built
 
-Mirante includes these modules. Each one provides one or more item types. [Item types](docs/item-types.md) describes them in detail, and Help > Modules lists them in the app.
+Mirante is split into repositories, and an app repository lists which of them to build:
 
-| Module | Item types |
+| Repository | Holds |
 |---|---|
-| [Claude](https://github.com/rrgmc/mirante-modules/blob/master/claude/README.md): Claude sessions on claude.ai | Claude session (web) |
-| [Documents](https://github.com/rrgmc/mirante-modules/blob/master/document/README.md): Markdown, text and PDF files | Document (web address), Document (workspace file), Document (project file) |
-| [Folder](https://github.com/rrgmc/mirante-modules/blob/master/folder/README.md): a project's folder, with its Git state and shortcuts to a terminal and an editor | Folder / terminal |
-| [GitHub](https://github.com/rrgmc/mirante-modules/blob/master/github/README.md): github.com or GitHub Enterprise Server | GitHub PR (summary), GitHub PR (page), GitHub PR List, GitHub Actions Run, GitHub Actions Run List, GitHub Issue (summary), GitHub Issue (page), GitHub Issue List |
-| [GitLab](https://github.com/rrgmc/mirante-modules/blob/master/gitlab/README.md): a GitLab server | GitLab MR (summary), GitLab MR (page), GitLab MR List, GitLab CI Pipeline, GitLab CI Pipeline List, GitLab Issue (summary), GitLab Issue (page), GitLab Issue List |
-| [Image](https://github.com/rrgmc/mirante-modules/blob/master/image/README.md): screenshots or diagrams, with an optional link and memo | Image |
-| [Jira](https://github.com/rrgmc/mirante-modules/blob/master/jira/README.md): a Jira site | Jira Issue (summary), Jira Issue (page), Jira List |
-| [Notes](https://github.com/rrgmc/mirante-modules/blob/master/notes/README.md): Markdown notes, kept in the task's file | Notes |
-| [Web](https://github.com/rrgmc/mirante-modules/blob/master/web/README.md): any web page | Web page |
+| `mirante-core`, this one | The app, the module interface, the build, the reusable workflows, and the design documents |
+| [`mirante-modules`](https://github.com/rrgmc/mirante-modules) | Documents, folders, images, notes and web pages |
+| [`mirante-modules-work`](https://github.com/rrgmc/mirante-modules-work) | GitHub, GitLab, Jira and Claude |
+| [`mirante`](https://github.com/rrgmc/mirante) | The official app: a manifest, `mirante.json`, that pins the core and both repositories of modules at their release tags |
+| [`mirante-app-template`](https://github.com/rrgmc/mirante-app-template) | A template for a Mirante of your own, with the modules you choose |
+| [`mirante-modules-samples`](https://github.com/rrgmc/mirante-modules-samples) | Small sample modules |
 
-## Installing
+When an app configures, the core fetches the repositories that its manifest lists, at their pins, and compiles the listed modules into the app. Each repository releases on its own, with a tag `vX.Y.Z`. See [custom builds](docs/plans/custom-builds.md) and [decision 0116](docs/decisions/0116-custom-builds-in-separate-repositories.md).
 
-Each [release](https://github.com/rrgmc/mirante/releases) has three files:
+## Why modules are compiled in
 
-- **Windows 10 and 11, 64-bit:** `mirante-<version>-win64.exe`. Run it and follow the steps. The setup is not signed, so the first time Windows may say that it protected your PC. Choose **More info**, then **Run anyway**. Mirante is then in the Start menu, and Settings > Apps uninstalls it.
-- **macOS 12 or later, Apple silicon and Intel:** `mirante-<version>-macos.dmg`. Open it and drag Mirante to Applications. The app is signed and notarised, so it opens without a warning.
-- **Ubuntu 24.04 or later, 64-bit:** `mirante_<version>_amd64.deb`. Install it with `sudo apt install ./mirante_<version>_amd64.deb`. Mirante is then in the applications menu, and `mirante` starts it from a terminal. The package installs into `/opt/mirante`, with its own Qt, and adds an AppArmor profile so the web pages keep Chromium's sandbox. `sudo apt remove mirante` removes it.
+A module is a static library, linked into the app when it is built. Mirante does not load modules while it runs, as plugins or shared libraries:
 
-### First start
+- **macOS would refuse them.** The app is signed with a Developer ID and runs with the hardened runtime, which notarisation requires. The hardened runtime loads only libraries signed by the same team, or by Apple. A module built by someone else would not load, unless the app turned off that library check, which would weaken the protection that notarisation gives every user.
+- **A plugin must match the app exactly.** It must be built with the same Qt version and the same compiler, for each platform and architecture, and the module interface would have to stay binary compatible from one release to the next.
+- **A plugin is no safer.** It runs in the app's process, so it can read every token and crash the whole app, as a compiled-in module can. Qt cannot unload a plugin safely either.
+- **Compiled in, the build checks everything at once.** A module that no longer fits the interface fails to build, in CI, before anyone installs it.
 
-1. Mirante opens with the sample data, which shows what it can do. Changes to it are not saved.
-2. Choose File > New Workspace… and pick an empty folder for your own data. A folder synced by Dropbox, OneDrive or iCloud Drive makes the workspace available on your other computers. Logins and tokens stay on each computer.
-3. Choose File > New Group…, then add projects, tasks and their items from the sidebar's context menu. File > New Task from Link… makes a task from a Jira issue or a merge request link.
-4. To see GitLab or Jira status, open the module's settings in the Profiles menu, such as Profiles > Default (default) > Modules > GitLab > General Configuration…, and enter the server and a token. Tokens are kept in the system's keychain.
-5. `Alt+Shift+D`, or `Control+Shift+D` on macOS, hides Mirante to the system tray, or the menu bar on macOS, and shows it again from any application. Closing the window quits Mirante. To keep it running in the tray instead, turn on "Closing the window keeps Mirante running in the tray" in Tools > Settings…, or Mirante > Settings… on macOS.
+So a Mirante with other modules is a new build of Mirante, made from a manifest that lists them. The template makes that a repository and a few clicks on GitHub. See decisions [0013](docs/decisions/0013-compiled-in-modules.md) and [0121](docs/decisions/0121-modules-are-trusted-code.md).
 
-The [user interface](docs/ui.md) describes everything in detail.
+## Documents
 
-## Building
-
-[BUILDING.md](BUILDING.md) says how to build, test and package Mirante.
+- [The design](docs/README.md), with its glossary
+- [Modules](docs/modules.md), the contract between the core and the modules
+- [Writing a module](docs/writing-a-module.md), a guide for authors outside the project
+- [The decisions](docs/decisions/README.md)
+- [The roadmap](docs/roadmap.md)
+- [Building](BUILDING.md), and the [changelog](CHANGELOG.md)
 
 ## Author
 
@@ -54,4 +45,4 @@ Rangel Reale <realerangel@gmail.com>
 
 ## License
 
-Mirante is released under the [MIT License](LICENSE).
+Released under the [MIT License](LICENSE).
