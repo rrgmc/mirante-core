@@ -2,6 +2,7 @@
 # only listed folders run, a repository's top file does not, modules see Qt and
 # AUTOMOC from the core's scope, and ctest in the top folder finds their tests.
 # DEPENDS reaches a module of another repository, whichever is listed first.
+# Folder entries set a module's options and make it optional.
 # Mistakes in the manifest stop configuration. Nothing is downloaded: every
 # repository comes from a folder here, through FETCHCONTENT_SOURCE_DIR_<NAME>.
 #
@@ -17,6 +18,7 @@ if(WIN32 AND NOT DEFINED ENV{VCToolsInstallDir})
 endif()
 
 # Writes a manifest with these entries in "modules" and configures the app.
+# Further arguments go to CMake, such as -DMIRANTE_MODULE_<ID>=ON.
 function(configure_app name modules_json)
     set(binary "${BINARY}/${name}")
     file(REMOVE_RECURSE "${binary}")
@@ -34,6 +36,7 @@ function(configure_app name modules_json)
             "-DFETCHCONTENT_SOURCE_DIR_TEST_MODULES=${SOURCE}/modules"
             "-DFETCHCONTENT_SOURCE_DIR_TEST_SINGLE=${SOURCE}/single"
             "-DFETCHCONTENT_SOURCE_DIR_TEST_OTHER=${SOURCE}/other"
+            ${ARGN}
         RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE output)
     set(result "${result}" PARENT_SCOPE)
     set(output "${output}" PARENT_SCOPE)
@@ -102,6 +105,55 @@ execute_process(COMMAND "${CMAKE_CTEST_COMMAND}" --test-dir "${BINARY}/across" -
 if(NOT result EQUAL 0 OR NOT output MATCHES "module_uses_tst_uses")
     message(FATAL_ERROR "The dependent module's test did not pass:\n${output}")
 endif()
+
+# Folder entries: an object with options and optional. See decision 0129.
+configure_app(options_default "[{ ${modules_repo}, \"folders\": [{ \"folder\": \"configurable\" }] }]")
+if(NOT result EQUAL 0 OR NOT output MATCHES "configurable MAX_ITEMS=25 COMPACT=OFF")
+    message(FATAL_ERROR "A module's options do not have their defaults:\n${output}")
+endif()
+
+configure_app(options_set "[{ ${modules_repo}, \"folders\": [
+    { \"folder\": \"configurable\", \"options\": { \"MAX_ITEMS\": \"50\" } }
+  ] }]")
+if(NOT result EQUAL 0 OR NOT output MATCHES "configurable MAX_ITEMS=50 COMPACT=OFF")
+    message(FATAL_ERROR "The manifest's option did not replace the default:\n${output}")
+endif()
+# The module's code needs the compile definitions to build.
+execute_process(COMMAND "${CMAKE_COMMAND}" --build "${BINARY}/options_set"
+    RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE output)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "A module with options did not build:\n${output}")
+endif()
+
+configure_app(optional_off "[{ ${modules_repo}, \"folders\": [
+    \"configurable\", { \"folder\": \"listed\", \"optional\": true }
+  ] }]")
+if(NOT result EQUAL 0 OR NOT output MATCHES "Module listed: off" OR NOT output MATCHES "Module configurable: on")
+    message(FATAL_ERROR "An optional module is not off by default:\n${output}")
+endif()
+
+configure_app(optional_on "[{ ${modules_repo}, \"folders\": [{ \"folder\": \"listed\", \"optional\": true }] }]"
+    -DMIRANTE_MODULE_LISTED=ON)
+if(NOT result EQUAL 0 OR NOT output MATCHES "Module listed: on")
+    message(FATAL_ERROR "The build option did not turn an optional module on:\n${output}")
+endif()
+
+expect_refusal(undeclared_option "[{ ${modules_repo}, \"folders\": [
+    { \"folder\": \"configurable\", \"options\": { \"NOPE\": \"1\" } }
+  ] }]"
+    "has no option \"NOPE\"")
+expect_refusal(option_not_text "[{ ${modules_repo}, \"folders\": [
+    { \"folder\": \"configurable\", \"options\": { \"MAX_ITEMS\": 50 } }
+  ] }]"
+    "must be a text")
+expect_refusal(bad_option_name "[{ ${modules_repo}, \"folders\": [\"badoption\"] }]"
+    "\"max_items=25\" must be")
+expect_refusal(unknown_entry_field "[{ ${modules_repo}, \"folders\": [{ \"folder\": \"listed\", \"optinal\": true }] }]"
+    "unknown field \"optinal\"")
+expect_refusal(optional_not_boolean "[{ ${modules_repo}, \"folders\": [{ \"folder\": \"listed\", \"optional\": \"yes\" }] }]"
+    "which must be true")
+expect_refusal(entry_not_object "[{ ${modules_repo}, \"folders\": [42] }]"
+    "must be a folder name")
 
 # Without the other repository's module, configuration says what is missing.
 expect_refusal(missing_dependency "[{ ${other_repo}, \"folders\": [\"uses\"] }]"

@@ -55,6 +55,8 @@ The modules are in other repositories. A manifest names the modules to build, an
 cmake --preset dev -DMIRANTE_MANIFEST=<path to mirante.json>
 ```
 
+A folder entry in the manifest can set a module's options and make it optional. An optional module is built only when asked for, with `-DMIRANTE_MODULE_<ID>=ON`, or on Windows with `tools/build.ps1 -EnableModules <id>,<id>`. See [decision 0129](docs/decisions/0129-folder-entries-options-and-optional-modules.md).
+
 To use a checkout on disk in place of a pinned repository, without changing the manifest, name it with its `name` from the manifest in capitals:
 
 ```sh

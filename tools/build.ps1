@@ -16,6 +16,9 @@
 #   tools/build.ps1 -Manifest <file> take the Qt modules from this manifest. The
 #                                    default is mirante.json in -Source, or
 #                                    ci/modules.json here
+#   tools/build.ps1 -EnableModules a,b
+#                                    build these optional modules of the
+#                                    manifest too
 #
 # Downloads Qt with tools/setup-qt.ps1 if it is missing, and enters the
 # Visual Studio 2022 developer environment if the shell is not in one.
@@ -28,7 +31,8 @@ param(
     [switch]$NoPch,
     [switch]$Package,
     [string]$Source,
-    [string]$Manifest
+    [string]$Manifest,
+    [string[]]$EnableModules
 )
 
 $ErrorActionPreference = 'Stop'
@@ -71,6 +75,7 @@ Push-Location $Repo
 try {
     $configure = @('--preset', $Preset, "-DCMAKE_PREFIX_PATH=$QtDir")
     if ($Version) { $configure += "-DMIRANTE_VERSION=$Version" }
+    foreach ($module in $EnableModules) { $configure += "-DMIRANTE_MODULE_$($module.ToUpperInvariant())=ON" }
     # Set each time, because the build folder keeps the value of its last run.
     $configure += "-DMIRANTE_PCH=$(if ($NoPch) { 'OFF' } else { 'ON' })"
     Invoke-Tool cmake @configure

@@ -58,6 +58,7 @@ mirante_add_module(gitlab
     RESOURCES icons/gitlab.svg
     DEPENDS          # other module ids, usually none; see below
     QT_LIBS          # further Qt components, usually none
+    OPTIONS          # build options with defaults, such as MAX_ITEMS=25; see below
     DEFAULT ON)
 ```
 
@@ -76,9 +77,11 @@ The core adds each folder that the manifest lists. See [building with modules](.
 
 A dependency may be in another repository of the manifest, in any order: the links are made after every module is added. The app must list both modules. Without the other one, configuration stops with "Module uses depends on the module "listed", which does not exist." A pin of one repository can then break the other, so the two authors keep their interface stable, or the app moves both pins together. `tests/cmake/manifest/` covers this.
 
+**Options.** A module can take build options, which an app sets in the manifest. It declares each with a default, `OPTIONS MAX_ITEMS=25 COMPACT=OFF`, with names in capital letters, digits and underscores. An app sets them in the module's folder entry, as texts: `{ "folder": "gitlab", "options": { "MAX_ITEMS": "50" } }`. An option the module does not declare stops configuration. The module gets each option as the CMake variable `MIRANTE_OPTION_<NAME>` after `mirante_add_module()`, and as the compile definition `MIRANTE_OPTION_<NAME>`, a string literal such as `"50"`, in its code and its tests. Its README lists its options. See [decision 0129](decisions/0129-folder-entries-options-and-optional-modules.md).
+
 **Choosing modules:**
 
-- the manifest: a listed folder is built, whatever its `DEFAULT` says;
+- the manifest: a listed folder is built, whatever its `DEFAULT` says, unless its folder entry says `"optional": true`. An optional module is built only with `-DMIRANTE_MODULE_<ID>=ON`, which `build-app.yml` sets for each id in its input `enable-modules`, and `tools/build.ps1` for each in `-EnableModules`;
 - an exact list, within what the manifest lists: `-DMIRANTE_MODULES="gitlab;web;notes"`, which enables those modules and disables all others;
 - a configure preset in `CMakePresets.json`, for builds that are used often.
 

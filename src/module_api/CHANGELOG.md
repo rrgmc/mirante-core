@@ -8,6 +8,7 @@ While the version is 0.x, any minor version may break modules, so a module must 
 
 Changes that do not affect modules are listed here too.
 
+- `mirante_add_module()` takes `OPTIONS NAME=default...`, build options that the manifest's folder entry can set. Each is the variable and the compile definition `MIRANTE_OPTION_<NAME>`. A folder entry can also make a module optional. See decision 0129.
 - A module's own web pages, in its `RESOURCES` under `web/`, are served as `module://<module id>/<path>`, with an origin per module. `createWebView()` refuses `qrc:` addresses, which share one origin. See decision 0128.
 - A module with a folder `translations/` carries its own texts, as `<id>_<language>.ts`. The core loads them for the enabled modules. A module without them keeps working, in English.
 

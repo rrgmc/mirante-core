@@ -42,6 +42,12 @@ The app speaks English and Brazilian Portuguese. Every text the user sees is wri
 
 **Module.** A folder of item types and the code they share, such as settings screens and API clients. Each module can be included or left out when building. See [modules](modules.md).
 
+**Folder entry.** One item of a repository's `folders` list in the manifest: a folder name, or an object with the folder and its settings. See [decision 0129](decisions/0129-folder-entries-options-and-optional-modules.md).
+
+**Module option.** A named build-time value that a module declares and the manifest sets, such as `MAX_ITEMS`.
+
+**Optional module.** A module whose folder entry says `"optional": true`. It is listed in the manifest but built only when a build option turns it on.
+
 **Settings screen.** A configuration screen of a whole module, such as GitLab's "General Configuration", opened from a profile's Modules submenu in the Profiles menu. Its values are the module's settings. Each profile has its own, kept in the workspace and synced. See [settings screens](modules.md#settings-screens).
 
 

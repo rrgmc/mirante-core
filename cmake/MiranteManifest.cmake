@@ -54,6 +54,45 @@ function(_mirante_manifest_get out json where field)
     set(${out} "${value}" PARENT_SCOPE)
 endfunction()
 
+# Reads one folder entry: a folder name, or an object with "folder" and its
+# settings. Sets folder, optional (ON or OFF) and options (a JSON object, or
+# empty) in the caller's scope.
+function(_mirante_manifest_folder_entry folders index where)
+    string(JSON type TYPE "${folders}" ${index})
+    set(optional OFF)
+    set(options "")
+    if(type STREQUAL "STRING")
+        string(JSON folder GET "${folders}" ${index})
+    elseif(type STREQUAL "OBJECT")
+        string(JSON entry GET "${folders}" ${index})
+        set(entry_where "folder entry ${index} of ${where}")
+        _mirante_manifest_check_fields("${entry}" "${entry_where}" "folder;optional;options")
+        _mirante_manifest_get(folder "${entry}" "${entry_where}" folder)
+        string(JSON optional_type ERROR_VARIABLE missing TYPE "${entry}" optional)
+        if(NOT missing)
+            if(NOT optional_type STREQUAL "BOOLEAN")
+                message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${entry_where} has \"optional\", "
+                    "which must be true or false.")
+            endif()
+            string(JSON optional GET "${entry}" optional)
+        endif()
+        string(JSON options_type ERROR_VARIABLE missing TYPE "${entry}" options)
+        if(NOT missing)
+            if(NOT options_type STREQUAL "OBJECT")
+                message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${entry_where} has \"options\", "
+                    "which must be an object of names and texts.")
+            endif()
+            string(JSON options GET "${entry}" options)
+        endif()
+    else()
+        message(FATAL_ERROR "${MIRANTE_MANIFEST}: folder entry ${index} of ${where} "
+            "must be a folder name or an object.")
+    endif()
+    set(folder "${folder}" PARENT_SCOPE)
+    set(optional "${optional}" PARENT_SCOPE)
+    set(options "${options}" PARENT_SCOPE)
+endfunction()
+
 # Fetches one repository of the manifest and adds its listed folders. The
 # repository's top CMakeLists.txt is for its own CI and must not run here, so
 # SOURCE_SUBDIR names a folder that does not exist, and FetchContent adds nothing.
@@ -103,7 +142,11 @@ function(_mirante_add_manifest_repository entry where)
 
     math(EXPR last "${folder_count} - 1")
     foreach(index RANGE ${last})
-        string(JSON folder GET "${folders}" ${index})
+        _mirante_manifest_folder_entry("${folders}" ${index} "${where}")
+        # What mirante_add_module() reads in the folder's scope, which
+        # inherits these. See decision 0129.
+        set(MIRANTE_LISTED_OPTIONAL "${optional}")
+        set(MIRANTE_LISTED_OPTIONS "${options}")
         if(folder STREQUAL ".")
             set(folder_dir "${source_dir}")
             set(binary_dir "${CMAKE_BINARY_DIR}/modules/${name}")
@@ -159,8 +202,9 @@ function(mirante_add_manifest_modules)
     _mirante_manifest_check_fields("${core}" "the core entry" "repo;ref")
     _mirante_manifest_get(repositories "${manifest}" "the manifest" modules)
 
-    # A module in a listed folder is built, whatever its DEFAULT says.
-    # mirante_add_module() reads this. A folder's scope inherits it.
+    # A module in a listed folder is built, whatever its DEFAULT says, unless
+    # its folder entry makes it optional. mirante_add_module() reads this. A
+    # folder's scope inherits it.
     set(MIRANTE_LISTED_MODULE ON)
 
     # Each configuration writes the list of module folders again.
