@@ -203,6 +203,11 @@ jobs:
           cmake --build --preset ci
           ctest --preset ci
 
+      # A report for reviews, on the run's summary page. It never fails.
+      - name: Scan modules for sensitive APIs
+        if: runner.os == 'Linux'
+        run: python3 .mirante-core/tools/scan-module-apis.py --build build/ci >> "$GITHUB_STEP_SUMMARY"
+
       # The committed files must be up to date and complete.
       - name: Check module translations
         if: inputs.check-modules && runner.os == 'Linux'
