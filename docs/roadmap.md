@@ -209,7 +209,7 @@ Started after M13, and builds on the packaging from M10 ([decision 0098](decisio
 - [x] CI fails if `src/module_api` changes without an entry in the interface changelog. The core's CI builds the first-party modules, and a small module that implements only the required methods.
 - [x] Modules are built with `-Werror=suggest-override` on GCC and Clang, and external modules are not built with `MIRANTE_WERROR`.
 - [x] An app repository can build without the core's own tests, and still runs the tests of its modules.
-- [ ] `DEPENDS` works across repositories.
+- [x] `DEPENDS` works across repositories.
 - [x] A module can use further Qt components. The manifest gives one list of Qt modules, and the Qt setup scripts, the CI cache keys, `find_package` and the package check follow from it. Configuration stops if a module's `QT_LIBS` names a Qt module that the list lacks.
 - [x] The module include check also covers external modules. The modules are also built with `MIRANTE_PCH=OFF`, so a missing include is found.
 - [x] Each module carries its own translation files, and the core loads them for the enabled modules. CI checks each module's translations.

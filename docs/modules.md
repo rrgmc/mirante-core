@@ -74,6 +74,8 @@ The core adds each folder that the manifest lists. See [building with modules](.
 
 **`DEPENDS`.** A module listed there is linked, and its folder goes on the include path, so its headers are included by file name, such as `#include "GitLabClient.h"`. A module not listed stays out of reach, and the app itself gets none of these paths. Quick add handlers and related-item finders need no dependency, so prefer them where they fit. A test in `tests/cmake/depends/` covers this.
 
+A dependency may be in another repository of the manifest, in any order: the links are made after every module is added. The app must list both modules. Without the other one, configuration stops with "Module uses depends on the module "listed", which does not exist." A pin of one repository can then break the other, so the two authors keep their interface stable, or the app moves both pins together. `tests/cmake/manifest/` covers this.
+
 **Choosing modules:**
 
 - the manifest: a listed folder is built, whatever its `DEFAULT` says;
