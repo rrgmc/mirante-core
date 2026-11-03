@@ -196,9 +196,9 @@ Started after M13, and builds on the packaging from M10 ([decision 0098](decisio
 **The user approves replacing `mirante` when:**
 
 - [x] `mirante-app` builds, tests and packages all modules on Windows, macOS and Linux.
-- [ ] At least one change to the module interface has been carried across the repositories, and the user finds the effort acceptable.
-- [ ] One module has been built by following the documentation alone, without changing the core.
-- [ ] The user has used the sample app for their own work for a period, whose length is set when the sample starts.
+- [x] At least one change to the module interface has been carried across the repositories, and the user finds the effort acceptable. The user accepted the effort of part 4's change.
+- [x] One module has been built by following the documentation alone, without changing the core. An agent with no knowledge of the code did it. The user accepted that in place of a person, since no one else writes modules yet.
+- [ ] The user has used the sample app for their own work for a period, whose length is set when the sample starts. The user set it at about an hour, because the project is new.
 
 **Acceptance criteria:**
 
