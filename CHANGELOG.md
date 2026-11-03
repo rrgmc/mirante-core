@@ -6,6 +6,17 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-11-03
+
+### Changed
+
+- Help > About lists each module by its name and the release it was built from, such as "Claude: 0.8.0", in place of its repository and commit. A module pinned to a commit shows the short commit, and a checkout on disk "local".
+- The Windows setup leaves "Start Mirante when I sign in" unticked on a first install. An upgrade keeps the installed version's choice. See [decision 0137](docs/decisions/0137-the-setup-does-not-start-mirante-at-sign-in-by-default.md).
+
+### Fixed
+
+- The Windows setup's last page is in Portuguese when Windows is, as its other pages are.
+
 ## [0.8.1] - 2026-11-03
 
 ### Added
@@ -44,6 +55,7 @@ The first release of the core on its own, after it was split from `mirante` for 
 
 - `qrc:` addresses in item web views, which shared one origin among all pages.
 
-[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.2...HEAD
+[0.8.2]: https://github.com/rrgmc/mirante-core/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/rrgmc/mirante-core/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/rrgmc/mirante-core/tree/v0.8.0

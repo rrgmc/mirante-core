@@ -2,6 +2,7 @@
 # docs/decisions/0125-how-modules-are-fetched.md.
 
 include(FetchContent)
+include("${CMAKE_CURRENT_LIST_DIR}/MiranteRelease.cmake")
 
 # mirante_manifest_qt_modules(<out>)
 #
@@ -214,8 +215,13 @@ function(_mirante_manifest_extensions extensions where)
                             "which ${repo} does not have.")
                     endif()
                 endif()
+                if(no_local)
+                    mirante_release_of(release "${ref}" "${commit}")
+                else()
+                    set(release "${commit}")
+                endif()
                 list(APPEND dirs "${point}=${dir}")
-                list(APPEND sources "${point}|${repo}|${commit}")
+                list(APPEND sources "${point}|${repo}|${commit}|${release}")
             endforeach()
         endif()
     endif()
@@ -316,6 +322,12 @@ function(_mirante_add_manifest_repository entry where)
             endif()
         endif()
     endif()
+    # The version the About dialog shows: the release of a tag pin, or else
+    # the commit. A local repository has no pin.
+    set(release "${commit}")
+    if(no_local)
+        mirante_release_of(release "${ref}" "${commit}")
+    endif()
 
     math(EXPR last "${folder_count} - 1")
     foreach(index RANGE ${last})
@@ -350,6 +362,7 @@ function(_mirante_add_manifest_repository entry where)
             if(NOT module IN_LIST modules_before)
                 set_property(GLOBAL PROPERTY MIRANTE_MODULE_REPOSITORY_${module} "${repo}")
                 set_property(GLOBAL PROPERTY MIRANTE_MODULE_COMMIT_${module} "${commit}")
+                set_property(GLOBAL PROPERTY MIRANTE_MODULE_RELEASE_${module} "${release}")
                 set_property(GLOBAL PROPERTY MIRANTE_MODULE_EXTENSION_SOURCES_${module} "${extension_sources}")
             endif()
         endforeach()
