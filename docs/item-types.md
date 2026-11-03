@@ -145,6 +145,22 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
 - **Messages:** with no data it says "Loading…" or the status's message. With old data and an error it keeps the rows, because the cell header shows the problem. An empty list shows the table with no rows and the line "No merge requests".
 - **Status:** a summary with the count, such as "12 merge requests", or "100+ merge requests" when the list reaches its `limit`. It reports no attention, and is neither closed nor open, so it never counts towards a task being done. A scope without its project or group reports no status, with a message such as "Set the group in the item's settings." See [decision 0067](decisions/0067-lists-report-status.md).
 
+### GitLab MR List (several projects)
+
+`gitlab.mr.multilist`, native. The merge requests of the projects you name.
+
+- **Configuration:**
+  - `projects`, required: the project paths, one per line, such as `acme/backend`. Blanks, slashes at the ends and repeated paths are left out;
+  - `preset`, `filter`, `limit`, `pageSize`, `showPipeline` and `showApprovals`, as for the merge request list;
+  - `projectFilter`: the projects that the Project filter chooses when the list opens. Empty shows all.
+
+  There is no scope, project or group: the type is apart from the merge request list so that its form leaves them out.
+- **Rows:** GitLab has no request for several projects, so the list asks each project, each up to `limit`. The rows are joined, sorted by their update, newest first, and cut to `limit`. "Review requested from me" reads the user once.
+- **Shows:** the merge request list's table, with a Project column after Title. It hides first in a narrow cell.
+- **Filter:** a Project drop-down above the table, filled from the fetched rows. "All" shows every project; checking one or more shows only their rows.
+- **No Web link,** because GitLab has no page for the merge requests of several projects. The line above the table names the projects, such as "All open · acme/backend, acme/web".
+- **Status:** as for the merge request list. The first project that fails fails the list, with its path before the message, such as "acme/web: Forbidden (403)". Without projects it reports no status, with "Set the projects in the item's settings."
+
 ### GitLab CI Pipeline
 
 `gitlab.pipeline`, native.
@@ -183,7 +199,8 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
   - `source`: `all` ("All pipelines", the default), `mine` ("Started by me"), `branch` ("Of a branch") or `mergeRequest` ("Of a merge request");
   - `branch`, used by `branch`. It is `master` by default, also as its placeholder, and an empty value means `master`;
   - `iid`, the merge request number, used by `mergeRequest`;
-  - `limit` and `pageSize`, as for the merge request list.
+  - `limit` and `pageSize`, as for the merge request list;
+  - `statusFilter`: the statuses that the Status filter chooses when the list opens, as the drop-down shows them, such as `Failed`. Empty shows all.
 - **Shows:** a sortable table, sorted on Id, newest first. Its columns are:
   - Id;
   - Status, a pill;
@@ -192,7 +209,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
   - Started, compact and sorted by the date, or the time the pipeline was created when GitLab gives no start. A missing date sorts as the oldest;
   - the links of the row, which never hide.
 - **A narrow cell** hides columns in this order: Author, Started, Id, Status.
-- **Filter:** a Status drop-down above the table, filled from the fetched rows. Several values can be checked; a row shows when it has any of them. The choice survives new rows and is not saved.
+- **Filter:** a Status drop-down above the table, filled from the fetched rows. Several values can be checked; a row shows when it has any of them. It starts with the values of `statusFilter`: each is checked once a row has it. The user's own choice replaces them, survives new rows and is not saved.
 - **Links of a row:**
   - "Web" opens the row's `web_url` in the external browser;
   - "Open" shows that page in the same cell, or in the external browser if you hold `Shift`;
@@ -201,6 +218,16 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
 - **The Web link** above the table opens `<baseUrl>/<project>/-/pipelines`, and it hides without a project.
 - **Messages:** as for the merge request list, with the line "No pipelines".
 - **Status:** a summary with the count, such as "12 pipelines", "1 pipeline", or "100+ pipelines" when the list reaches its `limit`. It reports no attention and is neither closed nor open. Without a project, or without a number for `mergeRequest`, it reports no status, with a message such as "Set the merge request number in the item's settings."
+
+### GitLab CI Pipeline List (several projects)
+
+`gitlab.pipeline.multilist`, native. The pipelines of the projects you name.
+
+- **Configuration:** `projects`, required, as for the merge request list over several projects; `source`: `all` ("All pipelines", the default), `mine` ("Started by me") or `branch` ("Of a branch"); `branch`, as for the pipeline list; `limit` and `pageSize`; `projectFilter` and `statusFilter`, the values its filters choose when the list opens. There is no merge request number, which fits one project only.
+- **Rows:** one request per project, each up to `limit`, joined, sorted by when each pipeline was created, newest first, and cut to `limit`. "Started by me" reads the user once.
+- **Shows:** the pipeline list's table, with a Project column after Id. Its filters are Project and Status. "Add" adds a GitLab CI Pipeline of the row's project.
+- **No Web link,** and the line above the table names the projects.
+- **Status:** as for the pipeline list. The first project that fails fails the list, with its path before the message.
 
 ### GitLab Issue (summary), GitLab Issue (page), GitLab Issue List
 
@@ -276,6 +303,22 @@ The types follow the GitLab types. A pull request is GitLab's merge request, an 
 - **Messages:** as for GitLab's lists, with the line "No pull requests".
 - **Status:** a summary such as "12 pull requests", or "100+ pull requests" at the `limit`. No attention, and neither closed nor open. A scope without its repository or owner reports no status, with a message such as "Set the owner in the item's settings."
 
+### GitHub PR List (several repositories)
+
+`github.pr.multilist`, native. The pull requests of the repositories you name.
+
+- **Configuration:**
+  - `repositories`, required: `owner/repo`, one per line. Blanks, slashes at the ends and repeated names are left out;
+  - `preset`, `filter`, `limit`, `pageSize`, `showChecks` and `showReviews`, as for the PR list;
+  - `repositoryFilter`: the repositories that the Repository filter chooses when the list opens. Empty shows all.
+
+  There is no scope, repository or owner: the type is apart from the PR list so that its form leaves them out.
+- **The list is one search,** whose query holds one `repo:<repository>` for each, which GitHub joins with OR. "All open" adds nothing more, since the repositories narrow the search.
+- **Shows:** the PR list's table, with a Repository column after Title. It hides first in a narrow cell.
+- **Filter:** a Repository drop-down above the table, filled from the fetched rows. "All" shows every repository; checking one or more shows only their rows.
+- **The Web link** opens the same search on the site, `<web address>/pulls?q=<query>`.
+- **Status:** as for the PR list. Without repositories it reports no status, with "Set the repositories in the item's settings."
+
 ### GitHub Actions Run
 
 `github.run`, native.
@@ -303,12 +346,22 @@ The types follow the GitLab types. A pull request is GitLab's merge request, an 
 
 `github.run.list`, native. The runs of one repository.
 
-- **Configuration:** `repository`; `source`: `all` ("All runs", the default), `mine` ("Started by me"), `branch` ("Of a branch") or `pullRequest` ("Of a pull request"); `branch`, for `branch`, empty for the default branch; `number`, the pull request, for `pullRequest`; `workflow`, to show one workflow's runs; `limit` and `pageSize`.
-- **Shows:** a sortable table, sorted on Run, newest first, with the columns Run (such as `#318`, sorted by the run's id, because run numbers count per workflow), Workflow, Status (a pill), Branch (which takes the free width), Actor, Started and the links. A narrow cell hides Actor, Started, Workflow, Run and Status, in that order. Filters: Status and Workflow.
+- **Configuration:** `repository`; `source`: `all` ("All runs", the default), `mine` ("Started by me"), `branch` ("Of a branch") or `pullRequest` ("Of a pull request"); `branch`, for `branch`, empty for the default branch; `number`, the pull request, for `pullRequest`; `workflow`, to show one workflow's runs; `limit` and `pageSize`; `statusFilter` and `workflowFilter`, the values its filters choose when the list opens, as the drop-downs show them, such as `Failed` or `CI`. Empty shows all.
+- **Shows:** a sortable table, sorted on Run, newest first, with the columns Run (such as `#318`, sorted by the run's id, because run numbers count per workflow), Workflow, Status (a pill), Branch (which takes the free width), Actor, Started and the links. A narrow cell hides Actor, Started, Workflow, Run and Status, in that order. Filters: Status and Workflow. Each starts with the item's values, checked once a row has them; the user's own choice replaces them.
 - **Links of a row:** "Web", "Open" and "Add". "Add" adds a GitHub Actions Run: for a run of a pull request, one that follows that pull request, named such as `owner/repo#42 CI`; otherwise one that follows the run's branch, named such as `owner/repo main CI`. The item's `workflow` is kept.
 - **The Web link** opens `<web address>/<repository>/actions`, or the workflow's page.
 - **Messages:** as for GitLab's lists, with the line "No runs".
 - **Status:** a summary such as "12 runs", or "100+ runs" at the `limit`. No attention, and neither closed nor open.
+
+### GitHub Actions Run List (several repositories)
+
+`github.run.multilist`, native. The runs of the repositories you name.
+
+- **Configuration:** `repositories`, required, as for the PR list over several repositories; `source`: `all` ("All runs", the default), `mine` ("Started by me") or `branch` ("Of a branch"); `branch`, for `branch`, empty for each repository's own default branch; `limit` and `pageSize`; `repositoryFilter`, `statusFilter` and `workflowFilter`, the values its filters choose when the list opens. There is no pull request number or workflow file, which fit one repository only.
+- **Rows:** GitHub has no request for the runs of several repositories, so the list asks each, each up to `limit`. The rows are joined, sorted by when each run was created, newest first, and cut to `limit`. "Started by me" reads the user once.
+- **Shows:** the run list's table, with a Repository column after Run. Its filters are Repository, Status and Workflow. "Web", "Open" and "Add" use the row's repository.
+- **No Web link,** because GitHub has no page for the runs of several repositories. The line above the table names the repositories.
+- **Status:** as for the run list. The first repository that fails fails the list, with its name before the message, such as "acme/web: Forbidden (403)".
 
 ### GitHub Issue (summary), GitHub Issue (page), GitHub Issue List
 
