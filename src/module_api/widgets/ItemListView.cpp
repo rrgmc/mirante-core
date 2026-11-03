@@ -259,7 +259,8 @@ public:
     }
 
     // Fills the list. Chosen values that are gone are no longer chosen, and do
-    // not come back with their value. It does not call changed.
+    // not come back with their value. Until the user chooses, the chosen values
+    // are the defaults that the list has. It does not call changed.
     void setValues(const QStringList &values)
     {
         const QSignalBlocker blocker(this);
@@ -267,8 +268,18 @@ public:
         addItem(ItemListView::tr("All"));
         for (const QString &value : values)
             addItem(value, value);
+        if (!m_userChose)
+            m_chosen = m_defaults;
         m_chosen.intersect(QSet<QString>(values.cbegin(), values.cend()));
         showChosen();
+    }
+
+    // The values chosen while the user has not chosen any. It does not call
+    // changed.
+    void setDefaults(const QSet<QString> &values)
+    {
+        m_defaults = values;
+        setValues(this->values());
     }
 
 protected:
@@ -308,6 +319,7 @@ protected:
 private:
     void choose(const QSet<QString> &values)
     {
+        m_userChose = true;
         if (values == m_chosen)
             return;
         m_chosen = values;
@@ -346,6 +358,9 @@ private:
     }
 
     QSet<QString> m_chosen;
+    QSet<QString> m_defaults;
+    // Once the user chooses, the defaults no longer apply.
+    bool m_userChose = false;
 };
 
 // Draws a cell with links as links, and a cell with a status role as a pill.
@@ -923,6 +938,22 @@ void ItemListView::addFilter(int column, const QString &label)
         });
         d->table->scrollToTop();
     };
+}
+
+void ItemListView::setFilterDefault(int column, const QStringList &values)
+{
+    const auto filter = std::find_if(d->filters.cbegin(), d->filters.cend(),
+                                     [column](const Private::Filter &filter) { return filter.column == column; });
+    Q_ASSERT_X(filter != d->filters.cend(), "ItemListView", "a default for a column without a filter");
+    if (filter == d->filters.cend())
+        return;
+
+    FilterChoice *choice = filter->choice;
+    d->changeRows([this, column, choice, &values] {
+        choice->setDefaults(QSet<QString>(values.cbegin(), values.cend()));
+        d->proxy->setChoice(column, choice->chosen());
+        d->page = 0;
+    });
 }
 
 void ItemListView::setDescription(const QString &text)
