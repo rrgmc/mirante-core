@@ -93,15 +93,47 @@ function(_mirante_manifest_folder_entry folders index where)
     set(options "${options}" PARENT_SCOPE)
 endfunction()
 
+# Returns the folder of the app repository that "local" names, which must stay
+# inside the app repository, the top source folder.
+function(_mirante_manifest_local_folder out local where)
+    if(IS_ABSOLUTE "${local}" OR local MATCHES "^[A-Za-z]:" OR local MATCHES "\\\\")
+        message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${where} has \"local\": \"${local}\", "
+            "which must be a folder of the app repository, written with /.")
+    endif()
+    get_filename_component(folder "${CMAKE_SOURCE_DIR}/${local}" ABSOLUTE)
+    file(RELATIVE_PATH inside "${CMAKE_SOURCE_DIR}" "${folder}")
+    if(inside MATCHES "^\\.\\.(/|$)")
+        message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${where} has \"local\": \"${local}\", "
+            "which leaves the app repository.")
+    endif()
+    if(NOT IS_DIRECTORY "${folder}")
+        message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${where} has \"local\": \"${local}\", "
+            "which is not a folder of the app repository.")
+    endif()
+    set(${out} "${folder}" PARENT_SCOPE)
+endfunction()
+
 # Fetches one repository of the manifest and adds its listed folders. The
 # repository's top CMakeLists.txt is for its own CI and must not run here, so
 # SOURCE_SUBDIR names a folder that does not exist, and FetchContent adds nothing.
+# A repository with "local" is a folder of the app repository itself, which is
+# not fetched. See decision 0130.
 function(_mirante_add_manifest_repository entry where)
-    _mirante_manifest_check_fields("${entry}" "${where}" "name;repo;ref;folders")
+    _mirante_manifest_check_fields("${entry}" "${where}" "name;repo;ref;local;folders")
     _mirante_manifest_get(name "${entry}" "${where}" name)
-    _mirante_manifest_get(repo "${entry}" "${where}" repo)
-    _mirante_manifest_get(ref "${entry}" "${where}" ref)
     _mirante_manifest_get(folders "${entry}" "${where}" folders)
+    string(JSON local ERROR_VARIABLE no_local GET "${entry}" local)
+    if(no_local)
+        _mirante_manifest_get(repo "${entry}" "${where}" repo)
+        _mirante_manifest_get(ref "${entry}" "${where}" ref)
+    else()
+        string(JSON repo ERROR_VARIABLE no_repo GET "${entry}" repo)
+        string(JSON ref ERROR_VARIABLE no_ref GET "${entry}" ref)
+        if(NOT no_repo OR NOT no_ref)
+            message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${where} has \"local\", "
+                "so it takes no \"repo\" or \"ref\".")
+        endif()
+    endif()
 
     if(NOT name MATCHES "^[a-z][a-z0-9_]*$")
         message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${where} has the name \"${name}\", "
@@ -116,25 +148,40 @@ function(_mirante_add_manifest_repository entry where)
         message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${where} lists no folders.")
     endif()
 
-    FetchContent_Declare(${name}
-        GIT_REPOSITORY "${repo}"
-        GIT_TAG "${ref}"
-        SOURCE_SUBDIR .mirante-adds-the-folders)
-    FetchContent_MakeAvailable(${name})
-    FetchContent_GetProperties(${name} SOURCE_DIR source_dir)
-
-    # What the About dialog shows. A checkout on disk has no pin to show.
+    # What the About dialog shows. A checkout on disk has no pin to show. A
+    # local folder shows the app repository and its commit.
     string(TOUPPER "${name}" upper_name)
     set(commit "unknown")
-    if(FETCHCONTENT_SOURCE_DIR_${upper_name})
-        set(commit "local")
+    find_package(Git QUIET)
+    if(no_local)
+        FetchContent_Declare(${name}
+            GIT_REPOSITORY "${repo}"
+            GIT_TAG "${ref}"
+            SOURCE_SUBDIR .mirante-adds-the-folders)
+        FetchContent_MakeAvailable(${name})
+        FetchContent_GetProperties(${name} SOURCE_DIR source_dir)
+        if(FETCHCONTENT_SOURCE_DIR_${upper_name})
+            set(commit "local")
+        endif()
     else()
-        find_package(Git QUIET)
+        _mirante_manifest_local_folder(source_dir "${local}" "${where}")
+        set(repo "local")
+        set(commit "local")
+        if(GIT_EXECUTABLE)
+            execute_process(COMMAND "${GIT_EXECUTABLE}" remote get-url origin
+                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+                OUTPUT_VARIABLE origin OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+            if(origin)
+                set(repo "${origin}")
+            endif()
+        endif()
+    endif()
+    if(NOT commit STREQUAL "local" OR NOT no_local)
         if(GIT_EXECUTABLE)
             execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse --short=12 HEAD
                 WORKING_DIRECTORY "${source_dir}"
-                OUTPUT_VARIABLE head OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
-            if(head)
+                OUTPUT_VARIABLE head OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET RESULT_VARIABLE git_result)
+            if(head AND git_result EQUAL 0)
                 set(commit "${head}")
             endif()
         endif()

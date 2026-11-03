@@ -48,6 +48,8 @@ The app speaks English and Brazilian Portuguese. Every text the user sees is wri
 
 **Optional module.** A module whose folder entry says `"optional": true`. It is listed in the manifest but built only when a build option turns it on.
 
+**Local module.** A module in a folder of the app repository itself, listed with `"local"` in place of a repository and a pin. See [decision 0130](decisions/0130-local-modules-in-the-app-repository.md).
+
 **Settings screen.** A configuration screen of a whole module, such as GitLab's "General Configuration", opened from a profile's Modules submenu in the Profiles menu. Its values are the module's settings. Each profile has its own, kept in the workspace and synced. See [settings screens](modules.md#settings-screens).
 
 

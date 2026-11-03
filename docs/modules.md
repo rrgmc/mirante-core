@@ -71,7 +71,7 @@ The function:
 5. adds the module's tests to CTest, named `module_<id>_<file>`;
 6. adds the module to the list of enabled modules.
 
-The core adds each folder that the manifest lists. See [building with modules](../BUILDING.md#building-with-modules) and [decision 0125](decisions/0125-how-modules-are-fetched.md). After all modules are added, it checks `DEPENDS`. If an enabled module depends on a disabled one, configuration stops with a message that names both.
+The core adds each folder that the manifest lists. See [building with modules](../BUILDING.md#building-with-modules) and [decision 0125](decisions/0125-how-modules-are-fetched.md). A folder can also be in the app repository itself, with `"local"` in place of a repository and a pin; see [decision 0130](decisions/0130-local-modules-in-the-app-repository.md). After all modules are added, it checks `DEPENDS`. If an enabled module depends on a disabled one, configuration stops with a message that names both.
 
 **`DEPENDS`.** A module listed there is linked, and its folder goes on the include path, so its headers are included by file name, such as `#include "GitLabClient.h"`. A module not listed stays out of reach, and the app itself gets none of these paths. Quick add handlers and related-item finders need no dependency, so prefer them where they fit. A test in `tests/cmake/depends/` covers this.
 
