@@ -185,7 +185,7 @@ Started after M13, and builds on the packaging from M10 ([decision 0098](decisio
 
 **Direction:**
 
-- **Repositories.** The core moves to `mirante-core` and the first-party modules to `mirante-modules`. `mirante-app` is a temporary sample of the main app. `mirante` takes only bug and security fixes until the user approves the result; its code is then replaced by that of `mirante-app`. All are public, under the MIT License. See [decision 0116](decisions/0116-custom-builds-in-separate-repositories.md).
+- **Repositories.** The core moves to `mirante-core` and the first-party modules to `mirante-modules`. `mirante-app` is a temporary sample of the main app. `mirante` takes only bug and security fixes until the user approves the result; its code is then replaced by that of `mirante-app`. All are public, under the MIT License. See [decision 0116](decisions/0116-custom-builds-in-separate-repositories.md). The user approved the result on 2026-11-03, and `mirante` became an app repository; see [decision 0135](decisions/0135-mirante-is-a-custom-build.md).
 - **App repository.** A repository made from a GitHub template holds a manifest and a short workflow. It is the top-level CMake project. The manifest is JSON. It pins the core and each module repository to a tag or a commit, and lists the modules to build one by one, each with its repository and folder. All selected modules from one repository share one pin. The manifest maps onto `MIRANTE_MODULES`, and the app repository's tags set `MIRANTE_VERSION`. See [decision 0117](decisions/0117-app-repository-and-json-manifest.md).
 - **Fetching.** The app fetches the core, and a function from the core fetches the modules, all with CMake's FetchContent, because the core must know the modules before it generates their registration. Git submodules, ExternalProject, package managers and a prebuilt core were considered and not chosen.
 - **App identity.** All builds are the same app, `mirante`, so installing a custom build replaces the installed Mirante and keeps its settings, tokens and web logins. See [decision 0118](decisions/0118-all-builds-are-one-app.md).
@@ -199,7 +199,7 @@ Started after M13, and builds on the packaging from M10 ([decision 0098](decisio
 - [x] `mirante-app` builds, tests and packages all modules on Windows, macOS and Linux.
 - [x] At least one change to the module interface has been carried across the repositories, and the user finds the effort acceptable. The user accepted the effort of part 4's change.
 - [x] One module has been built by following the documentation alone, without changing the core. An agent with no knowledge of the code did it. The user accepted that in place of a person, since no one else writes modules yet.
-- [ ] The user has used the sample app for their own work for a period, whose length is set when the sample starts. The user set it at about an hour, because the project is new.
+- [x] The user has used the sample app for their own work for a period, whose length is set when the sample starts. The user set it at about an hour, because the project is new, and approved the switch on 2026-11-03.
 
 **Acceptance criteria:**
 
@@ -215,7 +215,7 @@ Started after M13, and builds on the packaging from M10 ([decision 0098](decisio
 - [x] The module include check also covers external modules. The modules are also built with `MIRANTE_PCH=OFF`, so a missing include is found.
 - [x] Each module carries its own translation files, and the core loads them for the enabled modules. CI checks each module's translations.
 - [x] The About dialog shows each module's source and commit.
-- [ ] The core publishes a reusable workflow that builds, tests and packages an app repository. The build job has no signing secrets. On macOS, a separate job signs, notarises and staples the finished bundle and runs no code from the build. Mirante's own release uses the same jobs.
+- [x] The core publishes a reusable workflow that builds, tests and packages an app repository. The build job has no signing secrets. On macOS, a separate job signs, notarises and staples the finished bundle and runs no code from the build. Mirante's own release uses the same jobs. See [decision 0135](decisions/0135-mirante-is-a-custom-build.md).
 - [x] A scheduled job in the app repository opens a pull request when a pinned repository has a newer tag or commit, with a link to each module's diff. CI builds it, and merging it publishes a release. A failed update leaves the last release in place. The job uses a GitHub App token or a personal access token, because a pull request opened with the workflow's own token starts no CI.
 - [x] A scan reports which modules use sensitive APIs, as a help for reviews.
 - [x] Each module's web pages have their own origin, in place of the shared `qrc:` origin.

@@ -233,6 +233,13 @@ After the user approves, and only then:
 2. `mirante` moves its signing secrets to the signing job, and a prerelease tag proves the Developer ID path.
 3. Decision 0013 and the roadmap are updated. `mirante-app` is archived or deleted.
 
+**How part 9 went, on 2026-11-03.** The user approved the switch after about an hour of use.
+- rrgmc/mirante#18 replaced `mirante`'s code with `mirante-app`'s files, pinned to the `v0.8.0` tags of the core and both repositories of modules, at version 0.8.0.
+- The Developer ID path was proven before it, on the prerelease `v0.6.0-rc.1`, from a trial branch of `mirante` that held only an app's files.
+- `mirante` releases from a pushed tag, so its `release` environment still admits only tags.
+- `master`'s required checks became `build / build (windows-2022)` and `build / build (ubuntu-24.04)`.
+- Decision 0135 records the result and supersedes part of decision 0013. At the user's choice, `mirante-app` is deleted.
+
 ## What is not checked
 
 - macOS changes are checked by the CI jobs of `mirante-app` and `mirante-core`. The user builds by hand from time to time, as now.

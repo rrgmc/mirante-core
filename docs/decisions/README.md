@@ -18,7 +18,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0010](0010-folder-identity.md) | Folders stored as identities, mapped to paths per device | Accepted |
 | [0011](0011-root-cells-reference-task-dashboards.md) | Root dashboard cells refer to task dashboards | Accepted |
 | [0012](0012-html-prototype-first.md) | HTML prototype and Qt spike before features | Superseded by 0015 |
-| [0013](0013-compiled-in-modules.md) | Item types in compiled-in modules, chosen at build time | Accepted |
+| [0013](0013-compiled-in-modules.md) | Item types in compiled-in modules, chosen at build time | Accepted; the place and choice of module folders superseded by 0135 |
 | [0014](0014-name-mirante.md) | Name the app Mirante | Accepted |
 | [0015](0015-app-skeleton-instead-of-spike.md) | Build the app skeleton directly, with CI from M2 | Accepted; macOS in CI by 0077 |
 | [0016](0016-generic-items.md) | Generic items: any `QWidget`, with two view flags | Accepted |
@@ -139,6 +139,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0132](0132-extension-points.md) | Extension points: a module lets an app replace part of its code | Accepted |
 | [0133](0133-work-modules-in-their-own-repository.md) | The work modules move to a repository of their own | Accepted |
 | [0134](0134-release-tags-from-a-version-file.md) | Release tags from a version file, and apps pin tags | Accepted |
+| [0135](0135-mirante-is-a-custom-build.md) | Mirante is built from a manifest, like every app | Accepted |
 
 ## Template
 
