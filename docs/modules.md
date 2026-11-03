@@ -59,6 +59,7 @@ mirante_add_module(gitlab
     DEPENDS          # other module ids, usually none; see below
     QT_LIBS          # further Qt components, usually none
     OPTIONS          # build options with defaults, such as MAX_ITEMS=25; see below
+    EXTENSIONS       # extension points with their defaults, usually none; see below
     DEFAULT ON)
 ```
 
@@ -105,6 +106,24 @@ Modules do not register themselves through static objects. The linker drops unre
 **Further Qt modules.** A module names them in `QT_LIBS`, and the manifest must list them in `qt`, because Qt is installed before any module is fetched. Configuration stops if the list lacks one. `tools/setup-qt` knows which archive holds each one, so a Qt module that it does not know yet is added there too.
 
 **Warnings.** Modules are built with `-Werror=suggest-override` on GCC and Clang. Without `override`, a changed signature in the interface leaves a method that still compiles but is never called. Other warnings fail the build only with `MIRANTE_MODULES_WERROR`, which a module's own CI turns on and an app leaves off.
+
+### Extension points
+
+A module can let an app replace part of its code, such as the layout of a view, at build time. See [decision 0132](decisions/0132-extension-points.md).
+
+1. **The module declares the point** with the sources that implement it by default: `EXTENSIONS runlayout=RunLayoutDefault.cpp`, with several files separated by commas. The point's name has lowercase letters and digits.
+2. **The module defines the interface** in a header of its own, such as `RunLayout.h` with a function `std::unique_ptr<RunLayout> makeRunLayout()`. Its default sources implement it. Its README documents each point and its interface.
+3. **An app names an extension** in the module's folder entry:
+
+   ```json
+   { "folder": "github", "extensions": {
+       "runlayout": { "local": "extensions/run-layout" } } }
+   ```
+
+   `local` is a folder of the app repository. For a folder of another repository, give `name`, `repo`, `ref` and `folder` in its place, as for a repository of modules.
+4. **The core compiles the extension** in place of the defaults: every `.cpp` and `.h` file of its folder, into the module's target. The extension includes the module's headers by name, such as `#include "RunLayout.h"`, and may use the module interface and Qt only. A `resources.txt` in its folder lists resources, one path per line, served as `:/modules/<module id>/<path>`.
+
+A point the module does not declare stops configuration, and so does an extension folder with no sources. `build-app.yml` checks an extension's includes, as a module's. The About dialog lists each extension under its module, as `<module>/<point>`.
 
 ### Building a module alone
 

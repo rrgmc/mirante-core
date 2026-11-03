@@ -96,6 +96,69 @@ function(_mirante_module_options id declared manifest_values)
     endforeach()
 endfunction()
 
+# Reads a module's EXTENSIONS, <point>=<files> each, and the manifest's
+# extensions for it, a list of <point>=<folder>. Sets, in the caller's scope,
+# extension_sources to the sources to compile for every point, and
+# extension_resources to a list of <folder>|<file>,<file> for extensions that
+# list resources.
+function(_mirante_module_extensions id declared provided)
+    set(points "")
+    foreach(declaration IN LISTS declared)
+        if(NOT declaration MATCHES "^([a-z][a-z0-9]*)=(.+)$")
+            message(FATAL_ERROR "Module ${id}: the extension point \"${declaration}\" must be point=files, "
+                "with a point of lowercase letters and digits, and its default files separated by commas.")
+        endif()
+        list(APPEND points "${CMAKE_MATCH_1}")
+        string(REPLACE "," ";" defaults_${CMAKE_MATCH_1} "${CMAKE_MATCH_2}")
+    endforeach()
+    foreach(extension IN LISTS provided)
+        string(REGEX REPLACE "^([^=]+)=.*$" "\\1" point "${extension}")
+        string(REGEX REPLACE "^[^=]+=" "" folder "${extension}")
+        if(NOT point IN_LIST points)
+            set(takes "none")
+            if(points)
+                string(REPLACE ";" ", " takes "${points}")
+            endif()
+            message(FATAL_ERROR "${MIRANTE_MANIFEST}: module ${id} has no extension point \"${point}\". "
+                "Its extension points are: ${takes}")
+        endif()
+        set(folder_${point} "${folder}")
+    endforeach()
+    set(sources "")
+    set(resources "")
+    foreach(point IN LISTS points)
+        if(DEFINED folder_${point})
+            file(GLOB point_sources CONFIGURE_DEPENDS "${folder_${point}}/*.cpp" "${folder_${point}}/*.h")
+            if(NOT point_sources)
+                message(FATAL_ERROR "Module ${id}: the extension for \"${point}\" in ${folder_${point}} "
+                    "has no .cpp or .h files.")
+            endif()
+            list(APPEND sources ${point_sources})
+            message(STATUS "Module ${id}: extension ${point} from ${folder_${point}}")
+            if(EXISTS "${folder_${point}}/resources.txt")
+                file(STRINGS "${folder_${point}}/resources.txt" listed)
+                set(files "")
+                foreach(file IN LISTS listed)
+                    string(STRIP "${file}" file)
+                    if(file)
+                        list(APPEND files "${folder_${point}}/${file}")
+                    endif()
+                endforeach()
+                if(files)
+                    string(REPLACE ";" "," files "${files}")
+                    list(APPEND resources "${folder_${point}}|${files}")
+                endif()
+            endif()
+        else()
+            foreach(file IN LISTS defaults_${point})
+                list(APPEND sources "${CMAKE_CURRENT_SOURCE_DIR}/${file}")
+            endforeach()
+        endif()
+    endforeach()
+    set(extension_sources "${sources}" PARENT_SCOPE)
+    set(extension_resources "${resources}" PARENT_SCOPE)
+endfunction()
+
 # mirante_add_module(<id>
 #     API       <major.minor>       the version of the module interface it needs
 #     SOURCES   <files...>
@@ -104,6 +167,7 @@ endfunction()
 #     DEPENDS   <module ids...>     links them and makes their headers available
 #     QT_LIBS   <Qt components...>
 #     OPTIONS   <NAME=default...>   build options that the manifest can set
+#     EXTENSIONS <point=files...>   extension points, with their default sources
 #     DEFAULT   ON|OFF)
 #
 # QT_LIBS links further Qt components, such as PdfWidgets for the document
@@ -116,8 +180,15 @@ endfunction()
 # MIRANTE_OPTION_<NAME> in the module's folder and the compile definition
 # MIRANTE_OPTION_<NAME>="<value>" on the module and its tests. See
 # docs/decisions/0129-folder-entries-options-and-optional-modules.md.
+#
+# EXTENSIONS declares places where an app can replace part of the module's code:
+# runlayout=RunLayoutDefault.cpp, with several default files separated by
+# commas. An extension that the manifest names for a point is compiled in place
+# of that point's defaults: every .cpp and .h file of its folder, and the
+# resources that its resources.txt lists. See
+# docs/decisions/0132-extension-points.md.
 function(mirante_add_module id)
-    cmake_parse_arguments(ARG "" "DEFAULT;API" "SOURCES;TESTS;RESOURCES;DEPENDS;QT_LIBS;OPTIONS" ${ARGN})
+    cmake_parse_arguments(ARG "" "DEFAULT;API" "SOURCES;TESTS;RESOURCES;DEPENDS;QT_LIBS;OPTIONS;EXTENSIONS" ${ARGN})
     if(ARG_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "Module ${id}: unknown arguments: ${ARG_UNPARSED_ARGUMENTS}")
     endif()
@@ -159,6 +230,8 @@ function(mirante_add_module id)
     foreach(option IN LISTS option_names)
         set(MIRANTE_OPTION_${option} "${option_value_${option}}" PARENT_SCOPE)
     endforeach()
+    # The extension points, checked the same way.
+    _mirante_module_extensions(${id} "${ARG_EXTENSIONS}" "${MIRANTE_LISTED_EXTENSIONS}")
 
     # MIRANTE_MODULES, when set, is the exact list of enabled modules.
     string(TOUPPER "${id}" upper_id)
@@ -193,7 +266,23 @@ function(mirante_add_module id)
     # include path. mirante_finish_modules() links it. The app does not get it.
     add_library(${target}_headers INTERFACE)
     target_include_directories(${target}_headers INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
-    add_library(${target} STATIC ${ARG_SOURCES})
+    add_library(${target} STATIC ${ARG_SOURCES} ${extension_sources})
+    # An extension's files are in another folder, and include the module's
+    # headers by name.
+    if(extension_sources)
+        target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    endif()
+    set(resource_index 0)
+    foreach(entry IN LISTS extension_resources)
+        string(REGEX REPLACE "^([^|]*)\\|.*$" "\\1" base "${entry}")
+        string(REGEX REPLACE "^[^|]*\\|" "" files "${entry}")
+        string(REPLACE "," ";" files "${files}")
+        qt_add_resources(${target} ${target}_extension_${resource_index}
+            PREFIX "/modules/${id}"
+            BASE "${base}"
+            FILES ${files})
+        math(EXPR resource_index "${resource_index} + 1")
+    endforeach()
     target_link_libraries(${target} PUBLIC mirante::module_api Qt6::Core Qt6::Gui Qt6::Widgets)
     foreach(qt_lib IN LISTS ARG_QT_LIBS)
         target_link_libraries(${target} PUBLIC Qt6::${qt_lib})
@@ -297,6 +386,17 @@ function(mirante_finish_modules target)
         get_property(commit GLOBAL PROPERTY MIRANTE_MODULE_COMMIT_${id})
         string(APPEND MIRANTE_MODULE_SOURCES
             "        {QStringLiteral(\"${id}\"), QStringLiteral(\"${repository}\"), QStringLiteral(\"${commit}\")},\n")
+        # Each extension under its module, as <id>/<point>. See decision 0132.
+        get_property(extensions GLOBAL PROPERTY MIRANTE_MODULE_EXTENSION_SOURCES_${id})
+        foreach(extension IN LISTS extensions)
+            string(REPLACE "|" ";" parts "${extension}")
+            list(GET parts 0 point)
+            list(GET parts 1 extension_repository)
+            list(GET parts 2 extension_commit)
+            string(APPEND MIRANTE_MODULE_SOURCES
+                "        {QStringLiteral(\"${id}/${point}\"), QStringLiteral(\"${extension_repository}\"), "
+                "QStringLiteral(\"${extension_commit}\")},\n")
+        endforeach()
         string(APPEND MIRANTE_MODULE_DECLARATIONS
             "namespace mirante::modules::${id} {\n"
             "void registerModule(mirante::ModuleRegistrar &registrar);\n"

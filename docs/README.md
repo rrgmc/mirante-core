@@ -52,6 +52,10 @@ The app speaks English and Brazilian Portuguese. Every text the user sees is wri
 
 **Edition.** The name of one app repository's build, such as `work`, set in its manifest. It appears in package names and in the About dialog. Every edition is still the same app. See [decision 0131](decisions/0131-editions.md).
 
+**Extension point.** A named place where a module lets an app replace part of its code, such as the layout of a view, through a C++ interface of the module. See [decision 0132](decisions/0132-extension-points.md).
+
+**Extension.** The code that an app gives for an extension point: a folder that the manifest names, compiled into the module in place of the point's defaults.
+
 **Settings screen.** A configuration screen of a whole module, such as GitLab's "General Configuration", opened from a profile's Modules submenu in the Profiles menu. Its values are the module's settings. Each profile has its own, kept in the workspace and synced. See [settings screens](modules.md#settings-screens).
 
 

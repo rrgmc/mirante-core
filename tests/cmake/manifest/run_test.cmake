@@ -4,6 +4,7 @@
 # DEPENDS reaches a module of another repository, whichever is listed first.
 # Folder entries set a module's options and make it optional. A "local"
 # repository is a folder of the app itself. The edition is read and checked.
+# An extension replaces the default sources of an extension point.
 # Mistakes in the manifest stop configuration. Nothing is downloaded: every
 # repository comes from a folder here, through FETCHCONTENT_SOURCE_DIR_<NAME>,
 # or from app/ itself.
@@ -40,6 +41,7 @@ function(configure_app name modules_json)
             "-DFETCHCONTENT_SOURCE_DIR_TEST_MODULES=${SOURCE}/modules"
             "-DFETCHCONTENT_SOURCE_DIR_TEST_SINGLE=${SOURCE}/single"
             "-DFETCHCONTENT_SOURCE_DIR_TEST_OTHER=${SOURCE}/other"
+            "-DFETCHCONTENT_SOURCE_DIR_TEST_EXTENSIONS=${SOURCE}/extensions"
             ${ARGN}
         RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE output)
     set(result "${result}" PARENT_SCOPE)
@@ -186,6 +188,54 @@ expect_refusal(local_absolute "[{ \"name\": \"app_modules\", \"local\": \"/modul
     "which must be a")
 expect_refusal(local_missing "[{ \"name\": \"app_modules\", \"local\": \"nothere\", \"folders\": [\"localmod\"] }]"
     "which is not a")
+
+# Extension points. The module extensible's test compares its greeting with
+# EXPECTED_GREETING, and looks for the extension's resource when
+# EXPECTED_RESOURCE is 1. See decision 0132.
+function(expect_greeting name modules_json greeting resource)
+    configure_app(${name} "${modules_json}")
+    if(NOT result EQUAL 0)
+        message(FATAL_ERROR "${name}: configuring failed:\n${output}")
+    endif()
+    execute_process(COMMAND "${CMAKE_COMMAND}" --build "${BINARY}/${name}"
+        RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE output)
+    if(NOT result EQUAL 0)
+        message(FATAL_ERROR "${name}: the build failed:\n${output}")
+    endif()
+    execute_process(
+        COMMAND "${CMAKE_COMMAND}" -E env "EXPECTED_GREETING=${greeting}" "EXPECTED_RESOURCE=${resource}"
+            "${CMAKE_CTEST_COMMAND}" --test-dir "${BINARY}/${name}" -R module_extensible --output-on-failure
+        RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE output)
+    if(NOT result EQUAL 0 OR NOT output MATCHES "module_extensible_tst_extensible")
+        message(FATAL_ERROR "${name}: the module does not have the greeting \"${greeting}\":\n${output}")
+    endif()
+endfunction()
+
+expect_greeting(extension_default "[{ ${modules_repo}, \"folders\": [\"extensible\"] }]" "default" 0)
+expect_greeting(extension_local "[{ ${modules_repo}, \"folders\": [
+    { \"folder\": \"extensible\", \"extensions\": { \"greeting\": { \"local\": \"extensions/hello\" } } }
+  ] }]" "hello" 1)
+expect_greeting(extension_fetched "[{ ${modules_repo}, \"folders\": [
+    { \"folder\": \"extensible\", \"extensions\": { \"greeting\": {
+        \"name\": \"test_extensions\", \"repo\": \"unused\", \"ref\": \"unused\", \"folder\": \"loud\" } } }
+  ] }]" "LOUD" 0)
+# The About dialog lists the extension under its module.
+file(READ "${BINARY}/extension_fetched/_deps/mirante_core-build/generated/enabled_modules.cpp" generated)
+if(NOT generated MATCHES "QStringLiteral\\(\"extensible/greeting\"\\), QStringLiteral\\(\"unused\"\\), QStringLiteral\\(\"local\"\\)")
+    message(FATAL_ERROR "The generated code has no source for the extension:\n${generated}")
+endif()
+
+expect_refusal(extension_undeclared "[{ ${modules_repo}, \"folders\": [
+    { \"folder\": \"listed\", \"extensions\": { \"greeting\": { \"local\": \"extensions/hello\" } } }
+  ] }]" "has no extension point \"greeting\"")
+expect_refusal(extension_bad_point "[{ ${modules_repo}, \"folders\": [\"badextension\"] }]"
+    "\"Greeting=")
+expect_refusal(extension_empty "[{ ${modules_repo}, \"folders\": [
+    { \"folder\": \"extensible\", \"extensions\": { \"greeting\": { \"local\": \"extensions/empty\" } } }
+  ] }]" "has no .cpp or .h")
+expect_refusal(extension_fields "[{ ${modules_repo}, \"folders\": [
+    { \"folder\": \"extensible\", \"extensions\": { \"greeting\": { \"local\": \"extensions/hello\", \"ref\": \"x\" } } }
+  ] }]" "unknown field \"ref\"")
 
 # The edition, and a name it may not have. See decision 0131.
 set(manifest_top "\"edition\": \"work-2\",")

@@ -245,6 +245,17 @@ jobs:
           cmake --build --preset ci
           ctest --preset ci
 
+      # Extensions follow the rules of modules: their own files and the module
+      # interface only. Configuration lists their folders. See decision 0132.
+      - name: Check extension includes
+        if: runner.os == 'Linux'
+        run: |
+          while read -r folder; do
+            if [ -n "$folder" ]; then
+              python3 .mirante-core/tools/check-module-includes.py "$folder"
+            fi
+          done < build/ci/mirante-extension-folders.txt
+
       # A report for reviews, on the run's summary page. It never fails.
       - name: Scan modules for sensitive APIs
         if: runner.os == 'Linux'

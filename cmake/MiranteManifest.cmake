@@ -80,18 +80,27 @@ function(_mirante_manifest_get out json where field)
 endfunction()
 
 # Reads one folder entry: a folder name, or an object with "folder" and its
-# settings. Sets folder, optional (ON or OFF) and options (a JSON object, or
-# empty) in the caller's scope.
+# settings. Sets folder, optional (ON or OFF), options (a JSON object, or
+# empty) and extensions (a JSON object, or empty) in the caller's scope.
 function(_mirante_manifest_folder_entry folders index where)
     string(JSON type TYPE "${folders}" ${index})
     set(optional OFF)
     set(options "")
+    set(extensions "")
     if(type STREQUAL "STRING")
         string(JSON folder GET "${folders}" ${index})
     elseif(type STREQUAL "OBJECT")
         string(JSON entry GET "${folders}" ${index})
         set(entry_where "folder entry ${index} of ${where}")
-        _mirante_manifest_check_fields("${entry}" "${entry_where}" "folder;optional;options")
+        _mirante_manifest_check_fields("${entry}" "${entry_where}" "folder;optional;options;extensions")
+        string(JSON extensions_type ERROR_VARIABLE missing TYPE "${entry}" extensions)
+        if(NOT missing)
+            if(NOT extensions_type STREQUAL "OBJECT")
+                message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${entry_where} has \"extensions\", "
+                    "which must be an object of extension points.")
+            endif()
+            string(JSON extensions GET "${entry}" extensions)
+        endif()
         _mirante_manifest_get(folder "${entry}" "${entry_where}" folder)
         string(JSON optional_type ERROR_VARIABLE missing TYPE "${entry}" optional)
         if(NOT missing)
@@ -116,6 +125,102 @@ function(_mirante_manifest_folder_entry folders index where)
     set(folder "${folder}" PARENT_SCOPE)
     set(optional "${optional}" PARENT_SCOPE)
     set(options "${options}" PARENT_SCOPE)
+    set(extensions "${extensions}" PARENT_SCOPE)
+endfunction()
+
+# The commit of a checkout, short, or "local" when Git cannot tell.
+function(_mirante_manifest_commit out folder)
+    set(commit "local")
+    find_package(Git QUIET)
+    if(GIT_EXECUTABLE)
+        execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse --short=12 HEAD
+            WORKING_DIRECTORY "${folder}"
+            OUTPUT_VARIABLE head OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET RESULT_VARIABLE result)
+        if(head AND result EQUAL 0)
+            set(commit "${head}")
+        endif()
+    endif()
+    set(${out} "${commit}" PARENT_SCOPE)
+endfunction()
+
+# The app repository's origin, or "local" without one.
+function(_mirante_manifest_app_origin out)
+    set(origin "")
+    find_package(Git QUIET)
+    if(GIT_EXECUTABLE)
+        execute_process(COMMAND "${GIT_EXECUTABLE}" remote get-url origin
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+            OUTPUT_VARIABLE origin OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    endif()
+    if(NOT origin)
+        set(origin "local")
+    endif()
+    set(${out} "${origin}" PARENT_SCOPE)
+endfunction()
+
+# Resolves the "extensions" of a folder entry, a JSON object of extension
+# points, to folders. Each is {"local": "<folder>"}, a folder of the app
+# repository, or {"name", "repo", "ref", "folder"}, a folder of a repository
+# that is fetched like a repository of modules. Sets, in the caller's scope,
+# extension_dirs to a list of <point>=<folder> and extension_sources to a list
+# of <point>|<repository>|<commit>. See decision 0132.
+function(_mirante_manifest_extensions extensions where)
+    set(dirs "")
+    set(sources "")
+    if(extensions)
+        string(JSON count LENGTH "${extensions}")
+        if(count GREATER 0)
+            math(EXPR last "${count} - 1")
+            foreach(index RANGE ${last})
+                string(JSON point MEMBER "${extensions}" ${index})
+                string(JSON extension GET "${extensions}" "${point}")
+                set(point_where "the extension \"${point}\" of ${where}")
+                string(JSON type TYPE "${extensions}" "${point}")
+                if(NOT type STREQUAL "OBJECT")
+                    message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${point_where} must be an object with "
+                        "\"local\", or with \"name\", \"repo\", \"ref\" and \"folder\".")
+                endif()
+                string(JSON local ERROR_VARIABLE no_local GET "${extension}" local)
+                if(NOT no_local)
+                    _mirante_manifest_check_fields("${extension}" "${point_where}" "local")
+                    _mirante_manifest_local_folder(dir "${local}" "${point_where}")
+                    _mirante_manifest_app_origin(repo)
+                    _mirante_manifest_commit(commit "${CMAKE_SOURCE_DIR}")
+                else()
+                    _mirante_manifest_check_fields("${extension}" "${point_where}" "name;repo;ref;folder")
+                    _mirante_manifest_get(name "${extension}" "${point_where}" name)
+                    _mirante_manifest_get(repo "${extension}" "${point_where}" repo)
+                    _mirante_manifest_get(ref "${extension}" "${point_where}" ref)
+                    _mirante_manifest_get(folder "${extension}" "${point_where}" folder)
+                    if(NOT name MATCHES "^[a-z][a-z0-9_]*$")
+                        message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${point_where} has the name \"${name}\", "
+                            "which must have lowercase letters, digits and underscores only.")
+                    endif()
+                    FetchContent_Declare(${name}
+                        GIT_REPOSITORY "${repo}"
+                        GIT_TAG "${ref}"
+                        SOURCE_SUBDIR .mirante-adds-the-folders)
+                    FetchContent_MakeAvailable(${name})
+                    FetchContent_GetProperties(${name} SOURCE_DIR fetched)
+                    set(dir "${fetched}/${folder}")
+                    string(TOUPPER "${name}" upper_name)
+                    if(FETCHCONTENT_SOURCE_DIR_${upper_name})
+                        set(commit "local")
+                    else()
+                        _mirante_manifest_commit(commit "${fetched}")
+                    endif()
+                    if(NOT IS_DIRECTORY "${dir}")
+                        message(FATAL_ERROR "${MIRANTE_MANIFEST}: ${point_where} names the folder \"${folder}\", "
+                            "which ${repo} does not have.")
+                    endif()
+                endif()
+                list(APPEND dirs "${point}=${dir}")
+                list(APPEND sources "${point}|${repo}|${commit}")
+            endforeach()
+        endif()
+    endif()
+    set(extension_dirs "${dirs}" PARENT_SCOPE)
+    set(extension_sources "${sources}" PARENT_SCOPE)
 endfunction()
 
 # Returns the folder of the app repository that "local" names, which must stay
@@ -219,6 +324,9 @@ function(_mirante_add_manifest_repository entry where)
         # inherits these. See decision 0129.
         set(MIRANTE_LISTED_OPTIONAL "${optional}")
         set(MIRANTE_LISTED_OPTIONS "${options}")
+        # And the extensions, as <point>=<folder>. See decision 0132.
+        _mirante_manifest_extensions("${extensions}" "folder entry ${index} of ${where}")
+        set(MIRANTE_LISTED_EXTENSIONS "${extension_dirs}")
         if(folder STREQUAL ".")
             set(folder_dir "${source_dir}")
             set(binary_dir "${CMAKE_BINARY_DIR}/modules/${name}")
@@ -242,10 +350,18 @@ function(_mirante_add_manifest_repository entry where)
             if(NOT module IN_LIST modules_before)
                 set_property(GLOBAL PROPERTY MIRANTE_MODULE_REPOSITORY_${module} "${repo}")
                 set_property(GLOBAL PROPERTY MIRANTE_MODULE_COMMIT_${module} "${commit}")
+                set_property(GLOBAL PROPERTY MIRANTE_MODULE_EXTENSION_SOURCES_${module} "${extension_sources}")
             endif()
         endforeach()
-        # For tools/scan-module-apis.py --build.
+        # For tools/scan-module-apis.py --build, and the include check of
+        # build-app.yml.
         file(APPEND "${CMAKE_BINARY_DIR}/mirante-module-folders.txt" "${name}/${folder}\t${folder_dir}\n")
+        foreach(extension IN LISTS extension_dirs)
+            string(REGEX REPLACE "^([^=]+)=(.*)$" "\\1\t\\2" line "${extension}")
+            file(APPEND "${CMAKE_BINARY_DIR}/mirante-module-folders.txt" "${name}/${folder}:${line}\n")
+            string(REGEX REPLACE "^[^=]+=" "" extension_dir "${extension}")
+            file(APPEND "${CMAKE_BINARY_DIR}/mirante-extension-folders.txt" "${extension_dir}\n")
+        endforeach()
     endforeach()
 endfunction()
 
@@ -281,6 +397,7 @@ function(mirante_add_manifest_modules)
 
     # Each configuration writes the list of module folders again.
     file(WRITE "${CMAKE_BINARY_DIR}/mirante-module-folders.txt" "")
+    file(WRITE "${CMAKE_BINARY_DIR}/mirante-extension-folders.txt" "")
 
     string(JSON count LENGTH "${repositories}")
     if(count EQUAL 0)
