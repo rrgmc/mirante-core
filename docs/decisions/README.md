@@ -110,7 +110,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0103](0103-bundle-identifier-rrgmc.md) | The macOS bundle identifier is `com.rrgmc.mirante` | Accepted |
 | [0104](0104-document-items.md) | Document items show a file from a web address, the workspace or a project folder | Accepted |
 | [0105](0105-sample-data-holds-available-items.md) | The sample data holds only items that work | Accepted |
-| [0106](0106-start-at-sign-in.md) | Mirante can start at sign-in, hidden in the tray | Accepted |
+| [0106](0106-start-at-sign-in.md) | Mirante can start at sign-in, hidden in the tray | Accepted; the first install's default superseded by 0137 |
 | [0107](0107-closing-quits-by-default.md) | Closing the window quits by default | Accepted |
 | [0108](0108-freeze-web-pages-in-the-tray.md) | Web pages freeze while the app is hidden to the tray | Accepted |
 | [0109](0109-pull-requests-into-master.md) | Changes reach `master` only through pull requests | Accepted; merging by sessions superseded by 0111 |
@@ -141,6 +141,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0134](0134-release-tags-from-a-version-file.md) | Release tags from a version file, and apps pin tags | Accepted |
 | [0135](0135-mirante-is-a-custom-build.md) | Mirante is built from a manifest, like every app | Accepted |
 | [0136](0136-github-releases-from-the-changelog.md) | GitHub releases from the changelog | Accepted |
+| [0137](0137-the-setup-does-not-start-mirante-at-sign-in-by-default.md) | The Windows setup does not start Mirante at sign-in by default | Accepted |
 
 ## Template
 

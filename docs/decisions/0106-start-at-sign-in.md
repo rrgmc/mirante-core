@@ -1,6 +1,6 @@
 # 0106. Mirante can start at sign-in, hidden in the tray
 
-- Status: Accepted
+- Status: Accepted; the first install's default superseded by 0137
 - Date: 2026-10-31
 
 ## Context

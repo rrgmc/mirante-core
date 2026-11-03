@@ -190,34 +190,54 @@ endfunction()
 # The sign-in value goes in the per-user Run key, as the app's own settings
 # write it in src/platform/LoginItem.cpp; --hidden starts Mirante in the tray.
 #
-# The sign-in checkbox starts ticked on a first install and keeps the installed
-# version's choice on an upgrade. The old version's uninstaller removes the Run
-# value before the new files go in, so MiranteReadStartAtSignIn reads it first,
-# at the start of .onInit. A macro, so the variables reach include(CPack) in
-# the caller's scope.
+# The sign-in checkbox starts unticked on a first install and keeps the
+# installed version's choice on an upgrade. See
+# docs/decisions/0137-the-setup-does-not-start-mirante-at-sign-in-by-default.md.
+# The old version's uninstaller removes the Run value before the new files go
+# in, so MiranteReadStartAtSignIn reads it first, at the start of .onInit.
+#
+# The setup's own pages follow Windows' language, and so do the two checkbox
+# texts, which MiranteFinishPre sets before the last page is made: Portuguese
+# for Portuguese (Brazil, 1046) and Portuguese (Portugal, 2070), else English.
+# The texts are ASCII, because CPack's template makes an ANSI setup, whose
+# script is read in the build machine's code page. A macro, so the variables
+# reach include(CPack) in the caller's scope.
 macro(mirante_add_nsis_finish_options)
     file(TO_NATIVE_PATH "${MIRANTE_CORE_DIR}/resources/app/mirante.ico" _mirante_ico)
     set(_mirante_nsis_code [=[
 !define MUI_ICON "@ICO@"
 !define MUI_UNICON "@ICO@"
+Var MiranteRunText
+Var MiranteSignInText
 !define MUI_FINISHPAGE_RUN ""
-!define MUI_FINISHPAGE_RUN_TEXT "Run Mirante"
+!define MUI_FINISHPAGE_RUN_TEXT "$MiranteRunText"
 !define MUI_FINISHPAGE_RUN_FUNCTION MiranteRun
 !define MUI_FINISHPAGE_SHOWREADME ""
-!define MUI_FINISHPAGE_SHOWREADME_TEXT "Start Mirante when I sign in"
+!define MUI_FINISHPAGE_SHOWREADME_TEXT "$MiranteSignInText"
 !define MUI_FINISHPAGE_SHOWREADME_FUNCTION MiranteAutostart
 Var MiranteStartAtSignIn
+; Ticked only on an upgrade of a version that started at sign-in.
 Function MiranteReadStartAtSignIn
   Push $0
-  StrCpy $MiranteStartAtSignIn 1
+  StrCpy $MiranteStartAtSignIn 0
   ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Mirante" "UninstallString"
   StrCmp $0 "" done
   ClearErrors
   ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Mirante"
-  IfErrors 0 done
-  StrCpy $MiranteStartAtSignIn 0
+  IfErrors done
+  StrCpy $MiranteStartAtSignIn 1
 done:
   Pop $0
+FunctionEnd
+Function MiranteFinishPre
+  StrCpy $MiranteRunText "Run Mirante"
+  StrCpy $MiranteSignInText "Start Mirante when I sign in"
+  StrCmp $LANGUAGE 1046 portuguese
+  StrCmp $LANGUAGE 2070 portuguese done
+portuguese:
+  StrCpy $MiranteRunText "Abrir o Mirante"
+  StrCpy $MiranteSignInText "Iniciar o Mirante ao entrar no Windows"
+done:
 FunctionEnd
 Function MiranteAutostart
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Mirante" '"$INSTDIR\bin\mirante.exe" --hidden'
@@ -255,7 +275,8 @@ FunctionEnd
     endforeach()
     string(REPLACE "${_mirante_oninit}" "${_mirante_oninit}  Call MiranteReadStartAtSignIn\n"
         _mirante_template "${_mirante_template}")
-    string(REPLACE "${_mirante_finish}" [=[!define MUI_PAGE_CUSTOMFUNCTION_SHOW MiranteFinishShow
+    string(REPLACE "${_mirante_finish}" [=[!define MUI_PAGE_CUSTOMFUNCTION_PRE MiranteFinishPre
+  !define MUI_PAGE_CUSTOMFUNCTION_SHOW MiranteFinishShow
   !insertmacro MUI_PAGE_FINISH
   Function MiranteFinishShow
     StrCmp $MiranteStartAtSignIn 1 +2
