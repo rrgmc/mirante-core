@@ -130,6 +130,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0123](0123-tokens-stay-on-their-origin.md) | A token goes only to the origin of its server | Accepted |
 | [0124](0124-the-core-owns-the-app.md) | The core owns the app | Accepted |
 | [0125](0125-how-modules-are-fetched.md) | How the core fetches modules, and the fields of the manifest | Accepted |
+| [0126](0126-macos-signing-is-a-separate-job.md) | macOS signing is a separate job | Accepted |
 
 ## Template
 

@@ -179,18 +179,18 @@ jobs:
 - **The core's pin is then in two places,** since GitHub needs a literal ref after `uses:`. The workflow's first step fails the build if the workflow's ref and the manifest's core ref differ. The update job in part 8 changes both.
 - **The workflow reads the manifest first** with `jq`, and checks out the core at its pin for its scripts. The build then fetches the core again, which is cheap, because it is a small repository. Part 4 makes it get Qt from the manifest's list.
 - **The build jobs hold no secrets,** on all three platforms. They build, test and package, as `ci.yml` does today.
-- **Making the disk image can fail by chance.** `hdiutil` failed once with `Resource busy` in the sample's first run, and passed when the job ran again. If it recurs, the macOS packaging step retries it.
+- **Making the disk image can fail by chance.** `hdiutil` failed once with `Resource busy` in the sample's first run, and passed when the job ran again, so `tools/package-macos.sh` tries it up to five times.
 
 **macOS has two jobs:**
 
 1. **Build job, with no secrets.** It builds the universal bundle, tests it, installs it and runs `tools/check-package.py`. The install signs ad hoc, as it does today. It then packs the bundle with `tar` and uploads that. The packing matters: `actions/upload-artifact` makes a zip, which loses the symbolic links inside Qt's frameworks.
 2. **Signing job, with the secrets, in the `release` environment.** It checks out the core at its pin, downloads the bundle, and runs only `tools/sign-macos.sh`, a new `tools/package-macos.sh`, `notarytool` and `stapler`. It reads no cache and starts nothing from the bundle.
 
-`tools/package-macos.sh` makes the disk image with `hdiutil`, from the bundle and a link to `/Applications`. `cpack` cannot be used in the signing job, because it would run the build's install scripts. The Windows and Linux packages keep CPack. A check compares the two macOS disk image layouts, since the name and contents must stay as they are in a release today.
+`tools/package-macos.sh` makes the disk image with `hdiutil`, from the bundle and a link to `/Applications`. `cpack` cannot be used in the signing job, because it would run the build's install scripts. The Windows and Linux packages keep CPack. The script mounts the disk image and fails unless it holds `Applications`, `LICENSE` and `mirante.app`, the layout of CPack's.
 
 **Signing in the sample:** by decision 0116, `mirante-app` holds no secrets and publishes unsigned prereleases. A workflow input `macos-signing` is `none` or `developer-id`. With `none`, the signing job still runs, with no environment or secrets, and signs ad hoc. That tests the separate job's path on every sample build. `developer-id` is first tried in `mirante` itself, on a prerelease tag, when it moves to this workflow at the end. The `release` environment admits only tags, and this does not change. Whether a called workflow's job reads its environment's secrets through `secrets: inherit` is tested at that point.
 
-**Prereleases:** a tag `vX.Y.Z-rc.N` in the app publishes a prerelease. The version check in `release.yml` accepts that form, and `MIRANTE_VERSION` gets the `X.Y.Z` part.
+**Prereleases:** a tag `vX.Y.Z-rc.N` in the app publishes a prerelease. The app's `release.yml` passes the tag to `build-app.yml` as `release-tag`, and `MIRANTE_VERSION` gets the `X.Y.Z` part. Only the last job can write to the repository.
 
 ## Part 7: The first proof, and the point of decision
 

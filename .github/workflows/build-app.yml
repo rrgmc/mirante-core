@@ -7,8 +7,12 @@
 #       uses: rrgmc/mirante-core/.github/workflows/build-app.yml@<the manifest's core ref>
 #
 # GitHub needs a literal ref there, so the core's pin is in two places, and the
-# first step fails if they differ. This job holds no secrets, so the code of a
-# module cannot reach any. See docs/plans/custom-builds.md, parts 3 and 6.
+# first job fails if they differ.
+#
+# The build jobs hold no secrets, so the code of a module cannot reach any. On
+# macOS, a separate job signs the finished bundle and runs nothing from the
+# build. With release-tag, a last job publishes the packages. See
+# docs/decisions/0126-macos-signing-is-a-separate-job.md.
 
 name: Build app
 
@@ -23,6 +27,14 @@ on:
         description: Check that the repository's modules include only their own files and the module interface, and that their texts are translated
         type: boolean
         default: false
+      macos-signing:
+        description: none signs ad hoc. developer-id signs and notarises with the secrets of the environment "release", which the caller passes with secrets inherit
+        type: string
+        default: none
+      release-tag:
+        description: Publish a release for this tag, vX.Y.Z or vX.Y.Z-rc.N. The second is a prerelease. The caller must allow contents write
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -33,37 +45,65 @@ env:
   MANIFEST: ${{ inputs.manifest }}
 
 jobs:
-  build:
-    name: build (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-2022, macos-15, ubuntu-24.04]
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      core-repo: ${{ steps.core.outputs.repo }}
+      core-ref: ${{ steps.core.outputs.ref }}
+      qt: ${{ steps.core.outputs.qt }}
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Find the core's pin
         id: core
-        shell: bash
         run: |
-          repo=$(jq -r .core.repo "$MANIFEST" | tr -d '\r' | sed -e 's#^https://github.com/##' -e 's#\.git$##')
-          ref=$(jq -r .core.ref "$MANIFEST" | tr -d '\r')
+          repo=$(jq -r .core.repo "$MANIFEST" | sed -e 's#^https://github.com/##' -e 's#\.git$##')
+          ref=$(jq -r .core.ref "$MANIFEST")
           used=$(grep -rhoE 'mirante-core/\.github/workflows/build-app\.yml@[^ ]+' .github/workflows | tr -d '\r' | sed 's/.*@//' | sort -u)
           if [ "$used" != "$ref" ]; then
-            echo "::error::The workflow uses build-app.yml@$used, but $MANIFEST pins the core to $ref. Change both."
+            echo "::error::The workflows use build-app.yml@$used, but $MANIFEST pins the core to $ref. Change both."
             exit 1
           fi
           echo "repo=$repo" >> "$GITHUB_OUTPUT"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
-          echo "qt=$(jq -r '.qt | join("-")' "$MANIFEST" | tr -d '\r')" >> "$GITHUB_OUTPUT"
+          echo "qt=$(jq -r '.qt | join("-")' "$MANIFEST")" >> "$GITHUB_OUTPUT"
+
+      - name: Version from the release tag
+        id: version
+        env:
+          TAG: ${{ inputs.release-tag }}
+        run: |
+          if [ -z "$TAG" ]; then
+            exit 0
+          fi
+          if [[ ! "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)(-rc\.[0-9]+)?$ ]]; then
+            echo "::error::Release tag '$TAG' is not vX.Y.Z or vX.Y.Z-rc.N"
+            exit 1
+          fi
+          echo "version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$([ -n "${BASH_REMATCH[2]}" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: build (${{ matrix.os }})
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, macos-15, ubuntu-24.04]
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
 
       # The scripts that get Qt and make the package. The build fetches the core
       # by itself, from the same pin.
       - uses: actions/checkout@v4
         with:
-          repository: ${{ steps.core.outputs.repo }}
-          ref: ${{ steps.core.outputs.ref }}
+          repository: ${{ needs.prepare.outputs.core-repo }}
+          ref: ${{ needs.prepare.outputs.core-ref }}
           path: .mirante-core
           persist-credentials: false
 
@@ -77,7 +117,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/qt
-          key: qt-${{ runner.os }}-${{ env.QT_VERSION }}-qtbase-qtsvg-qtdeclarative-qttools-qttranslations-icu-webengine-imageformats-${{ steps.core.outputs.qt }}
+          key: qt-${{ runner.os }}-${{ env.QT_VERSION }}-qtbase-qtsvg-qtdeclarative-qttools-qttranslations-icu-webengine-imageformats-${{ needs.prepare.outputs.qt }}
 
       - name: Cache compiling
         uses: hendrikmuhs/ccache-action@v1.2
@@ -111,8 +151,9 @@ jobs:
         shell: pwsh
         env:
           MIRANTE_QT_ROOT: ${{ runner.temp }}/qt
-        run: ./.mirante-core/tools/build.ps1 -Source . -Manifest "$env:MANIFEST" -Preset ci -NoPch -Package
+        run: ./.mirante-core/tools/build.ps1 -Source . -Manifest "$env:MANIFEST" -Version "$env:VERSION" -Preset ci -NoPch -Package
 
+      # Universal on macOS, for Apple silicon and Intel. See decision 0101.
       - name: Build and test (macOS, Linux)
         if: runner.os != 'Windows'
         env:
@@ -122,7 +163,13 @@ jobs:
           QTWEBENGINE_DISABLE_SANDBOX: 1
         run: |
           QT_DIR=$(sh .mirante-core/tools/setup-qt.sh "$MANIFEST")
-          cmake --preset ci -DCMAKE_PREFIX_PATH="$QT_DIR" -DMIRANTE_PCH=OFF
+          if [ "$RUNNER_OS" = macOS ]; then
+            set -- "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+          else
+            set --
+          fi
+          cmake --preset ci -DCMAKE_PREFIX_PATH="$QT_DIR" -DMIRANTE_PCH=OFF \
+            ${VERSION:+"-DMIRANTE_VERSION=$VERSION"} "$@"
           cmake --build --preset ci
           ctest --preset ci
 
@@ -135,19 +182,164 @@ jobs:
           git diff --exit-code -- '*/translations/*'
           test -z "$(git status --porcelain -- '*/translations/*')"
 
-      - name: Package (macOS, Linux)
+      - name: Install and check (macOS, Linux)
         if: runner.os != 'Windows'
         run: |
           cmake --install build/ci --component Mirante --prefix "$PWD/build/ci/install"
           python3 .mirante-core/tools/check-package.py build/ci/install "$MANIFEST"
-          cd build/ci && cpack
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: cd build/ci && cpack
+
+      # A zip would lose the symbolic links inside Qt's frameworks, so the bundle
+      # travels as a tar file. The signing job needs the version for the disk
+      # image's name.
+      - name: Pack the bundle (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          grep '^MIRANTE_VERSION:STRING=' build/ci/CMakeCache.txt | cut -d= -f2 > build/ci/version.txt
+          tar -cf build/ci/mirante-bundle.tar -C build/ci/install .
 
       - uses: actions/upload-artifact@v4
+        if: runner.os != 'macOS'
         with:
           name: mirante-${{ runner.os }}
           path: |
             build/ci/mirante-*-win64.exe
-            build/ci/mirante-*-macos.dmg
             build/ci/mirante_*.deb
           if-no-files-found: error
           retention-days: 7
+
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'macOS'
+        with:
+          name: mirante-macOS-bundle
+          path: |
+            build/ci/mirante-bundle.tar
+            build/ci/version.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  # Runs nothing from the build, and reads no cache, so what a module built
+  # cannot reach the certificate. The bundle and its version are data here.
+  sign-macos:
+    needs: [prepare, build]
+    runs-on: macos-15
+    environment: ${{ inputs.macos-signing == 'developer-id' && 'release' || '' }}
+    env:
+      SIGNING: ${{ inputs.macos-signing }}
+    steps:
+      # Pinned to commits: this job can hold the signing secrets.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: ${{ needs.prepare.outputs.core-repo }}
+          ref: ${{ needs.prepare.outputs.core-ref }}
+          path: core
+          persist-credentials: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: mirante-macOS-bundle
+          path: bundle
+
+      - name: Unpack the bundle
+        run: |
+          version=$(cat bundle/version.txt)
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::The build gave the version '$version'"
+            exit 1
+          fi
+          echo "DMG=mirante-$version-macos.dmg" >> "$GITHUB_ENV"
+          mkdir install
+          tar -xf bundle/mirante-bundle.tar -C install
+
+      # A keychain of its own, with a random password, holds the Developer ID
+      # certificate for this job only. The last step deletes it.
+      - name: Import the signing certificate
+        if: env.SIGNING == 'developer-id'
+        env:
+          CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password=$(openssl rand -base64 24)
+          echo "::add-mask::$keychain_password"
+          umask 077
+          echo "$CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 7200 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" \
+            -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s \
+            -k "$keychain_password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" \
+            $(security list-keychains -d user | tr -d '"')
+
+      - name: Sign the bundle and make the disk image
+        run: |
+          identity=-
+          if [ "$SIGNING" = developer-id ]; then
+            identity="Developer ID Application"
+          fi
+          sh core/tools/sign-macos.sh install/mirante.app "$identity" core/resources/macos/webengine.entitlements
+          sh core/tools/package-macos.sh install "$DMG"
+
+      - name: Notarise the disk image
+        if: env.SIGNING == 'developer-id'
+        env:
+          NOTARY_API_KEY: ${{ secrets.NOTARY_API_KEY }}
+          MIRANTE_NOTARY_KEY: ${{ runner.temp }}/notary.p8
+          MIRANTE_NOTARY_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          MIRANTE_NOTARY_ISSUER: ${{ secrets.NOTARY_API_ISSUER }}
+        run: |
+          umask 077
+          printf '%s\n' "$NOTARY_API_KEY" > "$MIRANTE_NOTARY_KEY"
+          sh core/tools/notarise-macos.sh "$DMG" "Developer ID Application"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mirante-macOS
+          path: ${{ env.DMG }}
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Remove the signing keychain and key
+        if: always() && env.SIGNING == 'developer-id'
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/notary.p8"
+
+  # Publishes what the jobs before it made, and builds nothing.
+  release:
+    needs: [prepare, build, sign-macos]
+    if: inputs.release-tag != ''
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mirante-*
+          merge-multiple: true
+          path: packages
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.release-tag }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+        run: |
+          rm -f packages/mirante-bundle.tar packages/version.txt
+          ls -l packages
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            flags=()
+            if [ "$PRERELEASE" = true ]; then
+              flags+=(--prerelease)
+            fi
+            gh release create "$TAG" --verify-tag --generate-notes --title "Mirante $TAG" "${flags[@]}"
+          fi
+          gh release upload "$TAG" packages/* --clobber
