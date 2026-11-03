@@ -6,6 +6,10 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+### Changed
+
+- A new workspace starts with one group, "Default", so the first project has somewhere to go. See [menus](docs/ui.md#menus).
+
 ## [0.8.4] - 2026-11-03
 
 ### Changed

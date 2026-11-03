@@ -1071,6 +1071,12 @@ private slots:
         f.dataStore.flush();
         QVERIFY(QFile::exists(dir.filePath(QStringLiteral("dashboards/%1.json").arg(mainId))));
 
+        // It also starts with one group, "Default", with a colour of its own.
+        QCOMPARE(int(f.model.groups().size()), 1);
+        const Group *group = f.model.groups().front();
+        QCOMPARE(group->name, QStringLiteral("Default"));
+        QVERIFY(!group->colour.isEmpty());
+
         // It is ordinary: deleting it leaves the workspace without one, and
         // opening the workspace again does not add another.
         f.model.removeRootDashboard(mainId);
@@ -1078,6 +1084,9 @@ private slots:
         f.window->openWorkspace(dir.path());
         QVERIFY(f.model.rootDashboards().empty());
         QCOMPARE(f.bar()->count(), 0);
+        // The group is ordinary too: opening the workspace again keeps the one
+        // it has and adds no other.
+        QCOMPARE(int(f.model.groups().size()), 1);
 
         // A folder that does not exist cannot be made one.
         QVERIFY(!f.window->createWorkspace(dir.filePath(QStringLiteral("missing")), QStringLiteral("X")));
