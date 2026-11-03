@@ -15,7 +15,7 @@
 - **The signing job runs nothing from the build.** It checks out the core at its pin, downloads the bundle, and runs only `tools/sign-macos.sh`, `tools/package-macos.sh`, `tools/notarise-macos.sh`, `notarytool` and `stapler`. It reads no cache, and pins its actions to commits. It treats the bundle and its version as data.
 - **`tools/package-macos.sh` makes the disk image with `hdiutil`,** because `cpack` would run the build's install scripts. It keeps CPack's layout, and fails if the layout differs. It tries `hdiutil` again after the chance failure `Resource busy`.
 - **The input `macos-signing` is `none` or `developer-id`.** With `none`, the signing job still runs, with no environment or secrets, and signs ad hoc, so every build tests this path. With `developer-id`, it runs in the environment `release`, which admits only tags.
-- **A last job publishes a release for a tag,** `vX.Y.Z` or the prerelease `vX.Y.Z-rc.N`. Only this job can write to the repository. It builds nothing.
+- **`.github/workflows/release-app.yml` publishes a release for a tag,** `vX.Y.Z` or the prerelease `vX.Y.Z-rc.N`. It builds nothing, and only it can write to the repository. It is a workflow of its own because GitHub refuses a whole workflow at startup when the caller does not grant what any of its jobs asks for, even a job that would be skipped. A pull request's run therefore never holds write access.
 
 `tools/release-macos.sh`, which builds and signs on the maintainer's Mac, stays until `mirante` moves to this workflow.
 

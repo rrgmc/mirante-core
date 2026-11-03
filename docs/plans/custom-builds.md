@@ -190,7 +190,7 @@ jobs:
 
 **Signing in the sample:** by decision 0116, `mirante-app` holds no secrets and publishes unsigned prereleases. A workflow input `macos-signing` is `none` or `developer-id`. With `none`, the signing job still runs, with no environment or secrets, and signs ad hoc. That tests the separate job's path on every sample build. `developer-id` is first tried in `mirante` itself, on a prerelease tag, when it moves to this workflow at the end. The `release` environment admits only tags, and this does not change. Whether a called workflow's job reads its environment's secrets through `secrets: inherit` is tested at that point.
 
-**Prereleases:** a tag `vX.Y.Z-rc.N` in the app publishes a prerelease. The app's `release.yml` passes the tag to `build-app.yml` as `release-tag`, and `MIRANTE_VERSION` gets the `X.Y.Z` part. Only the last job can write to the repository.
+**Prereleases:** a tag `vX.Y.Z-rc.N` in the app publishes a prerelease. The app's `release.yml` passes the tag to `build-app.yml` as `release-tag`, and `MIRANTE_VERSION` gets the `X.Y.Z` part. It then calls `release-app.yml`, the only workflow that can write to the repository.
 
 ## Part 7: The first proof, and the point of decision
 
