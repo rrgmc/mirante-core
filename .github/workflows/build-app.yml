@@ -178,7 +178,7 @@ jobs:
               python3 .mirante-core/tools/check-module-includes.py "$folder"
             done
 
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           # uv only runs tools. There are no Python dependencies to cache.
           enable-cache: false
