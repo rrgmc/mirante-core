@@ -201,6 +201,8 @@ At this point, `mirante-app` builds, tests and packages all modules on Windows, 
 
 The user can stop here and keep `mirante` as it is. The work in part 8 has value only if the split stays.
 
+**What the user decided, on 2026-11-03.** The effort of part 4's interface change is acceptable. The agent's build from the guide, in part 8, stands in for a person, since no one else writes modules yet. The trial of the sample lasts about an hour of use, because the project is new. Part 9 starts when that hour is over and the user approves.
+
 ## Part 8: What outside authors need
 
 - **The template.** A template repository `mirante-app-template`, with the manifest, `CMakeLists.txt`, workflow and README.
