@@ -85,11 +85,14 @@ jobs:
       matrix:
         os: [windows-2022, macos-15, ubuntu-24.04]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: env.CODE != 'false'
 
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10
         if: env.CODE != 'false'
+        with:
+          # uv only runs tools. There are no Python dependencies to cache.
+          enable-cache: false
 
       - name: Qt modules of the manifest
         id: qt
@@ -99,7 +102,7 @@ jobs:
 
       - name: Cache Qt
         if: env.CODE != 'false'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/qt
           # Change the fixed part when setup-qt installs other archives.
@@ -110,7 +113,7 @@ jobs:
       # pull request only, and would push master's out of the 10 GB limit.
       - name: Cache compiling
         if: env.CODE != 'false'
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ${{ matrix.os }}-ci-no-pch
           max-size: 500M
@@ -167,7 +170,7 @@ jobs:
           python3 tools/check-package.py build/ci/install ci/modules.json
           cd build/ci && cpack
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: env.CODE != 'false'
         with:
           name: mirante-${{ runner.os }}
@@ -185,22 +188,25 @@ jobs:
     if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10
+        with:
+          # uv only runs tools. There are no Python dependencies to cache.
+          enable-cache: false
 
       - name: Qt modules of the manifest
         id: qt
         run: echo "modules=$(jq -r '.qt | join("-")' ci/modules.json)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Qt
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/qt
           key: qt-${{ runner.os }}-${{ env.QT_VERSION }}-qtbase-qtsvg-qtdeclarative-qttools-qttranslations-icu-webengine-imageformats-${{ steps.qt.outputs.modules }}
 
       - name: Cache compiling
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ubuntu-24.04-ci-no-modules
           max-size: 500M
@@ -263,7 +269,7 @@ jobs:
     if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Find the pinned modules
         id: modules
@@ -271,14 +277,14 @@ jobs:
           echo "ref=$(jq -r '.modules[] | select(.name == "mirante_modules") | .ref' ci/modules.json)" >> "$GITHUB_OUTPUT"
           echo "work-ref=$(jq -r '.modules[] | select(.name == "mirante_modules_work") | .ref' ci/modules.json)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: rrgmc/mirante-modules
           ref: ${{ steps.modules.outputs.ref }}
           path: pinned-modules
           persist-credentials: false
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: rrgmc/mirante-modules-work
           ref: ${{ steps.modules.outputs.work-ref }}
