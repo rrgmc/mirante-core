@@ -9,6 +9,10 @@
 # GitHub needs a literal ref there, so the core's pin is in two places, and the
 # first job fails if they differ.
 #
+# With release-new-version, a push to the default branch that raised
+# MIRANTE_VERSION builds a release, and the output release-tag tells the caller
+# to call release-app.yml. mirante-app-template shows this.
+#
 # The build jobs hold no secrets, so the code of a module cannot reach any. On
 # macOS, a separate job signs the finished bundle and runs nothing from the
 # build. release-app.yml publishes the packages. See
@@ -35,6 +39,14 @@ on:
         description: Build for this tag, vX.Y.Z or vX.Y.Z-rc.N, which gives the version. release-app.yml then publishes it
         type: string
         default: ''
+      release-new-version:
+        description: On a push to the default branch, build for the tag vX.Y.Z of MIRANTE_VERSION in CMakeLists.txt if that tag does not exist yet. The output release-tag names it
+        type: boolean
+        default: false
+    outputs:
+      release-tag:
+        description: The tag this run built for, or empty
+        value: ${{ jobs.prepare.outputs.release-tag }}
 
 permissions:
   contents: read
@@ -52,8 +64,12 @@ jobs:
       core-ref: ${{ steps.core.outputs.ref }}
       qt: ${{ steps.core.outputs.qt }}
       version: ${{ steps.version.outputs.version }}
+      release-tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The tags, to tell whether a version was released.
+          fetch-depth: 0
 
       - name: Find the core's pin
         id: core
@@ -73,7 +89,22 @@ jobs:
         id: version
         env:
           TAG: ${{ inputs.release-tag }}
+          NEW_VERSION: ${{ inputs.release-new-version && github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
         run: |
+          # A merged update raises MIRANTE_VERSION, so its first build on the
+          # default branch publishes it. See decision 0127.
+          if [ -z "$TAG" ] && [ "$NEW_VERSION" = true ]; then
+            version=$(sed -nE 's/^set\(MIRANTE_VERSION "([0-9]+\.[0-9]+\.[0-9]+)".*/\1/p' CMakeLists.txt | head -n 1)
+            if [ -z "$version" ]; then
+              echo "::error::CMakeLists.txt sets no MIRANTE_VERSION \"X.Y.Z\"."
+              exit 1
+            fi
+            if git rev-parse -q --verify "refs/tags/v$version" > /dev/null; then
+              echo "v$version is released already, so this build publishes nothing."
+            else
+              TAG="v$version"
+            fi
+          fi
           if [ -z "$TAG" ]; then
             exit 0
           fi
@@ -82,6 +113,7 @@ jobs:
             exit 1
           fi
           echo "version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
   build:
     name: build (${{ matrix.os }})
@@ -170,6 +202,11 @@ jobs:
             ${VERSION:+"-DMIRANTE_VERSION=$VERSION"} "$@"
           cmake --build --preset ci
           ctest --preset ci
+
+      # A report for reviews, on the run's summary page. It never fails.
+      - name: Scan modules for sensitive APIs
+        if: runner.os == 'Linux'
+        run: python3 .mirante-core/tools/scan-module-apis.py --build build/ci >> "$GITHUB_STEP_SUMMARY"
 
       # The committed files must be up to date and complete.
       - name: Check module translations
