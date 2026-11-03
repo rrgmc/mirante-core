@@ -6,6 +6,12 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-11-03
+
+### Changed
+
+- The reusable workflows run their actions on Node.js 24, so apps that build with them no longer get GitHub's warnings about Node.js 20. setup-uv no longer caches, which also ends its warning that no dependency files matched.
+
 ## [0.8.3] - 2026-11-03
 
 ### Fixed
@@ -61,7 +67,8 @@ The first release of the core on its own, after it was split from `mirante` for 
 
 - `qrc:` addresses in item web views, which shared one origin among all pages.
 
-[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.3...HEAD
+[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.4...HEAD
+[0.8.4]: https://github.com/rrgmc/mirante-core/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/rrgmc/mirante-core/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/rrgmc/mirante-core/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/rrgmc/mirante-core/compare/v0.8.0...v0.8.1
