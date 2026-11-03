@@ -10,6 +10,10 @@ The changes to the module interface, and what a module must do about them, are i
 
 - A list's filters, such as Status in the GitHub, GitLab and Jira lists, can choose several values. Clicking a value checks or unchecks it and leaves the list open; clicking "All" clears them.
 
+### Fixed
+
+- The Windows setup's last page shows the texts of its two checkboxes again, "Run Mirante" and "Start Mirante when I sign in", in English or Portuguese. The sign-in checkbox now starts unticked on a first install, as [decision 0137](docs/decisions/0137-the-setup-does-not-start-mirante-at-sign-in-by-default.md) says.
+
 ## [0.8.4] - 2026-11-03
 
 ### Changed
