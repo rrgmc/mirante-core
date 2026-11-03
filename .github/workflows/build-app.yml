@@ -19,8 +19,8 @@ on:
         description: The path of the manifest
         type: string
         default: mirante.json
-      check-includes:
-        description: Check that the repository's modules include only their own files and the module interface
+      check-modules:
+        description: Check that the repository's modules include only their own files and the module interface, and that their texts are translated
         type: boolean
         default: false
 
@@ -68,7 +68,7 @@ jobs:
           persist-credentials: false
 
       - name: Check module includes
-        if: inputs.check-includes && runner.os == 'Linux'
+        if: inputs.check-modules && runner.os == 'Linux'
         run: python3 .mirante-core/tools/check-module-includes.py .
 
       - uses: astral-sh/setup-uv@v6
@@ -125,6 +125,15 @@ jobs:
           cmake --preset ci -DCMAKE_PREFIX_PATH="$QT_DIR" -DMIRANTE_PCH=OFF
           cmake --build --preset ci
           ctest --preset ci
+
+      # The committed files must be up to date and complete.
+      - name: Check module translations
+        if: inputs.check-modules && runner.os == 'Linux'
+        run: |
+          cmake --build --preset ci --target update_translations
+          python3 .mirante-core/tools/check-translations.py .
+          git diff --exit-code -- '*/translations/*'
+          test -z "$(git status --porcelain -- '*/translations/*')"
 
       - name: Package (macOS, Linux)
         if: runner.os != 'Windows'

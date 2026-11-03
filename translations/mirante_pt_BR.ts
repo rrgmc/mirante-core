@@ -1609,6 +1609,10 @@
         <source>macOS starts Mirante at sign-in only after you allow it in System Settings &gt; General &gt; Login Items. Open System Settings now?</source>
         <translation>O macOS só inicia o Mirante ao entrar na sessão depois que você o permitir em Ajustes do Sistema &gt; Geral &gt; Itens de Início. Abrir os Ajustes do Sistema agora?</translation>
     </message>
+    <message>
+        <source>Modules:</source>
+        <translation>Módulos:</translation>
+    </message>
 </context>
 <context>
     <name>mirante::ModuleSettingsDialog</name>

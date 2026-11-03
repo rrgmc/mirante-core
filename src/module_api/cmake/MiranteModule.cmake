@@ -7,6 +7,8 @@
 #   MIRANTE_ALL_MODULES          every module folder, enabled or not
 #   MIRANTE_ENABLED_MODULES      the enabled modules
 #   MIRANTE_MODULE_DEPENDS_<id>  the DEPENDS of one module
+#   MIRANTE_MODULE_REPOSITORY_<id>, MIRANTE_MODULE_COMMIT_<id>
+#                                where one module came from, set by the manifest
 
 # Warnings in a module fail the build only where the module's owner builds it.
 # An app leaves this off, so a newer compiler cannot stop someone else's module.
@@ -157,6 +159,19 @@ function(mirante_add_module id)
             FILES ${ARG_RESOURCES})
     endif()
 
+    # A module with a folder translations/ carries its own texts, as
+    # :/i18n/<id>_<language>, which main.cpp loads. update_translations runs
+    # lupdate on them, on this module's sources only: without SOURCE_TARGETS it
+    # reads every target in the build. See translations/README.md in mirante-core.
+    if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/translations" AND QT_I18N_TRANSLATED_LANGUAGES)
+        qt_add_translations(${target}
+            SOURCE_TARGETS ${target}
+            TS_FILE_BASE ${id}
+            TS_FILE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/translations"
+            RESOURCE_PREFIX /i18n
+            LUPDATE_OPTIONS -locations none -no-obsolete)
+    endif()
+
     # The module's tests link the same libraries, so they share the first
     # test's precompiled header.
     set(pch_from "")
@@ -211,8 +226,13 @@ function(mirante_finish_modules target)
     set(MIRANTE_MODULE_DECLARATIONS "")
     set(MIRANTE_MODULE_CALLS "")
     set(MIRANTE_MODULE_REFERENCES "")
+    set(MIRANTE_MODULE_SOURCES "")
     set(ids "")
     foreach(id IN LISTS enabled)
+        get_property(repository GLOBAL PROPERTY MIRANTE_MODULE_REPOSITORY_${id})
+        get_property(commit GLOBAL PROPERTY MIRANTE_MODULE_COMMIT_${id})
+        string(APPEND MIRANTE_MODULE_SOURCES
+            "        {QStringLiteral(\"${id}\"), QStringLiteral(\"${repository}\"), QStringLiteral(\"${commit}\")},\n")
         string(APPEND MIRANTE_MODULE_DECLARATIONS
             "namespace mirante::modules::${id} {\n"
             "void registerModule(mirante::ModuleRegistrar &registrar);\n"

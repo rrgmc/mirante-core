@@ -212,8 +212,8 @@ Started after M13, and builds on the packaging from M10 ([decision 0098](decisio
 - [ ] `DEPENDS` works across repositories.
 - [x] A module can use further Qt components. The manifest gives one list of Qt modules, and the Qt setup scripts, the CI cache keys, `find_package` and the package check follow from it. Configuration stops if a module's `QT_LIBS` names a Qt module that the list lacks.
 - [x] The module include check also covers external modules. The modules are also built with `MIRANTE_PCH=OFF`, so a missing include is found.
-- [ ] Each module carries its own translation files, and the core loads them for the enabled modules. CI checks each module's translations.
-- [ ] The About dialog shows each module's source and commit.
+- [x] Each module carries its own translation files, and the core loads them for the enabled modules. CI checks each module's translations.
+- [x] The About dialog shows each module's source and commit.
 - [ ] The core publishes a reusable workflow that builds, tests and packages an app repository. The build job has no signing secrets. On macOS, a separate job signs, notarises and staples the finished bundle and runs no code from the build. Mirante's own release uses the same jobs.
 - [ ] A scheduled job in the app repository opens a pull request when a pinned repository has a newer tag or commit, with a link to each module's diff. CI builds it, and merging it publishes a release. A failed update leaves the last release in place. The job uses a GitHub App token or a personal access token, because a pull request opened with the workflow's own token starts no CI.
 - [ ] A scan reports which modules use sensitive APIs, as a help for reviews.

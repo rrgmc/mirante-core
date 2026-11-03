@@ -2,6 +2,7 @@
 
 #include "api/ApiServices.h"
 #include "core/Store.h"
+#include "items/EnabledModules.h"
 
 #include <QMainWindow>
 
@@ -89,6 +90,9 @@ public:
     bool moveWorkspace(const QString &destination);
 
     void showAbout();
+    // What the About dialog lists. main.cpp sets it, because only the app links
+    // the generated list.
+    void setModuleSources(const QList<ModuleSource> &sources);
     // Opens the settings window, or brings it to the front: Settings… in the
     // application menu on macOS, Tools > Settings… elsewhere. Its changes
     // apply at once. See docs/ui.md#settings.

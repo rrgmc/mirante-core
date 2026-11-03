@@ -447,7 +447,7 @@ The app speaks English and Brazilian Portuguese ([decision 0086](decisions/0086-
 - Every text the user sees uses `QCoreApplication::translate()` with the module id as its context, such as `QCoreApplication::translate("gitlab", "Open")`. This includes the module's name, item type names, field labels, choice labels and messages. Module code does not call `tr()`, because its views have no `Q_OBJECT` of their own, so `lupdate` would file the text under a context that the running app does not ask for. `task check` fails on a `tr()` in module code.
 - The source text is written out in the call, not passed through a helper function, so `lupdate` finds it. A text chosen in one place and translated in another is marked with `QT_TRANSLATE_NOOP("<module id>", "…")`.
 - Texts made from parts use `arg()`, such as `QCoreApplication::translate("jira", "%1 more").arg(count)`, never string addition.
-- Each new text is translated in the same change, in `translations/mirante_pt_BR.ts`. See [translations/README.md](../translations/README.md).
+- Each new text is translated in the same change, in the module's `translations/<id>_pt_BR.ts`. See [translations/README.md](../translations/README.md).
 - Ids, stored values, API values, URLs and log messages stay in English.
 - Dates and numbers shown to the user are formatted with the default `QLocale`, such as `QLocale().toString(date, QLocale::ShortFormat)`, or with `widgets::compactDate()`.
 

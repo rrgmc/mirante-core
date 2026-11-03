@@ -4,6 +4,8 @@ class ModuleRegistrar;
 }
 
 @MIRANTE_MODULE_DECLARATIONS@
+/* What the test reads:
+@MIRANTE_MODULE_SOURCES@*/
 // Referring to each module's function makes the linker keep it.
 void *enabledModuleCalls[] = {
 @MIRANTE_MODULE_REFERENCES@    nullptr,
