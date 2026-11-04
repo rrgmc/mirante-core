@@ -13,7 +13,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0005](0005-profiles-per-group.md) | One web login profile per group, with a shared option | Superseded by 0042 |
 | [0006](0006-connections-per-group.md) | API connections per group, tokens in the keychain | Superseded by 0054 |
 | [0007](0007-separate-item-types-per-rendering.md) | Separate item types for summary and page | Accepted |
-| [0008](0008-claude-sessions.md) | Claude sessions through web views and the terminal only | Accepted; local sessions superseded by 0084 |
+| [0008](0008-claude-sessions.md) | Claude sessions through web views and the terminal only | Accepted; local sessions superseded by 0084; status of local agents by 0143 |
 | [0009](0009-priority-and-attention.md) | Four priority levels; attention as badges | Accepted; sorting superseded by 0034 |
 | [0010](0010-folder-identity.md) | Folders stored as identities, mapped to paths per device | Accepted |
 | [0011](0011-root-cells-reference-task-dashboards.md) | Root dashboard cells refer to task dashboards | Accepted |
@@ -147,6 +147,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0140](0140-log-window-in-all-builds.md) | The log window in every build, the sample data menu in debug builds only | Accepted |
 | [0141](0141-one-menu-entry-for-links.md) | One menu entry adds items from a link | Accepted |
 | [0142](0142-item-dashboard-title.md) | Items have an optional title for dashboards | Accepted |
+| [0143](0143-claude-agents-list.md) | A list of local Claude agents, from `claude agents --json` | Accepted |
 
 ## Template
 

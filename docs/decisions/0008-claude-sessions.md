@@ -1,6 +1,6 @@
 # 0008. Claude sessions through web views and the terminal only
 
-- Status: Accepted; local sessions superseded by [0084](0084-no-local-claude-sessions.md)
+- Status: Accepted; local sessions superseded by [0084](0084-no-local-claude-sessions.md); status of local agents by [0143](0143-claude-agents-list.md)
 - Date: 2026-10-28
 
 ## Context
