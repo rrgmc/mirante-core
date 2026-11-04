@@ -71,7 +71,7 @@ Anything else, such as approving or commenting, uses the "Open page" button. It 
 
 ## GitLab
 
-Module `gitlab`. All GitLab types talk to the GitLab server of the item's profile, set in its GitLab General Configuration: a base URL, `https://gitlab.com` by default, and a token. In the item dialog, every `project` field offers the project paths of that screen in an editable list, so a path is chosen instead of typed. Another path can still be typed. See [settings screens](modules.md#settings-screens).
+Module `gitlab`. All GitLab types but [GitLab Status](#gitlab-status) talk to the GitLab server of the item's profile, set in its GitLab General Configuration: a base URL, `https://gitlab.com` by default, and a token. In the item dialog, every `project` field offers the project paths of that screen in an editable list, so a path is chosen instead of typed. Another path can still be typed. See [settings screens](modules.md#settings-screens).
 
 The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-native-layouts-with-sections.md). The title, the state and the actions always show, and scroll with the rest. Each other section has a field in the item's configuration, which is on when absent. These rules hold for all of them:
 
@@ -245,9 +245,20 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
 - **The summary's actions:** "Open page", and the Web link in the cell header.
 - **Status:** the summary and the page report a summary such as "Open · assigned to Ana", and are closed when the issue is closed. They report no attention. The list reports as the merge request list does, with a summary such as "12 issues" or "100+ issues". See [decision 0067](decisions/0067-lists-report-status.md).
 
+### GitLab Status
+
+`gitlab.status`, native. The health of gitlab.com, from its public status page, status.gitlab.com, which status.io serves. It does not use the profile's server and needs no token; see [decision 0149](decisions/0149-public-status-pages-without-a-server.md).
+
+- **Shows:** the page's overall state as a title and a pill, open incidents with their impact, state and latest update, planned maintenance, and the components that do not work.
+- **Configuration:** `showMaintenance`, on by default, and `showAllComponents`, off by default, which also lists the components that work.
+- **Actions:** "Refresh", and the Web link in the cell header, which opens the status page.
+- **Status:** a summary such as "All systems operational". Each open incident needs attention, and notifies when its impact is major or critical. A degraded page without an incident needs attention too. It is never closed.
+
+See the [module's README](https://github.com/rrgmc/mirante-modules-work/blob/master/gitlab/README.md#gitlab-status).
+
 ## GitHub
 
-Module `github`. All GitHub types talk to the GitHub server of the item's profile, set in its GitHub General Configuration: a web address, `https://github.com` by default, and a token. For any other host, such as GitHub Enterprise Server, the API is at `<web address>/api/v3`. In the item dialog, every `repository` field offers the repositories of that screen in an editable list. Another repository can still be typed. See [decision 0102](decisions/0102-github-module.md) and the [module's README](https://github.com/rrgmc/mirante-modules/blob/master/github/README.md).
+Module `github`. All GitHub types but [GitHub Status](#github-status) talk to the GitHub server of the item's profile, set in its GitHub General Configuration: a web address, `https://github.com` by default, and a token. For any other host, such as GitHub Enterprise Server, the API is at `<web address>/api/v3`. In the item dialog, every `repository` field offers the repositories of that screen in an editable list. Another repository can still be typed. See [decision 0102](decisions/0102-github-module.md) and the [module's README](https://github.com/rrgmc/mirante-modules/blob/master/github/README.md).
 
 The types follow the GitLab types. A pull request is GitLab's merge request, an Actions run is GitLab's pipeline, and the summaries, pages and lists have the same rules: fixed layouts with sections, "Loading…", plain text, local dates, "Open page" and the Web link. These rules differ:
 
@@ -374,6 +385,17 @@ The types follow the GitLab types. A pull request is GitLab's merge request, an 
 - **The page's address** is `<web address>/<repository>/issues/<number>`. Its messages are those of the pull request page.
 - **The summary's actions:** "Open page", and the Web link in the cell header.
 - **Status:** a summary such as "Open · assigned to ana", closed when the issue is closed, and no attention. The list reports "12 issues" or "100+ issues".
+
+### GitHub Status
+
+`github.status`, native. The health of github.com, from its public status page, githubstatus.com. It does not use the profile's server and needs no token; see [decision 0149](decisions/0149-public-status-pages-without-a-server.md).
+
+- **Shows:** the page's overall state as a title and a pill, open incidents with their impact, state and latest update, planned maintenance, and the components that do not work.
+- **Configuration:** `showMaintenance`, on by default, and `showAllComponents`, off by default, which also lists the components that work.
+- **Actions:** "Refresh", and the Web link in the cell header, which opens the status page.
+- **Status:** a summary such as "All Systems Operational". Each open incident needs attention, and notifies when its impact is major or critical. A degraded page without an incident needs attention too. It is never closed.
+
+See the [module's README](https://github.com/rrgmc/mirante-modules-work/blob/master/github/README.md#github-status).
 
 ## Jira
 
@@ -573,6 +595,16 @@ The editor command is a device setting of the `folder` module, default `code`. I
   - **Copy path**, and **Copy relative path**, which is relative to the project folder, with `/`.
 - **The view only reads.** It does not rename, delete or create files.
 - **Problems:** a folder with no local path on this device shows "Folder not set on this device" with **Choose folder…**. A subfolder that is absolute or contains `..` is refused, and a missing one says so; it shows once it exists and the view shows again. A failed action shows its message under the tree.
+
+### System Resources
+
+`system.resources`, native, module `system`.
+
+- **Shows:** one row each for the CPU use, the free memory and the free space of each disk of this computer, with a bar that turns to a warning colour from 75 % use and to an alarm colour from 90 %.
+- **Configuration:** `showCpu`, `showMemory` and `showDisks`, all on by default; `disks`, the roots of the disks to show, empty for every local disk, with the mounted disks offered by "Add from List…"; `interval`, the seconds between readings, 2 by default, from 1 to 3600.
+- **Reads** again at the interval while the view is visible, and stops while it is hidden. It has no status and needs no attention.
+
+See the [module's README](https://github.com/rrgmc/mirante-modules/blob/master/system/README.md).
 
 ### Built-in panels
 
