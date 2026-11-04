@@ -247,7 +247,7 @@ QJsonObject Group::toJson() const
 
 bool Profile::hasData() const
 {
-    return !moduleSettings.isEmpty() || !extra.isEmpty();
+    return !moduleSettings.isEmpty() || !accounts.isEmpty() || !extra.isEmpty();
 }
 
 std::optional<Profile> Profile::fromJson(const QJsonObject &json, QString *error)
@@ -260,6 +260,7 @@ std::optional<Profile> Profile::fromJson(const QJsonObject &json, QString *error
     // "connections" and "defaultConnections" from before decision 0054 stay
     // in extra; the profile migration moves them to module settings.
     r.object(QStringLiteral("moduleSettings"), &profile.moduleSettings);
+    r.object(QStringLiteral("accounts"), &profile.accounts);
     profile.extra = r.extra();
     return profile;
 }
@@ -272,6 +273,8 @@ QJsonObject Profile::toJson() const
     };
     if (!moduleSettings.isEmpty())
         json.insert(QStringLiteral("moduleSettings"), moduleSettings);
+    if (!accounts.isEmpty())
+        json.insert(QStringLiteral("accounts"), accounts);
     return withExtra(json, extra);
 }
 
@@ -322,6 +325,7 @@ std::optional<Item> Item::fromJson(const QJsonObject &json, QString *error)
     // "webProfile" is the name used before decision 0050. "profile" wins.
     r.string(QStringLiteral("webProfile"), &item.profile);
     r.string(QStringLiteral("profile"), &item.profile);
+    r.string(QStringLiteral("account"), &item.account);
     r.boolean(QStringLiteral("watch"), &item.watch);
     r.strings(QStringLiteral("pageKeys"), &item.pageKeys);
     item.extra = r.extra();
@@ -340,6 +344,8 @@ QJsonObject Item::toJson() const
         json.insert(QStringLiteral("dashboardTitle"), dashboardTitle);
     if (!profile.isEmpty())
         json.insert(QStringLiteral("profile"), profile);
+    if (!account.isEmpty())
+        json.insert(QStringLiteral("account"), account);
     if (watch)
         json.insert(QStringLiteral("watch"), true);
     if (!pageKeys.isEmpty())
@@ -382,6 +388,7 @@ std::optional<RootDashboard> RootDashboard::fromJson(const QJsonObject &json, QS
     // order is still in extra, because Dashboard does not know it.
     Reader r(base->extra);
     r.integer(QStringLiteral("order"), &dashboard.order);
+    r.string(QStringLiteral("colour"), &dashboard.colour);
     dashboard.extra = r.extra();
     return dashboard;
 }
@@ -391,6 +398,8 @@ QJsonObject RootDashboard::toJson() const
     QJsonObject json = Dashboard::toJson();
     if (!extra.contains(QStringLiteral("order")))
         json.insert(QStringLiteral("order"), order);
+    if (!colour.isEmpty() && !extra.contains(QStringLiteral("colour")))
+        json.insert(QStringLiteral("colour"), colour);
     return json;
 }
 

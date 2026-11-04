@@ -105,6 +105,20 @@ public:
     // each call. Empty if nothing is stored, the profile is unknown, or no
     // workspace is open.
     virtual QJsonObject values(const QString &profileId, const QString &screenId) const = 0;
+
+    // The values of a screen for one account of the module's server in a
+    // profile. An empty accountId is the default account, whose values are
+    // those of values(). For another account and the screen its ServerType
+    // names, that account's own values; for any other screen, values(). An
+    // account the profile does not have gives the default's. A view and a
+    // status job get these through moduleSettings() already; this is for
+    // code given ids, such as ItemType::fieldsForAccount(). See decision 0146.
+    virtual QJsonObject accountValues(const QString &profileId, const QString &accountId,
+                                      const QString &screenId) const
+    {
+        Q_UNUSED(accountId)
+        return values(profileId, screenId);
+    }
 };
 
 } // namespace mirante

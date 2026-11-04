@@ -11,6 +11,7 @@ namespace mirante {
 
 class ItemType;
 class ItemTypeRegistry;
+class Model;
 
 // Asks the item types what they make of a pasted web address. The new item
 // dialog and quick add use it. See decisions 0049 and 0141. Implemented in
@@ -26,12 +27,22 @@ struct TypeMatch
 {
     const ItemType *type = nullptr;
     UrlMatch match;
+    QString accountId;   // the account it was read with; empty for the default
 };
+
+// The account of the module's server in the profile that a link to url
+// belongs to: the first whose base URL is on the same host, the default
+// account first, then the others by name. Else the default, whose id is
+// empty. See decision 0146.
+QString accountFor(const ItemTypeRegistry &types, const Model &model, const QString &profileId,
+                   const QString &moduleId, const QUrl &url);
 
 // The types of the registry that take url, best first: the types of modules
 // before generic ones, such as Web page, and otherwise by name. profileId is
-// the profile the new item would use; each type reads its servers there.
-std::vector<TypeMatch> match(const ItemTypeRegistry &types, const QUrl &url, const QString &profileId);
+// the profile the new item would use; each type reads its servers there, in
+// the account accountFor() picks. Without a model, in the default account.
+std::vector<TypeMatch> match(const ItemTypeRegistry &types, const Model *model, const QUrl &url,
+                             const QString &profileId);
 
 } // namespace urlmatches
 } // namespace mirante

@@ -1010,6 +1010,17 @@ void TestLayoutView::factoryMakesPlacements()
     emit placement->headerWidgetChanged(nullptr);
     QVERIFY(!frame->isAncestorOf(toolbar.get()));
 
+    // So does its web link, as the "Open in browser" button.
+    auto *open = frame->findChild<QToolButton *>(QStringLiteral("openInBrowserButton"));
+    QVERIFY(open);
+    QVERIFY(!open->isVisible());
+    const QUrl link(QStringLiteral("https://example.com/"));
+    emit placement->webLinkChanged(link);
+    QCOMPARE(frame->webLink(), link);
+    QVERIFY(open->isVisible());
+    emit placement->webLinkChanged(QUrl());
+    QVERIFY(!open->isVisible());
+
     auto *maximise = frame->findChild<QToolButton *>(QStringLiteral("maximiseButton"));
     QVERIFY(maximise->isVisible());
     maximise->click();
@@ -1059,7 +1070,7 @@ void TestLayoutView::factoryConnectsStatus()
     placements.status = &cache;
     placements.attention = &attention;
     placements.servers = &servers;
-    placements.openServerSettings = [&opened](const QString &profileId, const QString &moduleId) {
+    placements.openServerSettings = [&opened](const QString &profileId, const QString &moduleId, const QString &) {
         opened << profileId + QLatin1Char('/') + moduleId;
     };
     LayoutServices services;

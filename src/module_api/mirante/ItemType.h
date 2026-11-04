@@ -64,6 +64,16 @@ public:
         Q_UNUSED(profileId)
         return fields();
     }
+    // The same for an item that uses one account of the module's server in
+    // that profile, such as a field whose suggestions come from that
+    // account's settings. An empty accountId is the default account. The
+    // item dialog calls it with the account the edited item would use.
+    // Defaults to fieldsForProfile(). See decision 0146.
+    virtual std::vector<Field> fieldsForAccount(const QString &profileId, const QString &accountId) const
+    {
+        Q_UNUSED(accountId)
+        return fieldsForProfile(profileId);
+    }
     // An editor of the type's own, or null to use a form built from fields().
     // Include <mirante/ItemEditor.h> to implement it.
     virtual ItemEditor *createEditor(const EditorContext &context, QWidget *parent) const
@@ -89,6 +99,16 @@ public:
         Q_UNUSED(url)
         Q_UNUSED(profileId)
         return std::nullopt;
+    }
+    // The same, read with the settings of one account of the module's server
+    // in that profile. An empty accountId is the default account. The core
+    // picks the account first, by the address's host. Defaults to fromUrl().
+    // See decision 0146.
+    virtual std::optional<UrlMatch> fromUrlForAccount(const QUrl &url, const QString &profileId,
+                                                      const QString &accountId) const
+    {
+        Q_UNUSED(accountId)
+        return fromUrl(url, profileId);
     }
 
     // Recognises a local file that the user dropped on a task, such as a

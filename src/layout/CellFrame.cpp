@@ -1,4 +1,5 @@
 #include "layout/CellFrame.h"
+#include "layout/BusyIndicators.h"
 
 #include "items/ItemContextImpl.h"
 #include "items/UnknownItemType.h"
@@ -10,6 +11,7 @@
 #include <mirante/ItemType.h>
 
 #include <QApplication>
+#include <QDesktopServices>
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
 #include <QDragMoveEvent>
@@ -113,6 +115,8 @@ struct CellFrame::Private
     HeaderRow *row = nullptr;
     QPointer<QWidget> headerWidget;     // shown between the row and the menu button; not owned
     QToolButton *menuButton = nullptr;
+    QToolButton *webButton = nullptr;   // "Open in browser", for the item's web link
+    QUrl webLink;
     QToolButton *maximiseButton = nullptr;
     QToolButton *openAloneButton = nullptr;
     bool canMaximise = false;           // a live item cell, not an empty or removed one
@@ -131,6 +135,8 @@ struct CellFrame::Private
     QToolButton *problemButton = nullptr;   // a problem with a fix, such as "Token not set"
     QLabel *staleText = nullptr;
     QToolButton *refreshButton = nullptr;
+    SpinningIcon *refreshSpinner = nullptr;  // turns the refresh icon while fetching
+    BusyBar *busyBar = nullptr;              // under the header, while fetching
 
     // Images dropped from other apps; see setImageDrop().
     ImageReader readImage;
@@ -229,8 +235,22 @@ CellFrame::CellFrame(const std::optional<CellRef> &ref, bool removed, const Item
     d->row->setShrinkOrder({d->context, name, typePill});
     headerLayout->addWidget(d->row, 1);
 
-    // The status area and the refresh button. A header widget, such as a web
-    // toolbar, goes between the row and these.
+    // "Open in browser", for the item's web link, hidden without one. A
+    // header widget, such as a web toolbar, goes between the row and it, so
+    // it stays beside a page's address. See decision 0148.
+    d->webButton = new QToolButton(d->header);
+    d->webButton->setObjectName(QStringLiteral("openInBrowserButton"));
+    d->webButton->setAutoRaise(true);
+    d->webButton->setIcon(QIcon(QStringLiteral(":/icons/open-in-browser.svg")));
+    d->webButton->setText(tr("Open in browser"));
+    d->webButton->setVisible(false);
+    connect(d->webButton, &QToolButton::clicked, this, [this] {
+        if (!d->webLink.isEmpty())
+            QDesktopServices::openUrl(d->webLink);
+    });
+    headerLayout->addWidget(d->webButton);
+
+    // The status area and the refresh button.
     const int pillHeight = d->header->fontMetrics().height() + 2;
     d->attentionBadge = new QLabel(d->header);
     d->attentionBadge->setObjectName(QStringLiteral("attentionBadge"));
@@ -260,7 +280,7 @@ CellFrame::CellFrame(const std::optional<CellRef> &ref, bool removed, const Item
     d->refreshButton = new QToolButton(d->header);
     d->refreshButton->setObjectName(QStringLiteral("refreshButton"));
     d->refreshButton->setAutoRaise(true);
-    d->refreshButton->setIcon(QIcon(QStringLiteral(":/icons/reload.svg")));
+    d->refreshSpinner = new SpinningIcon(d->refreshButton, QIcon(QStringLiteral(":/icons/reload.svg")));
     d->refreshButton->setToolTip(tr("Refresh"));
     d->refreshButton->setVisible(false);
     connect(d->refreshButton, &QToolButton::clicked, this, &CellFrame::refreshRequested);
@@ -303,6 +323,8 @@ CellFrame::CellFrame(const std::optional<CellRef> &ref, bool removed, const Item
     headerLayout->addWidget(d->openAloneButton);
 
     layout->addWidget(d->header);
+    d->busyBar = new BusyBar(this);
+    layout->addWidget(d->busyBar);
 
     // Body: a placeholder in M2.
     d->body = new QStackedWidget(this);
@@ -524,6 +546,16 @@ void CellFrame::setHeaderWidget(QWidget *widget)
     }
 }
 
+void CellFrame::setWebLink(const QUrl &url)
+{
+    d->webLink = url;
+    d->webButton->setVisible(!url.isEmpty());
+    d->webButton->setToolTip(url.isEmpty() ? QString()
+                                           : tr("Open in the external browser:\n%1").arg(url.toDisplayString()));
+}
+
+QUrl CellFrame::webLink() const { return d->webLink; }
+
 void CellFrame::setMaximiseButtonVisible(bool visible) { d->maximiseButton->setVisible(visible && d->canMaximise); }
 
 void CellFrame::setOpenAloneVisible(bool visible) { d->openAloneButton->setVisible(visible && d->canMaximise); }
@@ -547,6 +579,15 @@ void CellFrame::setStatus(const CellStatus &status)
 CellStatus CellFrame::status() const { return d->status; }
 
 void CellFrame::setRefreshVisible(bool visible) { d->refreshButton->setVisible(visible); }
+
+void CellFrame::setRefreshing(bool refreshing)
+{
+    d->refreshSpinner->setSpinning(refreshing);
+    d->busyBar->setBusy(refreshing);
+    d->refreshButton->setToolTip(refreshing ? tr("Refreshing…") : tr("Refresh"));
+}
+
+bool CellFrame::isRefreshing() const { return d->refreshSpinner->isSpinning(); }
 
 void CellFrame::setImageDrop(ImageReader read, std::function<void(const QImage &image)> dropped)
 {

@@ -1,4 +1,4 @@
-# 0143. Status of public status pages, fetched without the profile's server
+# 0149. Status of public status pages, fetched without the profile's server
 
 - Status: Accepted
 - Date: 2026-11-04

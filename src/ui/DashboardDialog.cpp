@@ -1,6 +1,7 @@
 #include "ui/DashboardDialog.h"
 
 #include "layout/Presets.h"
+#include "ui/ColourChooser.h"
 
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -16,6 +17,8 @@ struct DashboardDialog::Private
     Dashboard dashboard;
     QLineEdit *name = nullptr;
     QComboBox *preset = nullptr;    // only when creating
+    QFormLayout *form = nullptr;
+    ColourChooser *colour = nullptr; // only after offerColour()
     QLabel *message = nullptr;      // why OK was refused
 };
 
@@ -35,6 +38,7 @@ DashboardDialog::DashboardDialog(const Dashboard &dashboard, bool creating, QWid
     d->message->hide();
 
     auto *form = new QFormLayout;
+    d->form = form;
     form->addRow(tr("Name:"), d->name);
     if (creating) {
         d->preset = new QComboBox(this);
@@ -66,6 +70,21 @@ Dashboard DashboardDialog::value() const
 }
 
 int DashboardDialog::presetIndex() const { return d->preset ? d->preset->currentIndex() : -1; }
+
+void DashboardDialog::offerColour(const QString &colour)
+{
+    if (!d->colour) {
+        d->colour = new ColourChooser(true, tr("Dashboard colour"), this);
+        d->colour->setObjectName(QStringLiteral("colour"));
+        d->form->addRow(tr("Colour:"), d->colour);
+        auto *help = new QLabel(tr("A dot of this colour shows before the name in the dashboard's tab."), this);
+        help->setWordWrap(true);
+        d->form->addRow(QString(), help);
+    }
+    d->colour->setColour(colour);
+}
+
+QString DashboardDialog::colour() const { return d->colour ? d->colour->colour() : QString(); }
 
 void DashboardDialog::setName(const QString &name) { d->name->setText(name); }
 

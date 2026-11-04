@@ -1,6 +1,9 @@
 #pragma once
 
+#include "core/Accounts.h"
 #include "core/Entities.h"
+#include "ui/ModuleSettingsPage.h"
+#include "ui/ProfilesDialog.h"
 #include "ui/SidebarModel.h"
 
 #include <QObject>
@@ -8,6 +11,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 
 class QDialog;
 class QImage;
@@ -23,8 +27,6 @@ class ProfileManager;
 class SecretStore;
 class ServerClients;
 class Store;
-class ProfilesDialog;
-
 // Every command that creates, edits, moves or deletes a group, project, task,
 // item or task dashboard. The sidebar menus, the menu bar and drops in the
 // sidebar share them. Each opens its dialog, then applies the result through
@@ -67,13 +69,43 @@ public:
     void setEditProfiles(std::function<void(ProfilesDialog &dialog)> edit);
 
     // Opens the profiles dialog, Profiles > Manage Profiles…. See docs/ui.md#profiles.
-    void editProfiles();
+    // It opens at start: a profile's General page, a module, an account or a
+    // screen. An empty node opens at the default profile. See decision 0147.
+    void editProfiles(const ProfilesDialog::Node &start = ProfilesDialog::Node());
 
     // Opens the dialog of a module's settings screen in one profile, from
     // Profiles > <profile> > Modules, and stores the values in the model.
     // Tokens typed into it go to setSecretStore(). Nothing happens for an
     // unknown screen or profile. See docs/ui.md#modules.
-    void editModuleSettings(const QString &profileId, const QString &moduleId, const QString &screenId);
+    //
+    // accountId names another account of the module's server, whose values
+    // the server's screen then edits, with its name and a Remove Account
+    // button. Empty is the default account. Nothing happens for an account
+    // the profile does not have, or for another screen. See decision 0146.
+    void editModuleSettings(const QString &profileId, const QString &moduleId, const QString &screenId,
+                            const QString &accountId = QString());
+
+    // Adds another account of the module's server to the profile, from
+    // Profiles > <profile> > Modules > <module> > Add Account…: opens the
+    // server's screen for it, and stores it on OK. Returns its id, or empty
+    // if cancelled or the module has no server. See decision 0146.
+    QString addAccount(const QString &profileId, const QString &moduleId);
+
+    // What the Profiles window does with module settings, through
+    // ProfilesDialog::Services. createAccount() stores a new account named
+    // "New account" at once and returns its id, or empty for a module without
+    // a server. removeAccount() asks first, then removes the account and its
+    // tokens on this device. makeSettingsPage() makes the page of a screen
+    // for the default account or another, with its stored values and the
+    // state of its tokens, or null for an unknown one. applySettingsPage()
+    // stores a page's values and tokens, and returns false while the page
+    // reports a problem, which it then shows. storageOf() says where a
+    // profile keeps its data, without web profiles none.
+    QString createAccount(const QString &profileId, const QString &moduleId);
+    bool removeAccount(const QString &profileId, const QString &moduleId, const QString &accountId);
+    ModuleSettingsPage *makeSettingsPage(const ModuleSettingsPage::Target &target, QWidget *parent);
+    bool applySettingsPage(ModuleSettingsPage &page);
+    std::optional<ProfileStorage> storageOf(const QString &profileId) const;
 
     // Creating. Each opens the entity's dialog with a new value, and returns the
     // new id, or an empty string if the dialog was cancelled. A new task gets one
@@ -183,6 +215,13 @@ private:
     void addPasteImage(QMenu *menu, const QString &taskId);
     // Adds the checkable "Watch" for an item whose type reports status.
     void addWatch(QMenu *menu, const QString &taskId, const QString &itemId);
+    // Runs the dialog of a settings screen: of the default account without
+    // an account, else of that account, which creating stores only on OK.
+    // Returns whether anything was stored or removed.
+    bool editServerScreen(const QString &profileId, const QString &moduleId, const QString &screenId,
+                          const std::optional<Account> &account, bool creating = false);
+    // Gives a page its "Add from Server…" client and the state of its tokens.
+    void prepareSettingsPage(ModuleSettingsPage &page) const;
 
     struct Private;
     std::unique_ptr<Private> d;

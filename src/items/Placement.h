@@ -4,6 +4,7 @@
 
 #include <QDateTime>
 #include <QString>
+#include <QUrl>
 #include <QWidget>
 
 #include <functional>
@@ -41,8 +42,10 @@ struct PlacementServices
     // The data folder, for ItemContext::filePath(). Null: no files.
     const Store *store = nullptr;
     // Opens the settings screen of a module's server in a profile, for the
-    // fix button of "Token not set" and the like. Null leaves it out.
-    std::function<void(const QString &profileId, const QString &moduleId)> openServerSettings;
+    // account (empty for the default), for the fix button of "Token not set"
+    // and the like. Null leaves it out.
+    std::function<void(const QString &profileId, const QString &moduleId, const QString &accountId)>
+        openServerSettings;
     // Open an item alone, or a task's default dashboard, in the preview, for
     // the built-in panels. Null leaves the panels' links without effect.
     std::function<void(const QString &taskId, const QString &itemId)> openItem;
@@ -80,11 +83,19 @@ public:
     // toolbar, or null.
     QWidget *headerWidget() const;
 
+    // The address the cell header's "Open in browser" button opens: the page
+    // of showPage() while one is shown, else the view's ItemContext::setWebLink().
+    // Empty when there is none, or it is not an http or https address. See
+    // decision 0148.
+    QUrl webLink() const;
+
     // What the cell header shows about the item's status. Kind::None for a
     // type without status, or without a status cache.
     CellStatus cellStatus() const;
     // True for a type with status: the cell header then shows a refresh button.
     bool hasStatus() const;
+    // Whether the item's status is being fetched, by a poll or a refresh.
+    bool isFetching() const;
 
 public slots:
     // Fetches the item's status at once.
@@ -94,7 +105,9 @@ public slots:
 
 signals:
     void headerWidgetChanged(QWidget *widget);
+    void webLinkChanged(const QUrl &url);
     void cellStatusChanged(const mirante::CellStatus &status);
+    void fetchingChanged(bool fetching);
 
 private:
     struct Private;

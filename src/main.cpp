@@ -5,6 +5,7 @@
 #include "api/SecretStore.h"
 #include "api/ServerClient.h"
 #include "api/StatusCache.h"
+#include "core/Accounts.h"
 #include "core/DeviceSettings.h"
 #include "core/Language.h"
 #include "core/LogBuffer.h"
@@ -25,6 +26,8 @@
 #include "web/ModuleSchemeHandler.h"
 #include "web/ProfileManager.h"
 #include "web/SingleInstance.h"
+
+#include <mirante/ApiClient.h>
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -184,6 +187,14 @@ int main(int argc, char *argv[])
     // profiles.
     types.setSettingsReader([&model](const QString &profileId, const QString &moduleId, const QString &screenId) {
         return model.moduleSettings(profileId, moduleId, screenId);
+    });
+    // Another account of a module's server has its own values for the
+    // server's screen. See decision 0146.
+    types.setAccountReader([&model, &types](const QString &profileId, const QString &moduleId,
+                                            const QString &accountId, const QString &screenId) {
+        const mirante::ServerType *server = types.serverType(moduleId);
+        return mirante::accounts::screenValues(model, profileId, moduleId, accountId,
+                                               server ? server->screenId() : QString(), screenId);
     });
     mirante::Store store(model);
     // Tokens, the modules' servers and the status of items. See the M5 plan,

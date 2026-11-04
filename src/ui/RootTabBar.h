@@ -31,7 +31,7 @@ bool selectionShown(const QTabBar &bar);
 // Dragging a tab along the bar moves it; QTabBar::tabMoved() reports it.
 // A middle click on a tab asks to close it, and the context menu holds "New dashboard", "Close tab" and "All
 // dashboards…". A tab whose tab data is true is a root dashboard, so its menu
-// also holds "Rename dashboard…" and "Detach into Window". The preview and
+// also holds "Edit dashboard…" and "Detach into Window". The preview and
 // Focus are not here: they are in the SlotTabBar on the right of the row.
 // Implemented in RootTabBar.cpp.
 class RootTabBar : public QTabBar

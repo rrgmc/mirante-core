@@ -1,10 +1,13 @@
 // Tests CellFrame's status area: each kind of CellStatus shows its own
 // widget, the problem pill with a fix emits fixRequested, and the refresh
 // button shows when asked and emits refreshRequested. Also tests the
-// drops of images from other apps that setImageDrop() turns on.
+// drops of images from other apps that setImageDrop() turns on, and the
+// "Open in browser" button of setWebLink().
 #include "layout/CellFrame.h"
+#include "layout/BusyIndicators.h"
 
 #include <QApplication>
+#include <QDesktopServices>
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
 #include <QDragMoveEvent>
@@ -15,6 +18,7 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QToolButton>
+#include <QUrl>
 
 #include <memory>
 
@@ -91,7 +95,40 @@ class TestCellFrame : public QObject
 {
     Q_OBJECT
 
+public slots:
+    // Takes the place of the browser, for the tests of "Open in browser".
+    void openUrl(const QUrl &url) { m_opened.append(url); }
+
 private slots:
+    void init()
+    {
+        m_opened.clear();
+        QDesktopServices::setUrlHandler(QStringLiteral("https"), this, "openUrl");
+    }
+
+    void cleanup() { QDesktopServices::unsetUrlHandler(QStringLiteral("https")); }
+
+    // The button shows only with a link, and opens it in the browser.
+    void openInBrowser()
+    {
+        auto frame = itemFrame();
+        auto *button = frame->findChild<QToolButton *>(QStringLiteral("openInBrowserButton"));
+        QVERIFY(button);
+        QVERIFY(!button->isVisibleTo(frame.get()));
+
+        const QUrl link(QStringLiteral("https://example.com/pull/1"));
+        frame->setWebLink(link);
+        QCOMPARE(frame->webLink(), link);
+        QVERIFY(button->isVisibleTo(frame.get()));
+        QVERIFY(!button->icon().isNull());
+        QVERIFY(button->toolTip().contains(link.toDisplayString()));
+        button->click();
+        QCOMPARE(m_opened, QList<QUrl>{link});
+
+        frame->setWebLink(QUrl());
+        QVERIFY(!button->isVisibleTo(frame.get()));
+    }
+
     // A cell takes no drops of its own until setImageDrop().
     void noImageDropByDefault()
     {
@@ -212,8 +249,33 @@ private slots:
         QVERIFY(!button->isVisibleTo(frame.get()));
     }
 
+    // While fetching, the refresh icon turns and the busy bar runs.
+    void refreshing()
+    {
+        auto frame = itemFrame();
+        frame->setRefreshVisible(true);
+        auto *button = frame->findChild<QToolButton *>(QStringLiteral("refreshButton"));
+        auto *bar = frame->findChild<BusyBar *>(QStringLiteral("busyBar"));
+        QVERIFY(bar);
+        QVERIFY(!frame->isRefreshing());
+        QVERIFY(!bar->isBusy());
+        QCOMPARE(bar->height(), 2);
+
+        frame->setRefreshing(true);
+        QVERIFY(frame->isRefreshing());
+        QVERIFY(bar->isBusy());
+        QCOMPARE(button->toolTip(), QStringLiteral("Refreshing…"));
+
+        frame->setRefreshing(false);
+        QVERIFY(!frame->isRefreshing());
+        QVERIFY(!bar->isBusy());
+        QCOMPARE(button->toolTip(), QStringLiteral("Refresh"));
+        QVERIFY(!button->icon().isNull());
+    }
+
     // The status area comes after a header widget and before the menu
-    // button: header row, header widget, status, refresh, menu, maximise.
+    // button: header row, header widget, "Open in browser", status, refresh,
+    // menu, maximise.
     void order()
     {
         auto frame = itemFrame();
@@ -229,11 +291,16 @@ private slots:
         auto *badge = frame->findChild<QWidget *>(QStringLiteral("attentionBadge"));
         auto *refresh = frame->findChild<QWidget *>(QStringLiteral("refreshButton"));
         auto *maximise = frame->findChild<QWidget *>(QStringLiteral("maximiseButton"));
-        QVERIFY(position(&toolbar) < position(badge));
+        auto *open = frame->findChild<QWidget *>(QStringLiteral("openInBrowserButton"));
+        QCOMPARE(position(&toolbar) + 1, position(open));
+        QVERIFY(position(open) < position(badge));
         QVERIFY(position(badge) < position(refresh));
         QCOMPARE(position(refresh) + 2, position(maximise));   // the menu button is between
         frame->setHeaderWidget(nullptr);
     }
+
+private:
+    QList<QUrl> m_opened;
 };
 
 QTEST_MAIN(TestCellFrame)

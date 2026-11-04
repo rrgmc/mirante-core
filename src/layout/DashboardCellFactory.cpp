@@ -116,6 +116,8 @@ QWidget *DashboardCellFactory::createCell(const std::optional<CellRef> &ref, boo
         const QString taskId = d->dashboard.isRoot() ? ref->task : d->dashboard.taskId;
         auto *placement = new Placement(*d->services.placements, taskId, ref->item, frame);
         QObject::connect(placement, &Placement::headerWidgetChanged, frame, &CellFrame::setHeaderWidget);
+        frame->setWebLink(placement->webLink());
+        QObject::connect(placement, &Placement::webLinkChanged, frame, &CellFrame::setWebLink);
         // The item's status in the header. A change of the item's type can
         // add or remove its status, and with it the refresh button.
         frame->setStatus(placement->cellStatus());
@@ -125,6 +127,9 @@ QWidget *DashboardCellFactory::createCell(const std::optional<CellRef> &ref, boo
             frame->setRefreshVisible(placement->hasStatus());
         });
         QObject::connect(frame, &CellFrame::refreshRequested, placement, &Placement::refresh);
+        // A fetch in progress, from a poll or a refresh.
+        frame->setRefreshing(placement->isFetching());
+        QObject::connect(placement, &Placement::fetchingChanged, frame, &CellFrame::setRefreshing);
         QObject::connect(frame, &CellFrame::fixRequested, placement, &Placement::openSettings);
         frame->setBody(placement);
     }

@@ -13,7 +13,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0005](0005-profiles-per-group.md) | One web login profile per group, with a shared option | Superseded by 0042 |
 | [0006](0006-connections-per-group.md) | API connections per group, tokens in the keychain | Superseded by 0054 |
 | [0007](0007-separate-item-types-per-rendering.md) | Separate item types for summary and page | Accepted |
-| [0008](0008-claude-sessions.md) | Claude sessions through web views and the terminal only | Accepted; local sessions superseded by 0084 |
+| [0008](0008-claude-sessions.md) | Claude sessions through web views and the terminal only | Accepted; local sessions superseded by 0084; status of local agents by 0143 |
 | [0009](0009-priority-and-attention.md) | Four priority levels; attention as badges | Accepted; sorting superseded by 0034 |
 | [0010](0010-folder-identity.md) | Folders stored as identities, mapped to paths per device | Accepted |
 | [0011](0011-root-cells-reference-task-dashboards.md) | Root dashboard cells refer to task dashboards | Accepted |
@@ -58,7 +58,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0051](0051-paste-images-from-the-items-menu.md) | Pasted images become items of a task, not cells of a dashboard | Accepted |
 | [0052](0052-no-pinning.md) | The preview is never pinned | Accepted |
 | [0053](0053-no-focus-entry-in-the-sidebar.md) | The sidebar has no Focus entry | Accepted |
-| [0054](0054-module-settings-replace-connections.md) | Module settings replace connections | Accepted |
+| [0054](0054-module-settings-replace-connections.md) | Module settings replace connections | Accepted; one server per profile extended by 0146 |
 | [0055](0055-move-workspace.md) | Moving a workspace to another folder | Accepted |
 | [0056](0056-modules-window.md) | A Modules window lists the modules and their item types | Accepted |
 | [0057](0057-any-profile-can-be-the-default.md) | Any profile can be the default | Accepted |
@@ -147,7 +147,13 @@ Each file records one design decision: what was decided, what else was considere
 | [0140](0140-log-window-in-all-builds.md) | The log window in every build, the sample data menu in debug builds only | Accepted |
 | [0141](0141-one-menu-entry-for-links.md) | One menu entry adds items from a link | Accepted |
 | [0142](0142-item-dashboard-title.md) | Items have an optional title for dashboards | Accepted |
-| [0143](0143-public-status-pages-without-a-server.md) | Status of public status pages, fetched without the profile's server | Accepted |
+| [0143](0143-claude-agents-list.md) | A list of local Claude agents, from `claude agents --json` | Accepted |
+| [0144](0144-recent-dates-as-a-distance.md) | Recent dates in lists read as a distance | Accepted |
+| [0145](0145-tasks-without-dashboards.md) | A task may have no dashboards | Accepted |
+| [0146](0146-several-accounts-per-module.md) | A profile can hold several accounts of a module | Accepted; its menu entries superseded by 0147 |
+| [0147](0147-profile-settings-in-one-window.md) | A profile's settings are edited in one window | Accepted |
+| [0148](0148-web-link-in-the-cell-header.md) | The cell header opens an item's web link | Accepted |
+| [0149](0149-public-status-pages-without-a-server.md) | Status of public status pages, fetched without the profile's server | Accepted |
 
 ## Template
 

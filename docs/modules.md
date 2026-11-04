@@ -282,7 +282,7 @@ void registerModule(ModuleRegistrar &registrar)
           done(choices, QString());
       });
   }
-  ```- **Menu.** The core adds a submenu named after the module to each profile's Modules submenu in the [Profiles menu](ui.md#profiles-menu), with one entry per screen. Its dialog edits that profile's values. A module without screens does not appear there.
+  ```- **Menu.** The core lists the module under each profile in the [Profiles window](ui.md#profiles), with one node per screen. Its dialog edits that profile's values. A module without screens does not appear there.
 
 ## Items from a link
 
@@ -340,6 +340,7 @@ Each item's code gets an `ItemContext`. It gives access to the configuration the
 | `onConfigChanged(receiver, changed)` | Reports a change to the type's `viewKeys()`, which does not make the view again. See [decision 0081](decisions/0081-views-that-keep-their-own-keys.md). | M7 |
 | `updateConfig(config)` | Changes the item's configuration through `Model` | M4 |
 | `showPage(url)` | Shows a web page in place of the view, with a way back. See [decision 0069](decisions/0069-open-page-in-the-placement.md). | M6 |
+| `setWebLink(url)` | The item's address on the web, such as a pull request's page. The cell header shows an **Open in browser** button for an `http` or `https` address; an empty one hides it. Call it again when the address changes. A web view of `createWebView()` sets it by itself. See [decision 0148](decisions/0148-web-link-in-the-cell-header.md). | after M13 |
 | `addItemToTask(typeId, name, config)` | Adds an item to the item's task, for "Add to task as item" | M6 |
 
 ### Servers and tokens
@@ -366,7 +367,14 @@ The core then gives the module an `ApiClient` for the server of each profile, th
 
 - **`get()`, `post()` and `put()`:** the way to call an API. The path is relative to the base URL. The client adds the token, sends the last ETag, follows `Link` pages when asked, waits on `429` and on a rate-limited `403`, and runs at most four requests at once for each profile's server. Item code never sees the token, and the token goes only to the origin of the base URL; see [decision 0123](decisions/0123-tokens-stay-on-their-origin.md).
 
-Tokens are loaded from the keychain, under `<workspace id>/<profile id>/<module id>/<field key>`, before the first request. If no token is stored, a request fails with `NoToken` without being sent, and the cell shows "Token not set", as described in [errors](integrations.md#errors).
+**Accounts.** A profile can hold several accounts of a module's server, each with its own values of the server's screen and its own token ([decision 0146](decisions/0146-several-accounts-per-module.md)). The core chooses the item's account. `ItemContext::server()`, `StatusJob::server()` and the quick-add requests give that account's client, and their `moduleSettings()` give that account's values for the server's screen, so most module code needs no change. Where a module is given ids instead of a context, it reads an account with these, whose defaults fall back to the default account:
+
+- `ModuleSettings::accountValues(profileId, accountId, screenId)`;
+- `ItemType::fieldsForAccount(profileId, accountId)`, for the item dialog's form, such as repository suggestions of the account;
+- `ItemType::fromUrlForAccount(url, profileId, accountId)`, for a pasted link. The core picks the account by the link's host first;
+- `EditorContext::accountId` and `ItemEditor::setAccount()`, for a type's own editor.
+
+Tokens are loaded from the keychain, under `<workspace id>/<profile id>/<module id>/<field key>`, or `<workspace id>/<profile id>/<module id>/<account id>/<field key>` for another account, before the first request. If no token is stored, a request fails with `NoToken` without being sent, and the cell shows "Token not set", as described in [errors](integrations.md#errors).
 
 ### Status
 
@@ -383,7 +391,7 @@ Native views of different modules need the same small widgets, and modules rarel
 - `StatusPill` and `statusColours()`: a pill for a `StatusRole`. A module names a role, never a colour.
 - `FlowRow`: a layout that wraps.
 - `SummaryView`: the fixed layout of a summary, with sections that can be hidden. See [decision 0066](decisions/0066-fixed-native-layouts-with-sections.md).
-- `ActionRow`: the buttons of a view, the "Web" link, and the error of the last action. `addLinkAction()` adds an entry that goes somewhere and changes nothing, such as "Open page". It looks like a link, so it stands apart from the commands.
+- `ActionRow`: the buttons of a view, the "Web" link, and the error of the last action. For the item's own page, `ItemContext::setWebLink()` is preferred, since the cell header shows it. `addLinkAction()` adds an entry that goes somewhere and changes nothing, such as "Open page". It looks like a link, so it stands apart from the commands.
 - `styleAsLink()`: makes a button look like a link, as the links in a list's rows do.
 - `askComment()`: asks for the text of a comment.
 - `ItemListView`: a sortable table. See [decision 0071](decisions/0071-lists-link-out-without-a-preview.md).
@@ -397,7 +405,7 @@ Native views of different modules need the same small widgets, and modules rarel
 - `FieldForm`: the form the core builds from a list of fields, one row per field, as an `ItemEditor`. A custom editor can place one inside its own widgets, and `setFieldEditor()` replaces the editor of one field with a `FieldEditor`. See [custom screens](#custom-screens).
 - `ImagePasteDialog` and `ImageCropView`: the dialog every image paste opens first, with a preview and a crop. See [pasting images](ui.md#pasting-images).
 - `imageFromMime()`: the image a drag from another app carries.
-- `compactDate()`: a date for a table, in local time: `10-30 14:32` in this year, `2025-10-30` otherwise.
+- `compactDate()`: a date for a table. Up to 6 days away it reads as a distance in one unit, such as "10 minutes ago", "1 hour ago", "3 days ago" or "in 2 hours". Further away it is in local time: `10-30 14:32` in this year, `2025-10-30` otherwise. `relativeDate(when, now)` gives the distance alone.
 - `MarkdownView`: a read-only `QTextBrowser` that shows Markdown with GitHub's extensions. Before Qt reads the text, void HTML elements such as `<img ...>` and `<br>` are written as self-closing, outside code, because Qt's importer would otherwise drop all the text after them. Code blocks and code spans get a light background, and the text has a 10-pixel margin. Web and mail links open in the external programs. Loading images is off by default, as the Notes preview needs. `setResourceFetcher()` turns it on: the view asks the fetcher for each image, resolved against the base given to `setMarkdownText()`, and lays the document out again when it arrives. The Notes preview and the document items use it. See [decision 0104](decisions/0104-document-items.md).
 
 ### Testing
@@ -469,7 +477,7 @@ Synced data can reach a build that does not include a module. For example, one d
 - **Items:** shows a placeholder: "This item needs the jira module, which this build does not include." The item's `type` and `config` are kept unchanged.
 - **Removed types:** an item whose module is in the build but no longer registers its type, such as `claude.session.local` ([decision 0084](decisions/0084-no-local-claude-sessions.md)), is handled the same way. Its placeholder says "This item type is no longer available: claude.session.local." The item dialog changes only its name.
 - **Project settings:** keeps the module's settings unchanged and does not show them.
-- **Module settings:** keeps the values of the module's settings screens unchanged in each profile in `workspace.mirante`. The Profiles menu has no entry for the module.
+- **Module settings:** keeps the values of the module's settings screens unchanged in each profile in `workspace.mirante`. The Profiles window does not list the module.
 - **Cells and Focus:** show the item's name. No status or attention is computed for it.
 
 Everything is written back exactly as it was loaded. See [sync](sync.md#the-data-folder).

@@ -2,13 +2,13 @@
 
 #include <QKeySequence>
 #include <QList>
+#include <QUrl>
 #include <QWebEnginePage>
 #include <QWidget>
 
 #include <functional>
 #include <memory>
 
-class QUrl;
 class QWebEngineProfile;
 class QWebEngineView;
 
@@ -27,8 +27,9 @@ public:
     WebPanel(QWebEngineProfile *profile, const QUrl &url, QWidget *parent = nullptr);
     ~WebPanel() override;
 
-    // Back, reload, the current address and "Open in browser", for the cell
-    // header. The panel owns it; the cell header shows it.
+    // Back, reload and the current address, for the cell header. The panel
+    // owns it; the cell header shows it. The header's own "Open in browser"
+    // button opens the page; see ItemContext::setWebLink().
     QWidget *toolbar() const;
 
     QWebEngineView *view() const;
@@ -36,6 +37,10 @@ public:
     // The keys the page keeps instead of the app's shortcuts, such as an
     // item's pageKeys. See PageArea::setPageKeys().
     void setPageKeys(std::function<QList<QKeySequence>()> keys);
+
+signals:
+    // The page's address changed, by a load or in a single-page app.
+    void addressChanged(const QUrl &url);
 
 private:
     struct Private;

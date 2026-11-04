@@ -510,7 +510,7 @@ private slots:
         QCOMPARE(root.children[0].ref->item, task->items[0].id);
         QCOMPARE(root.children[1].ref->item, task->items[1].id);
 
-        // One item fills the cell; none leaves it empty.
+        // One item fills the cell; none makes no dashboard.
         const Task *one = model.task(run.create(QStringLiteral("p1"), QStringLiteral("One"), {items.front()}));
         QVERIFY(one);
         QCOMPARE(one->dashboards.front().layout.kind, LayoutNode::Kind::Cell);
@@ -518,7 +518,7 @@ private slots:
         const Task *none = model.task(run.create(QStringLiteral("p1"), QStringLiteral("None"), {}));
         QVERIFY(none);
         QVERIFY(none->items.empty());
-        QVERIFY(!none->dashboards.front().layout.ref);
+        QVERIFY(none->dashboards.empty());
 
         QVERIFY(run.create(QStringLiteral("missing"), QStringLiteral("x"), items).isEmpty());
     }

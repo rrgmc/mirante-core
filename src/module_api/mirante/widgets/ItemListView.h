@@ -90,6 +90,8 @@ public:
     void setDescription(const QString &text);
 
     // The "Web" link in a thin row above the table. An empty url hides it.
+    // For the item's own page, prefer ItemContext::setWebLink(), which the
+    // cell header shows; see decision 0148.
     void setWebLink(const QUrl &url);
     QUrl webLink() const;
 

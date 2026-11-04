@@ -2,6 +2,7 @@
 
 #include "api/ServerClient.h"
 #include "api/StatusCache.h"
+#include "core/Accounts.h"
 #include "core/DeviceSettings.h"
 #include "core/Edits.h"
 #include "core/GitHead.h"
@@ -142,7 +143,12 @@ QJsonObject ItemContextImpl::moduleSettings(const QString &screenId) const
     if (!item)
         return {};
     const QString profile = profiles::effective(*m_services.model, m_taskId, m_itemId);
-    return m_services.model->moduleSettings(profile, moduleOfType(item->type), screenId);
+    const QString moduleId = moduleOfType(item->type);
+    // The server's screen holds the values of the item's account.
+    const ServerType *server = m_services.types ? m_services.types->serverType(moduleId) : nullptr;
+    return accounts::screenValues(*m_services.model, profile, moduleId,
+                                  accounts::effective(*m_services.model, m_taskId, m_itemId),
+                                  server ? server->screenId() : QString(), screenId);
 }
 
 QString ItemContextImpl::folderPath(const QString &folderId) const
@@ -162,6 +168,11 @@ QWidget *ItemContextImpl::createWebView(const QUrl &url, QWidget *parent)
     QWidget *page = createPage(url, parent, toolbar);
     if (toolbar && onHeaderWidget)
         onHeaderWidget(toolbar);
+    // The page's address is the item's web link, and follows the page.
+    if (auto *panel = qobject_cast<WebPanel *>(page)) {
+        setWebLink(url);
+        QObject::connect(panel, &WebPanel::addressChanged, panel, [this](const QUrl &address) { setWebLink(address); });
+    }
     return page;
 }
 
@@ -248,6 +259,12 @@ void ItemContextImpl::showPage(const QUrl &url)
         onShowPage(url);
 }
 
+void ItemContextImpl::setWebLink(const QUrl &url)
+{
+    if (onWebLink)
+        onWebLink(url);
+}
+
 QString ItemContextImpl::addItemToTask(const QString &typeId, const QString &name, const QJsonObject &config)
 {
     if (!m_services.model || !m_services.types || !m_services.types->contains(typeId))
@@ -271,7 +288,8 @@ ApiClient *ItemContextImpl::server()
     if (!item || !m_services.servers)
         return nullptr;
     return m_services.servers->client(profiles::effective(*m_services.model, m_taskId, m_itemId),
-                                      moduleOfType(item->type));
+                                      moduleOfType(item->type),
+                                      accounts::effective(*m_services.model, m_taskId, m_itemId));
 }
 
 ItemStatusSource *ItemContextImpl::status()

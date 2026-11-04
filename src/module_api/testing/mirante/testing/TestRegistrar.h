@@ -29,6 +29,8 @@ public:
     using RegisterFunction = void (*)(ModuleRegistrar &);
     using SettingsReader =
         std::function<QJsonObject(const QString &profileId, const QString &moduleId, const QString &screenId)>;
+    using AccountReader = std::function<QJsonObject(const QString &profileId, const QString &moduleId,
+                                                    const QString &accountId, const QString &screenId)>;
 
     void registerModule(const QString &moduleId, RegisterFunction fn)
     {
@@ -42,6 +44,10 @@ public:
 
     // Reads the stored values of one screen in a profile, for settings().
     void setSettingsReader(SettingsReader reader) { m_settings.reader = std::move(reader); }
+    // Reads the values of one screen for an account, for
+    // ModuleSettings::accountValues(). Without one, every account reads the
+    // values of setSettingsReader().
+    void setAccountReader(AccountReader reader) { m_settings.accountReader = std::move(reader); }
 
     // ModuleRegistrar.
 
@@ -207,8 +213,15 @@ private:
         {
             return reader ? reader(profileId, moduleId, screenId) : QJsonObject();
         }
+        QJsonObject accountValues(const QString &profileId, const QString &accountId,
+                                  const QString &screenId) const override
+        {
+            return accountReader ? accountReader(profileId, moduleId, accountId, screenId)
+                                 : values(profileId, screenId);
+        }
         QString moduleId;
         SettingsReader reader;
+        AccountReader accountReader;
     };
 
     QString m_moduleId;
