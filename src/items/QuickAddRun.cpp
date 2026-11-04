@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <map>
 #include <utility>
 
 namespace mirante {
@@ -85,7 +86,6 @@ public:
 
     ApiClient *client() { return m_servers ? m_servers->client(m_profileId, m_moduleId, m_accountId) : nullptr; }
 
-    QString accountId() const { return m_accountId; }
 
     // Starts the timeout. When it runs out, the request ends as if it had
     // found nothing.
@@ -160,10 +160,6 @@ public:
     {
         if (!end())
             return;
-        if (proposal) {
-            for (QuickAddItem &item : proposal->items)
-                item.accountId = accountId();
-        }
         if (Done done = std::exchange(m_done, nullptr))
             done(std::move(proposal));
     }
@@ -213,8 +209,6 @@ public:
         if (!end())
             return;
         m_offered = nullptr;
-        for (QuickAddItem &item : items)
-            item.accountId = accountId();
         if (Done done = std::exchange(m_done, nullptr))
             done(std::move(items));
     }
@@ -249,6 +243,10 @@ struct QuickAddRun::Private
     QString profileId;
     int finding = 0;        // finders still running
     std::vector<QPointer<RequestBase>> requests;
+    // The account each module's requests use in the current run, by module
+    // id: the one the link's host belongs to, else the default. The items
+    // made get it. See decision 0144.
+    mutable std::map<QString, QString> accountOf;
 
     // Everything offered in the current finder run: the proposal's items,
     // then what each finder added.
@@ -284,7 +282,7 @@ struct QuickAddRun::Private
         std::vector<QuickAddItem> items;
         if (const Task *task = taskId.isEmpty() ? nullptr : model.task(taskId)) {
             for (const Item &item : task->items)
-                items.push_back(QuickAddItem{item.type, item.name, item.config, item.account});
+                items.push_back(QuickAddItem{item.type, item.name, item.config});
         }
         return items;
     }
@@ -350,7 +348,7 @@ struct QuickAddRun::Private
         item.config = defaultConfig(best.type->fields());
         for (auto it = best.match.config.begin(); it != best.match.config.end(); ++it)
             item.config.insert(it.key(), it.value());
-        item.accountId = best.accountId;
+        accountOf[moduleOfType(item.typeId)] = best.accountId;
 
         Proposal proposal;
         proposal.moduleId = moduleOfType(item.typeId);
@@ -358,6 +356,12 @@ struct QuickAddRun::Private
         if (!isOffered(taskItems(), item))
             proposal.proposal.items.push_back(std::move(item));
         return proposal;
+    }
+
+    QString accountOfType(const QString &typeId) const
+    {
+        const auto it = accountOf.find(moduleOfType(typeId));
+        return it != accountOf.end() ? it->second : QString();
     }
 
     void finderDone(int run, std::vector<QuickAddItem> items)
@@ -409,6 +413,7 @@ void QuickAddRun::propose(const QString &text, const QString &profileId)
     d->proposals = 0;
     d->text = text.trimmed();
     d->profileId = profileId;
+    d->accountOf.clear();
     const std::vector<ItemTypeRegistry::ModuleHandler> handlers = d->types.quickAddHandlers();
     const QString trimmed = text.trimmed();
     // A link is read in the account its host belongs to.
@@ -419,10 +424,10 @@ void QuickAddRun::propose(const QString &text, const QString &profileId)
     for (const ItemTypeRegistry::ModuleHandler &handler : handlers) {
         const QString moduleId = handler.moduleId;
         const ServerType *server = d->types.serverType(moduleId);
+        const QString accountId = urlmatches::accountFor(d->types, d->model, profileId, moduleId, url);
+        d->accountOf[moduleId] = accountId;
         auto *request = new HandlerRequest(
-            d->model, d->servers, profileId, moduleId,
-            urlmatches::accountFor(d->types, d->model, profileId, moduleId, url),
-            server ? server->screenId() : QString(), trimmed,
+            d->model, d->servers, profileId, moduleId, accountId, server ? server->screenId() : QString(), trimmed,
             [this, run, moduleId](std::optional<QuickAddProposal> proposal) {
                 d->handlerDone(run, moduleId, std::move(proposal));
             },
@@ -483,16 +488,10 @@ void QuickAddRun::findRelated(const Proposal &proposal, const QString &title, co
     const std::vector<ItemTypeRegistry::ModuleFinder> finders = d->types.relatedItemFinders();
     d->finding = int(finders.size()) + 1;
     for (const ItemTypeRegistry::ModuleFinder &finder : finders) {
-        // A finder of the proposal's module looks in the proposal's account.
-        QString accountId;
-        if (finder.moduleId == proposal.moduleId) {
-            for (const QuickAddItem &item : proposal.proposal.items) {
-                if (!item.accountId.isEmpty()) {
-                    accountId = item.accountId;
-                    break;
-                }
-            }
-        }
+        // A finder looks in the account its module's handler used, such as
+        // that of the proposal's link, else the default.
+        const auto known = d->accountOf.find(finder.moduleId);
+        const QString accountId = known != d->accountOf.end() ? known->second : QString();
         const ServerType *server = d->types.serverType(finder.moduleId);
         auto *request = new FinderRequest(
             d->model, d->servers, profileId, finder.moduleId, accountId, server ? server->screenId() : QString(),
@@ -543,7 +542,7 @@ QString QuickAddRun::create(const QString &projectId, const QString &title, cons
         item.type = offeredItem.typeId;
         item.name = offeredItem.name;
         item.config = offeredItem.config;
-        item.account = offeredItem.accountId;
+        item.account = d->accountOfType(item.type);
         task = edits::addItem(task, item);
 
         LayoutNode cell;
@@ -575,7 +574,7 @@ QStringList QuickAddRun::addToTask(const QString &taskId, const std::vector<Quic
         item.type = offeredItem.typeId;
         item.name = offeredItem.name;
         item.config = offeredItem.config;
-        item.account = offeredItem.accountId;
+        item.account = d->accountOfType(item.type);
         task = edits::addItem(task, item);
         ids << item.id;
     }
