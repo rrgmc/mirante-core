@@ -81,7 +81,9 @@ struct ProjectDialog::Private
         std::vector<Field> fields;
         QGroupBox *box = nullptr;
         ItemEditor *editor = nullptr;   // the module's own, or else a form
+        QAction *entry = nullptr;       // in the "Add settings" menu while not shown
         bool shown = false;
+        bool removed = false;           // the user removed it, so OK drops its settings
     };
     std::vector<Section> sections;
     QPushButton *addSettings = nullptr;     // its menu lists the sections not shown
@@ -93,19 +95,35 @@ struct ProjectDialog::Private
         return chosen ? profiles::groupDefault(*model, *chosen) : model->defaultProfile();
     }
 
-    // "Add settings": shows the section, and takes its entry out of the menu.
-    void showSection(const QString &moduleId, QAction *entry)
+    // "Add settings": shows the section, and hides its entry in the menu.
+    void showSection(const QString &moduleId)
+    {
+        for (Section &section : sections) {
+            if (section.moduleId == moduleId)
+                setShown(section, true);
+        }
+    }
+
+    // A section's Remove button: hides the section and empties it, so OK
+    // drops the module's settings. Its entry comes back to the menu.
+    void removeSection(const QString &moduleId)
     {
         for (Section &section : sections) {
             if (section.moduleId == moduleId) {
-                section.shown = true;
-                section.box->show();
+                section.editor->setConfig(QJsonObject());
+                setShown(section, false);
             }
         }
-        QMenu *menu = addSettings->menu();
-        menu->removeAction(entry);
-        entry->deleteLater();
-        addSettings->setVisible(!menu->isEmpty());
+    }
+
+    void setShown(Section &section, bool shown)
+    {
+        section.shown = shown;
+        section.removed = !shown;
+        section.box->setVisible(shown);
+        section.entry->setVisible(!shown);
+        addSettings->setVisible(std::any_of(sections.begin(), sections.end(),
+                                            [](const Section &each) { return !each.shown; }));
     }
 
     // Exactly one folder is main when there are any: the first main one, or
@@ -343,23 +361,33 @@ ProjectDialog::ProjectDialog(const Project &project, const Model &model, const D
             section.editor = new FieldForm(section.fields, EditorContext(), box);
         section.editor->setObjectName(QStringLiteral("moduleSettings.") + moduleId);
         section.editor->setConfig(project.moduleSettings.value(moduleId).toObject());
+        auto *remove = new QPushButton(tr("Remove"), box);
+        remove->setObjectName(QStringLiteral("removeSection.") + moduleId);
+        remove->setToolTip(tr("Remove the %1 settings from this project").arg(section.moduleName));
+        connect(remove, &QPushButton::clicked, this, [this, moduleId] { d->removeSection(moduleId); });
+        auto *removeRow = new QHBoxLayout;
+        removeRow->addStretch(1);
+        removeRow->addWidget(remove);
         auto *boxLayout = new QVBoxLayout(box);
         boxLayout->addWidget(section.editor);
+        boxLayout->addLayout(removeRow);
         sections->addWidget(box);
         section.box = box;
         section.shown = !project.moduleSettings.value(moduleId).toObject().isEmpty();
         box->setVisible(section.shown);
-        if (!section.shown) {
-            QAction *entry = addMenu->addAction(section.moduleName);
-            connect(entry, &QAction::triggered, this, [this, moduleId, entry] { d->showSection(moduleId, entry); });
-        }
+        // Every section has an entry, in the sections' order; it shows while
+        // the section does not.
+        section.entry = addMenu->addAction(section.moduleName);
+        section.entry->setVisible(!section.shown);
+        connect(section.entry, &QAction::triggered, this, [this, moduleId] { d->showSection(moduleId); });
         d->sections.push_back(section);
     }
 
     d->addSettings = new QPushButton(tr("Add settings"), this);
     d->addSettings->setObjectName(QStringLiteral("addSettings"));
     d->addSettings->setMenu(addMenu);
-    d->addSettings->setVisible(!addMenu->isEmpty());
+    d->addSettings->setVisible(std::any_of(d->sections.begin(), d->sections.end(),
+                                           [](const Private::Section &section) { return !section.shown; }));
     auto *addSettingsRow = new QHBoxLayout;
     addSettingsRow->addWidget(d->addSettings);
     addSettingsRow->addStretch(1);
@@ -405,8 +433,11 @@ Project ProjectDialog::value() const
     for (const Private::Row &row : d->rows)
         project.folders.push_back(row.folder);
     for (const Private::Section &section : d->sections) {
-        if (!section.shown)
+        if (!section.shown) {
+            if (section.removed)
+                project.moduleSettings.remove(section.moduleId);
             continue;
+        }
         // The editor keeps the keys it does not show. Of the declared fields, an
         // empty value removes its key, and an empty module object goes.
         QJsonObject values = section.editor->config();
