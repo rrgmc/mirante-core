@@ -17,10 +17,11 @@ Decision 0143 rejected hooks because the app would need a listener.
 ## Decision
 
 - **A Claude Code plugin, `mirante-bridge`, ships with the `claude` module** in its `plugin/` folder. Its hooks and a status line wrapper write files into an exchange folder. The app opens no port and runs no listener.
-- **The exchange folder** is `MIRANTE_CLAUDE_DIR`, or `~/.mirante/claude/sessions` when that is not set. The plugin cannot read the app's settings, so the place is fixed. Each session has up to two files, named by its session id, each replaced whole on every write:
-  - `<session>.hook.json`: the latest hook event, reduced to its name, the tool's name, the notification's type and the time. Prompt text and tool input are not written.
+- **The exchange folder** is `MIRANTE_CLAUDE_DIR`, or `~/.mirante/claude/sessions` when that is not set. The plugin cannot read the app's settings, so the place is fixed. Each session has up to two files, named by its session id, each replaced whole on every write. The file's modified time is the event's time.
+  - `<session>.hook.json`: the latest hook event, reduced to its name, the tool's name and the notification's type. Prompt text and tool input are not written.
   - `<session>.status.json`: the latest status line input, as Claude Code gave it.
-- **The module joins the files to the rows** of `claude agents --json` by session id. A row gets its tool, "Needs permission", its model, effort, context use and cost. Each account gets the rate limits of its newest status file. A file of a session that is not listed is ignored, and a file older than seven days is deleted.
+- **The module joins the files to the rows** of `claude agents --json` by session id. A row gets its tool, "Needs permission", its model, effort, context use and cost.
+- **The command's state decides.** The hooks run in the background, so two quick events can finish out of order. A tool shows only while `claude agents --json` says the session works, and "Needs permission" only while it says the session needs input. Each account gets the rate limits of its newest status file. A file of a session that is not listed is ignored, and a file older than seven days is deleted.
 - **The list refreshes when the folder changes,** at most once every five seconds, as well as on the usual poll.
 - **Without the plugin the list works as before.** The plugin is optional, and the item has no setting for it.
 - **The app reads only files that its own plugin writes.** It still reads none of Claude Code's stored data and calls no undocumented endpoint. Decisions 0008, 0084 and 0143 stand for everything else.
