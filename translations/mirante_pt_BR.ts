@@ -27,6 +27,7 @@
      Task state: active, done, archived: Ativa, concluída, arquivada
      Attention: Atenção
      Watch, watched item: Acompanhar, item acompanhado
+     Account, default account: Conta, conta padrão
      Server: Servidor
      Token: Token
      Profile, default profile: Perfil, perfil padrão
@@ -57,6 +58,13 @@
      Comment: Comentário
 -->
 <TS version="2.1" language="pt_BR" sourcelanguage="en">
+<context>
+    <name>Accounts</name>
+    <message>
+        <source>Default</source>
+        <translation>Padrão</translation>
+    </message>
+</context>
 <context>
     <name>DashboardCellFactory</name>
     <message>
@@ -864,6 +872,14 @@
         <source>%1 was copied into the workspace.</source>
         <translation>%1 foi copiado para o espaço de trabalho.</translation>
     </message>
+    <message>
+        <source>New account</source>
+        <translation>Nova conta</translation>
+    </message>
+    <message>
+        <source>Remove the account &quot;%1&quot;? Items that use it will use the default account. Its token on this device is deleted.</source>
+        <translation>Remover a conta &quot;%1&quot;? Os itens que a usam passam a usar a conta padrão. O token dela neste dispositivo é apagado.</translation>
+    </message>
 </context>
 <context>
     <name>mirante::FocusView</name>
@@ -1076,6 +1092,18 @@
     <message>
         <source>The module of this item type is not available, so only the name and the dashboard title can be changed. The rest of the item is kept.</source>
         <translation>O módulo deste tipo de item não está disponível, então só o nome e o título no painel podem ser alterados. O resto do item é mantido.</translation>
+    </message>
+    <message>
+        <source>Unknown account, uses the default</source>
+        <translation>Conta desconhecida, usa a padrão</translation>
+    </message>
+    <message>
+        <source>The account of the module&apos;s server that the item uses, with its own settings and token. Accounts are added in the profile&apos;s Modules menu.</source>
+        <translation>A conta do servidor do módulo que o item usa, com suas próprias configurações e token. As contas são adicionadas no menu Módulos do perfil.</translation>
+    </message>
+    <message>
+        <source>Account:</source>
+        <translation>Conta:</translation>
     </message>
 </context>
 <context>
@@ -1629,6 +1657,18 @@
         <source>Default</source>
         <translation>Padrão</translation>
     </message>
+    <message>
+        <source>%1, account %2, in the profile %3 refused the token.</source>
+        <translation>%1, conta %2, no perfil %3 recusou o token.</translation>
+    </message>
+    <message>
+        <source>%1: %2…</source>
+        <translation>%1: %2…</translation>
+    </message>
+    <message>
+        <source>Add Account…</source>
+        <translation>Adicionar Conta…</translation>
+    </message>
 </context>
 <context>
     <name>mirante::ModuleSettingsDialog</name>
@@ -1655,6 +1695,26 @@
     <message>
         <source>This module has no server to ask.</source>
         <translation>Este módulo não tem servidor para consultar.</translation>
+    </message>
+    <message>
+        <source>Account name:</source>
+        <translation>Nome da conta:</translation>
+    </message>
+    <message>
+        <source>%1: %2 %3 (%4)</source>
+        <translation>%1: %2 %3 (%4)</translation>
+    </message>
+    <message>
+        <source>These settings belong to the account &quot;%1&quot; of the profile &quot;%2&quot;. Items that choose it read them. They are saved in the workspace and shared with it; tokens stay on this device.</source>
+        <translation>Estas configurações pertencem à conta &quot;%1&quot; do perfil &quot;%2&quot;. Os itens que a escolhem as leem. Elas são salvas no espaço de trabalho e compartilhadas com ele; os tokens ficam neste dispositivo.</translation>
+    </message>
+    <message>
+        <source>Remove Account</source>
+        <translation>Remover Conta</translation>
+    </message>
+    <message>
+        <source>The account needs a name.</source>
+        <translation>A conta precisa de um nome.</translation>
     </message>
 </context>
 <context>

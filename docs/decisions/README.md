@@ -58,7 +58,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0051](0051-paste-images-from-the-items-menu.md) | Pasted images become items of a task, not cells of a dashboard | Accepted |
 | [0052](0052-no-pinning.md) | The preview is never pinned | Accepted |
 | [0053](0053-no-focus-entry-in-the-sidebar.md) | The sidebar has no Focus entry | Accepted |
-| [0054](0054-module-settings-replace-connections.md) | Module settings replace connections | Accepted |
+| [0054](0054-module-settings-replace-connections.md) | Module settings replace connections | Accepted; one server per profile extended by 0144 |
 | [0055](0055-move-workspace.md) | Moving a workspace to another folder | Accepted |
 | [0056](0056-modules-window.md) | A Modules window lists the modules and their item types | Accepted |
 | [0057](0057-any-profile-can-be-the-default.md) | Any profile can be the default | Accepted |

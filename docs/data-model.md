@@ -115,6 +115,7 @@ The sidebar's Trash list and its commands are in [ui](ui.md#trash).
 | `name` | Display name, shown in the sidebar, in tabs and in cell headers |
 | `dashboardTitle` | Optional, written only when not empty. Shown in dashboards instead of `name`: in cell headers, in the titles of new layout tabs and in the task summary panel. See [decision 0142](decisions/0142-item-dashboard-title.md). |
 | `config` | Object with the fields of the item type |
+| `account` | Optional, written only when not empty. The id of another [account](#accounts) of the type's module in the item's profile. Without it, or when the profile has no such account, the item uses the default account. |
 | `profile` | Optional. The id of a [profile](#profile) that replaces the group's for this item. Offered only for types that use a profile: types whose views are web views, or whose module has settings screens. Items from before decision 0050 name it `webProfile`, which is still read. |
 | `watch` | Optional, written only when true. The item is [watched](ui.md#watched-items): it counts on the tray icon and may send desktop notifications. See [decision 0087](decisions/0087-watched-items.md). |
 | `pageKeys` | Optional, written only when not empty. Key sequences, such as `"Ctrl+K"`, that the item's web page keeps instead of the app. See [decision 0088](decisions/0088-keys-a-page-keeps.md). |
@@ -140,6 +141,7 @@ The list belongs to the workspace and is kept in `workspace.mirante`, under `pro
 | `id` | UUID, or `default` for the profile a workspace gets when it has none |
 | `name` | Display name |
 | `moduleSettings` | Optional. The values of the modules' settings screens; see [module settings](#module-settings) |
+| `accounts` | Optional. The other accounts of the modules' servers; see [accounts](#accounts) |
 
 ```json
 {
@@ -230,9 +232,34 @@ Each module that talks to a server keeps it in its settings, one server per prof
 | | `jira.general.email`, the account's email, for Jira Cloud only | none |
 | | `jira.general.extraFields`, names of extra fields to show. See [decision 0073](decisions/0073-jira-extra-fields.md) | none |
 
-- An item uses the server of its [profile](#profile): its own, else its group's, else the default profile's.
+- An item uses the server of its [profile](#profile): its own, else its group's, else the default profile's. Within the profile it uses its [account](#accounts), else the default account.
 - Jira's deployment chooses its API and how the token is sent. `auto` means Jira Cloud for an `.atlassian.net` or `.jira.com` site, and Jira Data Center otherwise. Jira Cloud sends the email with the token, so without an email no request is sent. The email is not secret, so it is synced, but it is personal data in the shared workspace. See [integrations](integrations.md#jira) and [decision 0060](decisions/0060-jira-cloud-or-data-center-by-setting.md).
 - The token for the server is entered on the same screen, in a `Secret` field. It is never part of the synced data. The keychain keeps it under the key `<workspace id>/<profile id>/<module id>/<field key>`, such as `5a3e…/default/gitlab/token`, so each workspace keeps its own ([decision 0059](decisions/0059-logins-per-workspace.md)). See [sync](sync.md#secrets).
+
+## Accounts
+
+A profile can hold several accounts of a module's server, such as a personal GitHub account and a bot, or github.com and a GitHub Enterprise server. See [decision 0144](decisions/0144-several-accounts-per-module.md).
+
+- **The default account** is the server as described above: the values of the server's screen in `moduleSettings`, and the token under the key above. It has no entry and no stored name; lists call it "Default".
+- **Other accounts** are kept in the profile's entry, under `accounts`: an object of module ids, each an array of accounts. Each has an `id`, a UUID, a `name`, and `values`, the values of the screen that the module's `ServerType` names, such as its own base URL, repositories, Jira email and deployment. Other keys of an entry are kept. An entry without an id, or with an id already listed, is skipped.
+- Only the server's screen is per account. The module's other screens, and project settings, are read from the profile, whatever the account.
+- The token of another account is kept under `<workspace id>/<profile id>/<module id>/<account id>/<field key>`.
+- An item uses the account its `account` names, if its profile has one with that id for the item's module, else the default account. An item moved to another profile keeps the id, and uses that profile's default until it has the account. The code is `accounts::effective` in `src/core/Accounts.h`.
+- Removing an account removes its entry and its tokens on this device. Items that name it use the default account.
+- The accounts are synced with the profiles. Their tokens are not.
+
+```json
+{
+  "id": "3f6c2a8e-5d1b-4c7a-9e2f-8b0d4a6c1e93",
+  "name": "Work",
+  "moduleSettings": { "github": { "general": { "baseUrl": "https://github.com" } } },
+  "accounts": {
+    "github": [
+      { "id": "8c1f4e2a-…", "name": "Bot", "values": { "baseUrl": "https://github.com", "repositories": [ "acme/infra" ] } }
+    ]
+  }
+}
+```
 
 ## Dashboard
 

@@ -6,6 +6,10 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+### Added
+
+- A profile can hold several accounts of a module, such as a personal GitHub account and a bot, or github.com and a GitHub Enterprise server. Each has its own settings and token. **Add Account…** in a module's submenu of Profiles > <profile> > Modules adds one, and an item chooses its account in the item dialog. A pasted link is read in the account of its host. See [decision 0144](docs/decisions/0144-several-accounts-per-module.md).
+
 ### Changed
 
 - Every build has **Help > Show Log** and keeps the log messages from the start. The `--log` option is removed. See [decision 0140](docs/decisions/0140-log-window-in-all-builds.md).
