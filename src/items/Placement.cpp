@@ -2,6 +2,7 @@
 
 #include "api/Attention.h"
 #include "api/StatusCache.h"
+#include "core/Accounts.h"
 #include "core/DeviceSettings.h"
 #include "core/Model.h"
 #include "core/Profiles.h"
@@ -775,7 +776,8 @@ void Placement::openSettings()
     if (!found || !d->services.openServerSettings)
         return;
     d->services.openServerSettings(profiles::effective(*d->services.model, d->taskId, d->itemId),
-                                   moduleOfType(found->type));
+                                   moduleOfType(found->type),
+                                   accounts::effective(*d->services.model, d->taskId, d->itemId));
 }
 
 } // namespace mirante

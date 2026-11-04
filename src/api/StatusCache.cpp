@@ -2,6 +2,7 @@
 
 #include "api/ModuleDirectory.h"
 #include "api/ServerClient.h"
+#include "core/Accounts.h"
 #include "core/DeviceSettings.h"
 #include "core/GitHead.h"
 #include "core/Model.h"
@@ -138,12 +139,17 @@ public:
 
     // folders holds the local path of each of the project's folders, by id,
     // and of the main folder under an empty id.
+    // accountId is the item's account, and serverScreenId the screen that
+    // holds its values. See decision 0144.
     StatusJobImpl(QJsonObject config, QJsonObject projectSettings, QString profileId, QString moduleId,
-                  std::map<QString, QString> folders, const Model &model, ApiClient &server, Done done)
+                  QString accountId, QString serverScreenId, std::map<QString, QString> folders,
+                  const Model &model, ApiClient &server, Done done)
         : m_config(std::move(config))
         , m_projectSettings(std::move(projectSettings))
         , m_profileId(std::move(profileId))
         , m_moduleId(std::move(moduleId))
+        , m_accountId(std::move(accountId))
+        , m_serverScreenId(std::move(serverScreenId))
         , m_folders(std::move(folders))
         , m_model(model)
         , m_server(server)
@@ -155,7 +161,7 @@ public:
     QJsonValue projectSetting(const QString &key) const override { return m_projectSettings.value(key); }
     QJsonObject moduleSettings(const QString &screenId) const override
     {
-        return m_model.moduleSettings(m_profileId, m_moduleId, screenId);
+        return accounts::screenValues(m_model, m_profileId, m_moduleId, m_accountId, m_serverScreenId, screenId);
     }
     ApiClient &server() override { return m_server; }
     QObject *owner() override { return this; }
@@ -203,6 +209,8 @@ private:
     QJsonObject m_projectSettings;
     QString m_profileId;
     QString m_moduleId;
+    QString m_accountId;
+    QString m_serverScreenId;
     std::map<QString, QString> m_folders;
     std::set<QString> m_heads;
     const Model &m_model;
@@ -292,8 +300,8 @@ struct StatusCache::Private
     }
 
     // What a fetch of the item depends on: its type and configuration, its
-    // profile, its module's settings in the profile and the project, and the
-    // local paths of the project's folders.
+    // profile and account, its module's settings in the profile, the account
+    // and the project, and the local paths of the project's folders.
     QJsonObject inputsOf(const Task &task, const Item &item, const QJsonObject &folders) const
     {
         const QString moduleId = moduleOf(item.type);
@@ -304,6 +312,11 @@ struct StatusCache::Private
         inputs.insert(QStringLiteral("profile"), profileId);
         if (const Profile *profile = model->profile(profileId))
             inputs.insert(QStringLiteral("profileSettings"), profile->moduleSettings.value(moduleId));
+        const QString accountId = accounts::effective(*model, task.id, item.id);
+        if (const std::optional<Account> account = accounts::find(*model, profileId, moduleId, accountId)) {
+            inputs.insert(QStringLiteral("account"), accountId);
+            inputs.insert(QStringLiteral("accountSettings"), account->values);
+        }
         if (const Project *project = model->project(task.projectId))
             inputs.insert(QStringLiteral("projectSettings"), project->moduleSettings.value(moduleId));
         inputs.insert(QStringLiteral("folders"), folders);
@@ -495,12 +508,15 @@ struct StatusCache::Private
         QJsonObject projectSettings;
         if (const Project *project = model->project(task.projectId))
             projectSettings = project->moduleSettings.value(moduleId).toObject();
-        ApiClient *client = servers->client(profileId, moduleId);
+        const QString accountId = accounts::effective(*model, task.id, item.id);
+        ApiClient *client = servers->client(profileId, moduleId, accountId);
         if (!client)
             client = &noServer;
+        const ServerType *serverType = modules->serverType(moduleId);
 
         const QString itemId = item.id;
-        auto *job = new StatusJobImpl(item.config, projectSettings, profileId, moduleId, foldersOf(task.projectId),
+        auto *job = new StatusJobImpl(item.config, projectSettings, profileId, moduleId, accountId,
+                                      serverType ? serverType->screenId() : QString(), foldersOf(task.projectId),
                                       *model, *client,
                                       [this, itemId](StatusJobImpl *done, const ItemStatus &status) {
                                           finished(itemId, done, status);

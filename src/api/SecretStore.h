@@ -19,10 +19,23 @@ class SecretBackend;
 // id, the first part is left out. See docs/sync.md#secrets and decision 0059.
 QString secretKey(const QString &workspaceId, const QString &profileId, const QString &moduleId,
                   const QString &fieldKey);
+// The key of a token of an account: the one above for the default account,
+// whose id is empty, and "<workspace id>/<profile id>/<module id>/<account
+// id>/<field key>" for another. See decision 0144.
+QString secretKey(const QString &workspaceId, const QString &profileId, const QString &moduleId,
+                  const QString &accountId, const QString &fieldKey);
+
+// The full keys of the tokens of one other account: the Secret fields of the
+// module's server screen. Empty for the default account or a module without
+// a ServerType.
+QStringList accountTokenKeys(const QString &workspaceId, const ModuleDirectory &modules, const QString &profileId,
+                             const QString &moduleId, const QString &accountId);
 
 // "<profile id>/<module id>/<field key>" for every profile of the model and
-// every Secret field of every module's settings screens: the keys a workspace
-// can have, without its id. The keychain cannot list its keys, so removing
+// every Secret field of every module's settings screens, and
+// "<profile id>/<module id>/<account id>/<field key>" for the Secret fields
+// of the server screen in each other account: the keys a workspace can have,
+// without its id. The keychain cannot list its keys, so removing
 // and moving tokens works from this list. See decision 0063.
 QStringList tokenKeys(const Model &model, const ModuleDirectory &modules);
 

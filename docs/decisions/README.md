@@ -147,6 +147,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0140](0140-log-window-in-all-builds.md) | The log window in every build, the sample data menu in debug builds only | Accepted |
 | [0141](0141-one-menu-entry-for-links.md) | One menu entry adds items from a link | Accepted |
 | [0142](0142-item-dashboard-title.md) | Items have an optional title for dashboards | Accepted |
+| [0144](0144-several-accounts-per-module.md) | A profile can hold several accounts of a module | Accepted |
 
 ## Template
 

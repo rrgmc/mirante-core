@@ -2,6 +2,7 @@
 
 #include "api/ModuleDirectory.h"
 #include "api/SecretStore.h"
+#include "core/Accounts.h"
 #include "core/Model.h"
 
 #include "Version.h"
@@ -110,7 +111,7 @@ ApiReply errorReply(ApiReply::Error error, const QString &message, int httpStatu
 
 } // namespace
 
-// One module's server in one profile. Owned by ServerClients.
+// One account of a module's server in one profile. Owned by ServerClients.
 class ServerClient : public QObject, public ApiClient
 {
 public:
@@ -124,7 +125,7 @@ public:
     };
 
     ServerClient(ServerClients &owner, const Model &model, const ServerType &type, const ModuleSettings *settings,
-                 SecretStore &secrets, QNetworkAccessManager &network, QString profileId, QString moduleId,
+                 SecretStore &secrets, QNetworkAccessManager &network, ServerId id,
                  std::optional<Fixed> fixed = std::nullopt);
     ~ServerClient() override;
 
@@ -188,8 +189,7 @@ private:
     const ModuleSettings *m_settings;
     SecretStore *m_secrets;
     QNetworkAccessManager *m_network;
-    QString m_profileId;
-    QString m_moduleId;
+    ServerId m_id;
     std::optional<Fixed> m_fixed;
 
     // The token, once read. Never logged.
@@ -210,15 +210,14 @@ private:
 
 ServerClient::ServerClient(ServerClients &owner, const Model &model, const ServerType &type,
                            const ModuleSettings *settings, SecretStore &secrets, QNetworkAccessManager &network,
-                           QString profileId, QString moduleId, std::optional<Fixed> fixed)
+                           ServerId id, std::optional<Fixed> fixed)
     : m_owner(&owner)
     , m_model(&model)
     , m_type(&type)
     , m_settings(settings)
     , m_secrets(&secrets)
     , m_network(&network)
-    , m_profileId(std::move(profileId))
-    , m_moduleId(std::move(moduleId))
+    , m_id(std::move(id))
     , m_fixed(std::move(fixed))
 {
     m_retryTimer.setSingleShot(true);
@@ -243,7 +242,10 @@ ServerClient::ServerClient(ServerClients &owner, const Model &model, const Serve
         pump();
     });
     connect(m_model, &Model::profilesChanged, this, [this] {
-        if (m_failing && values() != m_failingValues)
+        // A removed account stops failing too: nothing uses it any more.
+        const bool gone = !m_id.accountId.isEmpty()
+                          && !accounts::find(*m_model, m_id.profileId, m_id.moduleId, m_id.accountId);
+        if (m_failing && (gone || values() != m_failingValues))
             setFailing(false);
     });
 }
@@ -262,12 +264,16 @@ QJsonObject ServerClient::values() const
 {
     if (m_fixed)
         return m_fixed->values;
-    return m_settings ? m_settings->values(m_profileId, m_type->screenId()) : QJsonObject();
+    if (!m_id.accountId.isEmpty()) {
+        const std::optional<Account> account = accounts::find(*m_model, m_id.profileId, m_id.moduleId, m_id.accountId);
+        return account ? account->values : QJsonObject();
+    }
+    return m_settings ? m_settings->values(m_id.profileId, m_type->screenId()) : QJsonObject();
 }
 
 QString ServerClient::tokenKey() const
 {
-    return secretKey(m_model->workspaceId(), m_profileId, m_moduleId, m_type->tokenKey());
+    return secretKey(m_model->workspaceId(), m_id.profileId, m_id.moduleId, m_id.accountId, m_type->tokenKey());
 }
 
 QUrl ServerClient::baseUrl() const
@@ -607,7 +613,7 @@ void ServerClient::setFailing(bool failing)
     // The profile's own client is not failing because a token typed into a
     // dialog was refused.
     if (!m_fixed)
-        emit m_owner->failingChanged(m_profileId, m_moduleId);
+        emit m_owner->failingChanged(m_id);
 }
 
 struct ServerClients::Private
@@ -616,7 +622,7 @@ struct ServerClients::Private
     const ModuleDirectory *modules = nullptr;
     SecretStore *secrets = nullptr;
     QNetworkAccessManager *network = nullptr;
-    std::map<QPair<QString, QString>, std::unique_ptr<ServerClient>> clients;
+    std::map<ServerId, std::unique_ptr<ServerClient>> clients;
 };
 
 ServerClients::ServerClients(const Model &model, const ModuleDirectory &modules, SecretStore &secrets,
@@ -632,9 +638,9 @@ ServerClients::ServerClients(const Model &model, const ModuleDirectory &modules,
 
 ServerClients::~ServerClients() = default;
 
-ApiClient *ServerClients::client(const QString &profileId, const QString &moduleId)
+ApiClient *ServerClients::client(const QString &profileId, const QString &moduleId, const QString &accountId)
 {
-    const QPair<QString, QString> key(profileId, moduleId);
+    const ServerId key{profileId, moduleId, accountId};
     auto &slot = d->clients[key];
     if (!slot) {
         const ServerType *type = d->modules->serverType(moduleId);
@@ -643,13 +649,13 @@ ApiClient *ServerClients::client(const QString &profileId, const QString &module
             return nullptr;
         }
         slot = std::make_unique<ServerClient>(*this, *d->model, *type, d->modules->moduleSettings(moduleId),
-                                              *d->secrets, *d->network, profileId, moduleId);
+                                              *d->secrets, *d->network, key);
     }
     return slot.get();
 }
 
 std::unique_ptr<ApiClient> ServerClients::clientFor(const QString &profileId, const QString &moduleId,
-                                                    const QJsonObject &values, const QJsonObject &typedSecrets,
+                                                    const QString &accountId, const QJsonObject &values, const QJsonObject &typedSecrets,
                                                     const QStringList &removedSecrets)
 {
     const ServerType *type = d->modules->serverType(moduleId);
@@ -667,18 +673,18 @@ std::unique_ptr<ApiClient> ServerClients::clientFor(const QString &profileId, co
         fixed.tokenGiven = true;
     }
     return std::make_unique<ServerClient>(*this, *d->model, *type, d->modules->moduleSettings(moduleId), *d->secrets,
-                                          *d->network, profileId, moduleId, std::move(fixed));
+                                          *d->network, ServerId{profileId, moduleId, accountId}, std::move(fixed));
 }
 
-bool ServerClients::failing(const QString &profileId, const QString &moduleId) const
+bool ServerClients::failing(const QString &profileId, const QString &moduleId, const QString &accountId) const
 {
-    const auto it = d->clients.find(qMakePair(profileId, moduleId));
+    const auto it = d->clients.find(ServerId{profileId, moduleId, accountId});
     return it != d->clients.end() && it->second->isFailing();
 }
 
-QList<QPair<QString, QString>> ServerClients::failingServers() const
+QList<ServerId> ServerClients::failingServers() const
 {
-    QList<QPair<QString, QString>> result;
+    QList<ServerId> result;
     for (const auto &[key, client] : d->clients) {
         if (client->isFailing())
             result.append(key);
@@ -688,10 +694,10 @@ QList<QPair<QString, QString>> ServerClients::failingServers() const
 
 void ServerClients::clear()
 {
-    const QList<QPair<QString, QString>> wereFailing = failingServers();
+    const QList<ServerId> wereFailing = failingServers();
     d->clients.clear();
-    for (const auto &server : wereFailing)
-        emit failingChanged(server.first, server.second);
+    for (const ServerId &server : wereFailing)
+        emit failingChanged(server);
 }
 
 } // namespace mirante

@@ -2,12 +2,14 @@
 
 #include "api/SecretStore.h"
 #include "api/ServerClient.h"
+#include "core/Accounts.h"
 #include "core/DeviceSettings.h"
 #include "core/Edits.h"
 #include "core/GroupColours.h"
 #include "core/Model.h"
 #include "core/Profiles.h"
 #include "core/Store.h"
+#include <mirante/ApiClient.h>
 #include <mirante/FieldValidation.h>
 #include "items/ItemTypeRegistry.h"
 #include "layout/Presets.h"
@@ -31,6 +33,7 @@
 #include <QApplication>
 #include <QDialog>
 #include <QFileInfo>
+#include <QHash>
 #include <QGuiApplication>
 #include <QImage>
 #include <QMenu>
@@ -189,6 +192,8 @@ struct EntityActions::Private
         const Group *group = project ? model.group(project->groupId) : nullptr;
         const QString groupProfile = group ? profiles::groupDefault(model, *group) : model.defaultProfile();
         dialog.setProfiles(profiles::all(model), groupProfile, profiles::nameOf(model, groupProfile));
+        // The profiles' other accounts, and a link read in the account of its host.
+        dialog.setModel(&model);
     }
 
     // Runs the project dialog and applies its value and folder paths.
@@ -271,7 +276,16 @@ void EntityActions::editProfiles()
 {
     ProfilesDialog dialog(d->model, d->dialogParent);
     dialog.setConfirm(d->confirm);
-    connect(&dialog, &ProfilesDialog::profileDeleted, this, [this](const QString &id) {
+    // The other accounts of each profile and module, by "<profile>/<module>":
+    // the dialog cannot add any, and a deleted profile takes its own along.
+    QHash<QString, QStringList> accountsBefore;
+    for (const Profile &profile : d->model.profiles()) {
+        for (const QString &moduleId : d->types.moduleIds()) {
+            for (const Account &account : accounts::others(d->model, profile.id, moduleId))
+                accountsBefore[profile.id + QLatin1Char('/') + moduleId] << account.id;
+        }
+    }
+    connect(&dialog, &ProfilesDialog::profileDeleted, this, [this, accountsBefore](const QString &id) {
         // Its logins on this device go too. The placements that used it make
         // new views at once, but delete the old ones later. The profile goes
         // after those pages, or Qt warns.
@@ -288,6 +302,10 @@ void EntityActions::editProfiles()
                             keys << secretKey(d->model.workspaceId(), id, moduleId, field.key);
                     }
                 }
+                // The profile's other accounts went with it, so their ids
+                // come from the profiles as they were when the dialog opened.
+                for (const QString &accountId : accountsBefore.value(id + QLatin1Char('/') + moduleId))
+                    keys << accountTokenKeys(d->model.workspaceId(), d->types, id, moduleId, accountId);
             }
             secrets->removeAll(keys);
         }
@@ -302,21 +320,52 @@ void EntityActions::editProfiles()
         dialog.exec();
 }
 
-void EntityActions::editModuleSettings(const QString &profileId, const QString &moduleId, const QString &screenId)
+void EntityActions::editModuleSettings(const QString &profileId, const QString &moduleId, const QString &screenId,
+                                       const QString &accountId)
+{
+    if (accountId.isEmpty()) {
+        editServerScreen(profileId, moduleId, screenId, std::nullopt);
+        return;
+    }
+    const ServerType *server = d->types.serverType(moduleId);
+    const std::optional<Account> account = accounts::find(d->model, profileId, moduleId, accountId);
+    if (!server || server->screenId() != screenId || !account)
+        return;
+    editServerScreen(profileId, moduleId, screenId, account);
+}
+
+QString EntityActions::addAccount(const QString &profileId, const QString &moduleId)
+{
+    const ServerType *server = d->types.serverType(moduleId);
+    if (!server || !d->model.profile(profileId))
+        return {};
+    Account account;
+    account.id = edits::newId();
+    account.name = tr("New account");
+    return editServerScreen(profileId, moduleId, server->screenId(), account, true) ? account.id : QString();
+}
+
+bool EntityActions::editServerScreen(const QString &profileId, const QString &moduleId, const QString &screenId,
+                                     const std::optional<Account> &account, bool creating)
 {
     const SettingsScreen *screen = d->types.settingsScreen(moduleId, screenId);
     if (!screen || !d->model.profile(profileId))
-        return;
+        return false;
+    const QString accountId = account ? account->id : QString();
     EditorContext context = d->filesContext();
     context.profileId = profileId;
+    context.accountId = accountId;
     ModuleSettingsDialog dialog(profiles::nameOf(d->model, profileId), d->types.moduleName(moduleId), *screen,
-                                d->model.moduleSettings(profileId, moduleId, screenId), context, d->dialogParent);
+                                account ? account->values : d->model.moduleSettings(profileId, moduleId, screenId),
+                                context, d->dialogParent);
+    if (account)
+        dialog.setAccount(account->name);
     // "Add from Server…" asks the module's server with the values in the form.
     if (ServerClients *servers = d->servers; servers && d->types.serverType(moduleId)) {
-        dialog.setServerFactory([servers, profileId, moduleId](const QJsonObject &values,
-                                                               const QJsonObject &typedSecrets,
-                                                               const QStringList &removedSecrets) {
-            return servers->clientFor(profileId, moduleId, values, typedSecrets, removedSecrets);
+        dialog.setServerFactory([servers, profileId, moduleId, accountId](const QJsonObject &values,
+                                                                          const QJsonObject &typedSecrets,
+                                                                          const QStringList &removedSecrets) {
+            return servers->clientFor(profileId, moduleId, accountId, values, typedSecrets, removedSecrets);
         });
     }
     const QString workspaceId = d->model.workspaceId();
@@ -344,7 +393,7 @@ void EntityActions::editModuleSettings(const QString &profileId, const QString &
             return ItemEditor::SecretState::Unknown;
         };
         for (const QString &fieldKey : secretFields) {
-            const QString key = secretKey(workspaceId, profileId, moduleId, fieldKey);
+            const QString key = secretKey(workspaceId, profileId, moduleId, accountId, fieldKey);
             editor->setSecretState(fieldKey, stateOf(key));
             if (secrets->state(key) == SecretStore::State::Unknown) {
                 secrets->read(key, editor, [editor, stateOf, key, fieldKey](const std::optional<QString> &) {
@@ -354,14 +403,34 @@ void EntityActions::editModuleSettings(const QString &profileId, const QString &
         }
     }
     if (!d->exec(dialog))
-        return;
-    d->model.setModuleSettings(profileId, moduleId, screenId, dialog.values());
+        return false;
+    if (dialog.removeChosen()) {
+        // A new account is not stored yet, so there is nothing to remove.
+        if (creating || !account)
+            return false;
+        if (!d->confirm(tr("Remove the account \"%1\"? Items that use it will use the default account. Its "
+                           "token on this device is deleted.")
+                            .arg(account->name)))
+            return false;
+        accounts::remove(d->model, profileId, moduleId, accountId);
+        if (SecretStore *secrets = d->secrets)
+            secrets->removeAll(accountTokenKeys(workspaceId, d->types, profileId, moduleId, accountId));
+        return true;
+    }
+    if (account) {
+        Account changed = *account;
+        changed.name = dialog.accountName();
+        changed.values = dialog.values();
+        accounts::set(d->model, profileId, moduleId, changed);
+    } else {
+        d->model.setModuleSettings(profileId, moduleId, screenId, dialog.values());
+    }
     // Tokens stay on this device, in the keychain. Without a secret store,
     // as in some tests, they are dropped.
     if (SecretStore *secrets = d->secrets) {
         for (const QString &fieldKey : editor->removedSecrets()) {
             if (secretFields.contains(fieldKey))
-                secrets->remove(secretKey(workspaceId, profileId, moduleId, fieldKey));
+                secrets->remove(secretKey(workspaceId, profileId, moduleId, accountId, fieldKey));
         }
         // A pasted token often brings a line break along, which a server
         // refuses; no token has spaces at its ends.
@@ -374,9 +443,10 @@ void EntityActions::editModuleSettings(const QString &profileId, const QString &
             }
             const QString token = it.value().toString().trimmed();
             if (!token.isEmpty())
-                secrets->write(secretKey(workspaceId, profileId, moduleId, it.key()), token);
+                secrets->write(secretKey(workspaceId, profileId, moduleId, accountId, it.key()), token);
         }
     }
+    return true;
 }
 
 // Creating.

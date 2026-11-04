@@ -8,6 +8,7 @@
 #include "api/SecretBackend.h"
 #include "api/SecretStore.h"
 #include "api/ServerClient.h"
+#include "core/Accounts.h"
 #include "core/Model.h"
 
 #include <mirante/ApiClient.h>
@@ -251,8 +252,14 @@ private slots:
     void clientForRemovedTokenSendsNothing();
     void clientForRefusedDoesNotFail();
     void clientForOnlyForServerModules();
+    void accountHasItsOwnValuesAndToken();
+    void accountFailsOnItsOwn();
+    void removedAccountStopsFailing();
+    void accountSecretKeys();
 
 private:
+    // Adds another account of kModule to kProfile, with its own token.
+    void addAccount(const QString &id, const QString &baseUrl, const QString &token);
     ApiClient *client() { return m_clients->client(kProfile, kModule); }
     QString key() const { return secretKey(kWorkspace, kProfile, kModule, QStringLiteral("token")); }
     // Sends a GET and waits for its answer.
@@ -688,10 +695,9 @@ void TestServerClient::refusedPausesUntilTokenChanges()
     ApiReply reply = getAndWait(QStringLiteral("api/v4/user"));
     QCOMPARE(reply.error, ApiReply::Error::Refused);
     QVERIFY(m_clients->failing(kProfile, kModule));
-    QCOMPARE(m_clients->failingServers(), (QList<QPair<QString, QString>>{{kProfile, kModule}}));
+    QCOMPARE(m_clients->failingServers(), (QList<ServerId>{ServerId{kProfile, kModule, QString()}}));
     QCOMPARE(changed.size(), 1);
-    QCOMPARE(changed.at(0).at(0).toString(), kProfile);
-    QCOMPARE(changed.at(0).at(1).toString(), kModule);
+    QCOMPARE(changed.at(0).at(0).value<ServerId>(), (ServerId{kProfile, kModule, QString()}));
 
     reply = getAndWait(QStringLiteral("api/v4/user"));
     QCOMPARE(reply.error, ApiReply::Error::Paused);
@@ -908,7 +914,7 @@ void TestServerClient::clientForUsesFormValuesAndTypedToken()
 {
     m_network->handler = [](const FakeNetwork::Sent &) { return Answer{200, "[]", {}}; };
     // A pasted token is trimmed, as when it is stored.
-    auto client = m_clients->clientFor(kProfile, kModule,
+    auto client = m_clients->clientFor(kProfile, kModule, QString(),
                                        {{QStringLiteral("baseUrl"), QStringLiteral("https://other.example/")}},
                                        {{QStringLiteral("token"), QStringLiteral(" typed-1\n")}}, {});
     QVERIFY(client);
@@ -922,7 +928,7 @@ void TestServerClient::clientForUsesStoredToken()
 {
     m_network->handler = [](const FakeNetwork::Sent &) { return Answer{200, "[]", {}}; };
     // Another token field than the server's is not its token.
-    auto client = m_clients->clientFor(kProfile, kModule,
+    auto client = m_clients->clientFor(kProfile, kModule, QString(),
                                        {{QStringLiteral("baseUrl"), QStringLiteral("https://git.example/")}},
                                        {{QStringLiteral("other"), QStringLiteral("x")}}, {QStringLiteral("other")});
     QVERIFY(getWith(*client, QStringLiteral("user")).ok());
@@ -931,7 +937,7 @@ void TestServerClient::clientForUsesStoredToken()
 
 void TestServerClient::clientForRemovedTokenSendsNothing()
 {
-    auto client = m_clients->clientFor(kProfile, kModule,
+    auto client = m_clients->clientFor(kProfile, kModule, QString(),
                                        {{QStringLiteral("baseUrl"), QStringLiteral("https://git.example/")}}, {},
                                        {QStringLiteral("token")});
     QCOMPARE(getWith(*client, QStringLiteral("user")).error, ApiReply::Error::NoToken);
@@ -942,7 +948,7 @@ void TestServerClient::clientForRefusedDoesNotFail()
 {
     m_network->handler = [](const FakeNetwork::Sent &) { return Answer{401, {}, {}}; };
     QSignalSpy failing(m_clients.get(), &ServerClients::failingChanged);
-    auto client = m_clients->clientFor(kProfile, kModule,
+    auto client = m_clients->clientFor(kProfile, kModule, QString(),
                                        {{QStringLiteral("baseUrl"), QStringLiteral("https://git.example/")}},
                                        {{QStringLiteral("token"), QStringLiteral("wrong")}}, {});
     QCOMPARE(getWith(*client, QStringLiteral("user")).error, ApiReply::Error::Refused);
@@ -952,9 +958,93 @@ void TestServerClient::clientForRefusedDoesNotFail()
     QVERIFY(m_clients->failingServers().isEmpty());
 }
 
+void TestServerClient::addAccount(const QString &id, const QString &baseUrl, const QString &token)
+{
+    Account account;
+    account.id = id;
+    account.name = id;
+    account.values.insert(QStringLiteral("baseUrl"), baseUrl);
+    accounts::set(*m_model, kProfile, kModule, account);
+    const QString accountKey = secretKey(kWorkspace, kProfile, kModule, id, QStringLiteral("token"));
+    m_secrets->write(accountKey, token);
+    QTRY_COMPARE(m_secrets->state(accountKey), SecretStore::State::Set);
+}
+
+// Another account has a client of its own, with its base URL and its token.
+void TestServerClient::accountHasItsOwnValuesAndToken()
+{
+    m_network->handler = [](const FakeNetwork::Sent &) { return Answer{200, "{}", {}}; };
+    addAccount(QStringLiteral("bot"), QStringLiteral("https://bot.example/"), QStringLiteral("bot-token"));
+    ApiClient *bot = m_clients->client(kProfile, kModule, QStringLiteral("bot"));
+    QVERIFY(bot);
+    QVERIFY(bot != client());
+    QCOMPARE(bot->baseUrl(), QUrl(QStringLiteral("https://bot.example/")));
+
+    bool answered = false;
+    bot->get(QStringLiteral("user"), {}, {}, this, [&](const ApiReply &) { answered = true; });
+    QTRY_VERIFY(answered);
+    QCOMPARE(m_network->sent.size(), 1);
+    QCOMPARE(m_network->sent.at(0).request.url(), QUrl(QStringLiteral("https://bot.example/user")));
+    QCOMPARE(header(m_network->sent.at(0), "X-Token"), QByteArray("bot-token"));
+
+    // The default account keeps its own.
+    QVERIFY(getAndWait(QStringLiteral("user")).ok());
+    QCOMPARE(m_network->sent.at(1).request.url(), QUrl(QStringLiteral("https://git.example/user")));
+    QCOMPARE(header(m_network->sent.at(1), "X-Token"), QByteArray("secret-1"));
+}
+
+void TestServerClient::accountFailsOnItsOwn()
+{
+    m_network->handler = [](const FakeNetwork::Sent &sent) {
+        return sent.request.url().host() == QLatin1String("bot.example") ? Answer{401, {}, {}}
+                                                                         : Answer{200, "{}", {}};
+    };
+    addAccount(QStringLiteral("bot"), QStringLiteral("https://bot.example/"), QStringLiteral("bot-token"));
+    QSignalSpy changed(m_clients.get(), &ServerClients::failingChanged);
+    ApiClient *bot = m_clients->client(kProfile, kModule, QStringLiteral("bot"));
+    ApiReply refused;
+    bool answered = false;
+    bot->get(QStringLiteral("user"), {}, {}, this, [&](const ApiReply &reply) {
+        refused = reply;
+        answered = true;
+    });
+    QTRY_VERIFY(answered);
+    QCOMPARE(refused.error, ApiReply::Error::Refused);
+    QVERIFY(m_clients->failing(kProfile, kModule, QStringLiteral("bot")));
+    QVERIFY(!m_clients->failing(kProfile, kModule));
+    QCOMPARE(m_clients->failingServers(), (QList<ServerId>{ServerId{kProfile, kModule, QStringLiteral("bot")}}));
+    QCOMPARE(changed.size(), 1);
+    QVERIFY(getAndWait(QStringLiteral("user")).ok());
+}
+
+void TestServerClient::removedAccountStopsFailing()
+{
+    m_network->handler = [](const FakeNetwork::Sent &) { return Answer{401, {}, {}}; };
+    addAccount(QStringLiteral("bot"), QStringLiteral("https://bot.example/"), QStringLiteral("bot-token"));
+    ApiClient *bot = m_clients->client(kProfile, kModule, QStringLiteral("bot"));
+    bool answered = false;
+    bot->get(QStringLiteral("user"), {}, {}, this, [&](const ApiReply &) { answered = true; });
+    QTRY_VERIFY(answered);
+    QVERIFY(m_clients->failing(kProfile, kModule, QStringLiteral("bot")));
+    QVERIFY(accounts::remove(*m_model, kProfile, kModule, QStringLiteral("bot")));
+    QVERIFY(!m_clients->failing(kProfile, kModule, QStringLiteral("bot")));
+    QVERIFY(m_clients->failingServers().isEmpty());
+}
+
+void TestServerClient::accountSecretKeys()
+{
+    QCOMPARE(secretKey(kWorkspace, kProfile, kModule, QString(), QStringLiteral("token")),
+             QStringLiteral("ws/default/srv/token"));
+    QCOMPARE(secretKey(kWorkspace, kProfile, kModule, QStringLiteral("bot"), QStringLiteral("token")),
+             QStringLiteral("ws/default/srv/bot/token"));
+    // The test directory lists no screens, so no field is known.
+    QVERIFY(accountTokenKeys(kWorkspace, *m_directory, kProfile, kModule, QStringLiteral("bot")).isEmpty());
+    QVERIFY(accountTokenKeys(kWorkspace, *m_directory, kProfile, kModule, QString()).isEmpty());
+}
+
 void TestServerClient::clientForOnlyForServerModules()
 {
-    QVERIFY(!m_clients->clientFor(kProfile, QStringLiteral("plain"), {}, {}, {}));
+    QVERIFY(!m_clients->clientFor(kProfile, QStringLiteral("plain"), QString(), {}, {}, {}));
 }
 QTEST_MAIN(TestServerClient)
 #include "tst_server_client.moc"

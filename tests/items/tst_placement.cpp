@@ -413,7 +413,7 @@ private:
         services.status = cache.get();
         services.attention = attention.get();
         services.servers = servers.get();
-        services.openServerSettings = [this](const QString &profileId, const QString &moduleId) {
+        services.openServerSettings = [this](const QString &profileId, const QString &moduleId, const QString &) {
             settingsOpened << profileId + QLatin1Char('/') + moduleId;
         };
     }

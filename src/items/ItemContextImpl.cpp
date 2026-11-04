@@ -2,6 +2,7 @@
 
 #include "api/ServerClient.h"
 #include "api/StatusCache.h"
+#include "core/Accounts.h"
 #include "core/DeviceSettings.h"
 #include "core/Edits.h"
 #include "core/GitHead.h"
@@ -142,7 +143,12 @@ QJsonObject ItemContextImpl::moduleSettings(const QString &screenId) const
     if (!item)
         return {};
     const QString profile = profiles::effective(*m_services.model, m_taskId, m_itemId);
-    return m_services.model->moduleSettings(profile, moduleOfType(item->type), screenId);
+    const QString moduleId = moduleOfType(item->type);
+    // The server's screen holds the values of the item's account.
+    const ServerType *server = m_services.types ? m_services.types->serverType(moduleId) : nullptr;
+    return accounts::screenValues(*m_services.model, profile, moduleId,
+                                  accounts::effective(*m_services.model, m_taskId, m_itemId),
+                                  server ? server->screenId() : QString(), screenId);
 }
 
 QString ItemContextImpl::folderPath(const QString &folderId) const
@@ -271,7 +277,8 @@ ApiClient *ItemContextImpl::server()
     if (!item || !m_services.servers)
         return nullptr;
     return m_services.servers->client(profiles::effective(*m_services.model, m_taskId, m_itemId),
-                                      moduleOfType(item->type));
+                                      moduleOfType(item->type),
+                                      accounts::effective(*m_services.model, m_taskId, m_itemId));
 }
 
 ItemStatusSource *ItemContextImpl::status()

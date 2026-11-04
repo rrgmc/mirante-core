@@ -8,6 +8,7 @@
 #include <QStringList>
 
 #include <memory>
+#include <tuple>
 
 class QNetworkAccessManager;
 
@@ -18,8 +19,26 @@ class Model;
 class ModuleDirectory;
 class SecretStore;
 
-// The modules' servers of the open workspace: one ApiClient for each profile
-// and module with a ServerType, made on first use, sharing one
+// One module's server: the account of a module in a profile. The default
+// account has an empty accountId. See decision 0144.
+struct ServerId
+{
+    QString profileId;
+    QString moduleId;
+    QString accountId;
+
+    friend bool operator<(const ServerId &a, const ServerId &b)
+    {
+        return std::tie(a.profileId, a.moduleId, a.accountId) < std::tie(b.profileId, b.moduleId, b.accountId);
+    }
+    friend bool operator==(const ServerId &a, const ServerId &b)
+    {
+        return a.profileId == b.profileId && a.moduleId == b.moduleId && a.accountId == b.accountId;
+    }
+};
+
+// The modules' servers of the open workspace: one ApiClient for each account
+// of each profile and module with a ServerType, made on first use, sharing one
 // QNetworkAccessManager. Each client queues at most four requests at once,
 // keeps ETags, follows Link pages, waits on 429 and on GitHub's rate-limited
 // 403, and pauses while its token
@@ -36,9 +55,11 @@ public:
                   QNetworkAccessManager *network = nullptr, QObject *parent = nullptr);
     ~ServerClients() override;
 
-    // The module's server in the profile, or null if the module registered
-    // no ServerType. The client lives until clear() or this object goes.
-    ApiClient *client(const QString &profileId, const QString &moduleId);
+    // The module's server in the profile, with the account's values and
+    // token, or null if the module registered no ServerType. An empty
+    // accountId is the default account. The client lives until clear() or
+    // this object goes.
+    ApiClient *client(const QString &profileId, const QString &moduleId, const QString &accountId = QString());
 
     // A client of its own for the module's server in the profile, with the
     // values of an open settings dialog instead of the stored ones. Its token
@@ -49,13 +70,13 @@ public:
     // ServerType. The caller owns it, and it must not outlive this object.
     // See decision 0138.
     std::unique_ptr<ApiClient> clientFor(const QString &profileId, const QString &moduleId,
-                                         const QJsonObject &values, const QJsonObject &typedSecrets,
-                                         const QStringList &removedSecrets);
+                                         const QString &accountId, const QJsonObject &values,
+                                         const QJsonObject &typedSecrets, const QStringList &removedSecrets);
 
     // True while the client's token is refused. See failingChanged.
-    bool failing(const QString &profileId, const QString &moduleId) const;
-    // The failing servers, as (profile id, module id).
-    QList<QPair<QString, QString>> failingServers() const;
+    bool failing(const QString &profileId, const QString &moduleId, const QString &accountId = QString()) const;
+    // The failing servers.
+    QList<ServerId> failingServers() const;
 
     // Drops every client, for another workspace: the workspace id is part of
     // every token key. Requests in flight end without a callback.
@@ -63,7 +84,7 @@ public:
 
 signals:
     // A client started or stopped failing.
-    void failingChanged(const QString &profileId, const QString &moduleId);
+    void failingChanged(const mirante::ServerId &server);
 
 private:
     struct Private;

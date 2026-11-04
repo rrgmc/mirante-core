@@ -58,6 +58,16 @@ public:
     // Nothing happens for a field without the button.
     void addFromServer(const QString &key);
 
+    // Makes the dialog edit another account of the module's server, not the
+    // default: the title and the note name it, a Name row above the editor
+    // holds its name, and a Remove Account button closes the dialog as
+    // accepted with removeChosen() true. OK is refused without a name. See
+    // decision 0144.
+    void setAccount(const QString &name);
+    QString accountName() const;
+    bool removeChosen() const;
+    void chooseRemove();   // as the Remove Account button does
+
     ItemEditor *editor() const;   // for tests
 
     void accept() override;

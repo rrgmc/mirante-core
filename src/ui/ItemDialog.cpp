@@ -1,10 +1,13 @@
 #include "ui/ItemDialog.h"
 
+#include "core/Accounts.h"
+#include "core/Model.h"
 #include <mirante/FieldValidation.h>
 #include "items/ItemTypeRegistry.h"
 #include "items/UrlMatches.h"
 #include <mirante/widgets/FieldForm.h>
 
+#include <mirante/ApiClient.h>
 #include <mirante/ItemType.h>
 
 #include <QCheckBox>
@@ -65,6 +68,9 @@ struct ItemDialog::Private
     QLineEdit *dashboardTitle = nullptr;
     QFormLayout *form = nullptr;
     QComboBox *profile = nullptr;       // shown for types that use a profile
+    QComboBox *account = nullptr;       // shown when the profile has other accounts of the module
+    QString wantedAccount;              // the account the item names, or the user or a link chose
+    const Model *model = nullptr;       // for the accounts; may be null
     QCheckBox *watch = nullptr;         // shown for types that report status
     QWidget *pageKeys = nullptr;        // shown for types whose views are web views
     QListWidget *pageKeyList = nullptr; // the keys, in PortableText as data
@@ -128,7 +134,7 @@ struct ItemDialog::Private
 
         url = urlmatches::webAddress(urlEdit->text());
         // A link is read in the profile a new item uses: its group's.
-        matches = urlmatches::match(*types, url, groupProfile);
+        matches = urlmatches::match(*types, model, url, groupProfile);
         std::vector<const ItemType *> shown;
         if (url.isEmpty()) {
             shown = types->types();
@@ -235,10 +241,12 @@ struct ItemDialog::Private
         const ItemType &itemType = types->type(item.type);
         EditorContext editorContext = context;
         editorContext.profileId = effectiveProfile();
+        editorContext.accountId = effectiveAccount();
         editor = itemType.createEditor(editorContext, q);
         ownEditor = editor != nullptr;
         if (!editor)
-            editor = new FieldForm(itemType.fieldsForProfile(editorContext.profileId), editorContext, q);
+            editor = new FieldForm(itemType.fieldsForAccount(editorContext.profileId, editorContext.accountId),
+                                   editorContext, q);
         editor->setObjectName(QStringLiteral("editor"));
         editor->setConfig(config);
         editorBox->addWidget(editor);
@@ -250,6 +258,7 @@ struct ItemDialog::Private
     void showTypeRows()
     {
         form->setRowVisible(profile, types->usesProfile(item.type));
+        fillAccounts();
         form->setRowVisible(watch, types->contains(item.type) && types->type(item.type).hasStatus());
         // A built-in panel takes no keys of its own.
         form->setRowVisible(pageKeys, types->contains(item.type)
@@ -329,18 +338,61 @@ struct ItemDialog::Private
         return profileIds.contains(chosen) ? chosen : groupProfile;
     }
 
-    // The fields of a form may depend on the profile, such as the
-    // suggestions of a module's settings, so the form is built again for
-    // another profile, keeping what was entered. A type's own editor stays,
+    // The account the item would use with the chosen entry, in the profile
+    // it would use: the chosen one if the profile has it, else the default.
+    QString effectiveAccount() const
+    {
+        if (!model || !form->isRowVisible(account))
+            return {};
+        return accounts::effective(*model, effectiveProfile(), moduleOf(item.type),
+                                   account->currentData().toString());
+    }
+
+    // The Account row: shown for a type whose module has a server, when the
+    // profile the item would use has other accounts of it, or the item names
+    // one. "Default" first, then the others by name. See decision 0144.
+    void fillAccounts()
+    {
+        const QSignalBlocker blocker(account);
+        account->clear();
+        const QString moduleId = moduleOf(item.type);
+        std::vector<Account> others;
+        if (model && types->contains(item.type) && types->serverType(moduleId))
+            others = accounts::others(*model, effectiveProfile(), moduleId);
+        const bool shown = !others.empty() || (!wantedAccount.isEmpty() && types->serverType(moduleId));
+        form->setRowVisible(account, shown && model);
+        if (!shown || !model)
+            return;
+        account->addItem(accounts::defaultName(), QString());
+        for (const Account &other : others)
+            account->addItem(other.name, other.id);
+        // An account the profile does not have is kept until another is
+        // chosen, as an unknown profile is.
+        if (account->findData(wantedAccount) < 0)
+            account->addItem(ItemDialog::tr("Unknown account, uses the default"), wantedAccount);
+        account->setCurrentIndex(account->findData(wantedAccount));
+    }
+
+    // The fields of a form may depend on the profile and the account, such
+    // as the suggestions of a module's settings, so the form is built again
+    // for another one, keeping what was entered. A type's own editor stays,
     // and is told.
     void profileChosen()
     {
+        fillAccounts();
+        accountChosen();
+    }
+
+    void accountChosen()
+    {
         if (!editor || !types->contains(item.type))
             return;
-        if (ownEditor)
+        if (ownEditor) {
             editor->setProfile(effectiveProfile());
-        else
+            editor->setAccount(effectiveAccount());
+        } else {
             makeEditor(editor->config());
+        }
     }
 
     void showTypeName()
@@ -378,6 +430,9 @@ struct ItemDialog::Private
             return;
         item.type = id;
         if (const urlmatches::TypeMatch *found = matchFor(id)) {
+            // The link was read in an account, which the item then uses.
+            if (id != editorType || url != editorUrl)
+                wantedAccount = found->accountId;
             // The type's defaults, with what it made of the link over them.
             // The same type from the same link keeps what was entered.
             if (id != editorType || url != editorUrl) {
@@ -536,6 +591,14 @@ ItemDialog::ItemDialog(const Item &item, bool creating, const ItemTypeRegistry &
                               "read the logins and data of every site in the profile."));
     form->addRow(tr("Profile:"), d->profile);
 
+    d->wantedAccount = item.account;
+    d->account = new QComboBox(d->itemPage);
+    d->account->setObjectName(QStringLiteral("account"));
+    d->account->setToolTip(tr("The account of the module's server that the item uses, with its own "
+                              "settings and token. Accounts are added in the profile's Modules menu."));
+    form->addRow(tr("Account:"), d->account);
+    form->setRowVisible(d->account, false);
+
     d->watch = new QCheckBox(tr("Count on the tray icon, and notify"), d->itemPage);
     d->watch->setObjectName(QStringLiteral("watch"));
     d->watch->setChecked(item.watch);
@@ -628,6 +691,10 @@ ItemDialog::ItemDialog(const Item &item, bool creating, const ItemTypeRegistry &
         d->showPage(false);
     }
     connect(d->profile, &QComboBox::currentIndexChanged, this, [this] { d->profileChosen(); });
+    connect(d->account, &QComboBox::currentIndexChanged, this, [this] {
+        d->wantedAccount = d->account->currentData().toString();
+        d->accountChosen();
+    });
 }
 
 ItemDialog::~ItemDialog()
@@ -656,6 +723,12 @@ Item ItemDialog::value() const
     // it had, such as an item of a missing module.
     if (d->form->isRowVisible(d->profile))
         item.profile = d->profile->currentData().toString();
+    // Without the row, the profile has no other accounts, so the item uses
+    // the default. One it named is dropped only for another module's type.
+    if (d->form->isRowVisible(d->account))
+        item.account = d->account->currentData().toString();
+    else if (moduleOf(item.type) != moduleOf(d->original.type))
+        item.account.clear();
     if (d->form->isRowVisible(d->watch))
         item.watch = d->watch->isChecked();
     if (d->form->isRowVisible(d->pageKeys))
@@ -715,6 +788,23 @@ void ItemDialog::setProfile(const QString &id)
 }
 
 bool ItemDialog::showsProfile() const { return d->form->isRowVisible(d->profile); }
+
+void ItemDialog::setModel(const Model *model)
+{
+    d->model = model;
+    d->profileChosen();
+    if (d->urlEdit && !d->urlEdit->text().trimmed().isEmpty())
+        d->fillTypeList();
+}
+
+void ItemDialog::setAccount(const QString &id)
+{
+    const int index = d->account->findData(id);
+    if (index >= 0)
+        d->account->setCurrentIndex(index);
+}
+
+bool ItemDialog::showsAccount() const { return d->form->isRowVisible(d->account); }
 
 bool ItemDialog::showsWatch() const { return d->form->isRowVisible(d->watch); }
 

@@ -25,6 +25,10 @@ struct QuickAddItem
     QString typeId;         // such as "gitlab.mr.summary"
     QString name;           // such as "!42"
     QJsonObject config;
+    // The account of the module's server the item uses, empty for the
+    // default. The core sets it to the request's account; a module leaves it
+    // empty. See decision 0144.
+    QString accountId;
 };
 
 // A project setting of the handler's module to match, such as
