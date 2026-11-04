@@ -6,6 +6,10 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+### Added
+
+- A list tells its module when the user changes a filter, so the module can keep the choice for the next start.
+
 ## [0.8.5] - 2026-11-03
 
 ### Added
