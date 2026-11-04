@@ -714,6 +714,10 @@ Placement::Placement(const PlacementServices &services, const QString &taskId, c
     connect(&d->ageTimer, &QTimer::timeout, this, [this] { d->updateStatus(); });
     if (StatusCache *status = services.status) {
         status->source(itemId).subscribe(this, [this](const ItemStatus &) { d->updateStatus(); });
+        connect(status, &StatusCache::fetchingChanged, this, [this](const QString &id, bool fetching) {
+            if (id == d->itemId)
+                emit fetchingChanged(fetching);
+        });
         if (Model *model = services.model) {
             connect(model, &Model::taskChanged, this, [this](const QString &id) {
                 if (id == d->taskId)
@@ -762,6 +766,8 @@ QWidget *Placement::headerWidget() const { return d->header; }
 CellStatus Placement::cellStatus() const { return d->cellStatus; }
 
 bool Placement::hasStatus() const { return d->statusType() != nullptr; }
+
+bool Placement::isFetching() const { return d->services.status && d->services.status->isFetching(d->itemId); }
 
 void Placement::refresh()
 {

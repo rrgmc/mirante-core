@@ -125,6 +125,9 @@ QWidget *DashboardCellFactory::createCell(const std::optional<CellRef> &ref, boo
             frame->setRefreshVisible(placement->hasStatus());
         });
         QObject::connect(frame, &CellFrame::refreshRequested, placement, &Placement::refresh);
+        // A fetch in progress, from a poll or a refresh.
+        frame->setRefreshing(placement->isFetching());
+        QObject::connect(placement, &Placement::fetchingChanged, frame, &CellFrame::setRefreshing);
         QObject::connect(frame, &CellFrame::fixRequested, placement, &Placement::openSettings);
         frame->setBody(placement);
     }

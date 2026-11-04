@@ -405,7 +405,7 @@ Some reasons are events, such as an approval or a new Jira status. They stop cou
   - In **Focus**, each row has the task's badge, as in the sidebar.
 - **Problems.** When the item's status cannot be fetched, the cell header shows an amber pill in place of the badge: "Token not set", "Token refused", "No server set", "Not found", or "Error" for a network or server error with no older data. For the first three the pill is a button that opens the profile's settings screen of the module. Its tooltip gives the message and the profile's name.
 - **Old data.** When the last fetch failed with a network or server error but older data exists, the header shows the data's age in grey, such as "12 min ago". The badges keep the older data's count.
-- **Refresh.** The refresh button in the cell header fetches the item's status at once. Otherwise the app checks the servers at the interval set in the [settings window](#settings).
+- **Refresh.** The refresh button in the cell header fetches the item's status at once. Otherwise the app checks the servers at the interval set in the [settings window](#settings). While a fetch runs, from the button or from a poll, the refresh icon turns, its tooltip says "Refreshing…", and a thin bar under the cell header shows a moving stripe. The bar keeps its height while idle, so the cell's content does not move.
 
 ### Watched items
 

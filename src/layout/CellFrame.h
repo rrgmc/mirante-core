@@ -86,6 +86,10 @@ public:
     // Shows the refresh button, which emits refreshRequested. Off by default;
     // on for items of types with status.
     void setRefreshVisible(bool visible);
+    // While the item's status is fetched, by a poll or a refresh, the refresh
+    // icon turns and a thin bar under the header shows a moving stripe.
+    void setRefreshing(bool refreshing);
+    bool isRefreshing() const;
 
     // Takes images dropped from other apps, for the cell of an item whose
     // type takes pasted images. read gives the image a drag carries, or a
