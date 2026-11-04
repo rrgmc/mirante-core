@@ -58,16 +58,16 @@ struct ColourChooser::Private
     QToolButton *none = nullptr;          // only with allowNone
     QToolButton *customSwatch = nullptr;  // a colour outside the palette; hidden without one
 
-    QToolButton *swatch(const QString &colour, const QString &objectName)
+    QToolButton *swatch(const QString &swatchColour, const QString &objectName)
     {
         auto *button = new QToolButton(q);
         button->setObjectName(objectName);
         button->setCheckable(true);
         button->setAutoRaise(true);
         button->setIconSize(QSize(20, 20));
-        button->setIcon(colourDot(QColor(colour)));
-        button->setToolTip(colour);
-        button->setProperty("colour", colour);
+        button->setIcon(colourDot(QColor(swatchColour)));
+        button->setToolTip(swatchColour);
+        button->setProperty("colour", swatchColour);
         return button;
     }
 
