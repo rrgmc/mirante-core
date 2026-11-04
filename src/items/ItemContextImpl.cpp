@@ -168,6 +168,11 @@ QWidget *ItemContextImpl::createWebView(const QUrl &url, QWidget *parent)
     QWidget *page = createPage(url, parent, toolbar);
     if (toolbar && onHeaderWidget)
         onHeaderWidget(toolbar);
+    // The page's address is the item's web link, and follows the page.
+    if (auto *panel = qobject_cast<WebPanel *>(page)) {
+        setWebLink(url);
+        QObject::connect(panel, &WebPanel::addressChanged, panel, [this](const QUrl &address) { setWebLink(address); });
+    }
     return page;
 }
 
@@ -252,6 +257,12 @@ void ItemContextImpl::showPage(const QUrl &url)
 {
     if (onShowPage)
         onShowPage(url);
+}
+
+void ItemContextImpl::setWebLink(const QUrl &url)
+{
+    if (onWebLink)
+        onWebLink(url);
 }
 
 QString ItemContextImpl::addItemToTask(const QString &typeId, const QString &name, const QJsonObject &config)

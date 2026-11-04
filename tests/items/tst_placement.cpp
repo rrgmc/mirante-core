@@ -1,7 +1,8 @@
 // Tests Placement and its ItemContext with test item types: when the view is
 // made, unloading by the ViewPool, making the view again after a change, the
 // header widget, what the context reads from the model, the page of showPage(),
-// adding an item to the task, the item's status in the cell header, view keys,
+// the web link of the header, adding an item to the task, the item's status in
+// the cell header, view keys,
 // folder mappings, and the context's device settings and files. No test uses
 // the network or the keychain.
 #include "api/Attention.h"
@@ -839,6 +840,8 @@ private slots:
             QCOMPARE(header.count(), 1);
             QCOMPARE(header.at(0).at(0).value<QWidget *>(), panel->toolbar());
             QCOMPARE(placement->headerWidget(), panel->toolbar());
+            // A data: address has no page on the web to open.
+            QVERIFY(placement->webLink().isEmpty());
 
             // A new address makes a new page. The old toolbar leaves the
             // header before the new one comes.
@@ -915,6 +918,64 @@ private slots:
         // It left the pool with the page.
         placement->hide();
         QCOMPARE(pool->hiddenCount(), 0);
+    }
+
+    // A view's web link reaches the header, which shows only web addresses.
+    void viewSetsTheWebLink()
+    {
+        auto placement = make(QStringLiteral("n1"));
+        placement->show();
+        QSignalSpy links(placement.get(), &Placement::webLinkChanged);
+        QVERIFY(placement->webLink().isEmpty());
+
+        const QUrl web(QStringLiteral("https://example.com/pull/1"));
+        lastContext->setWebLink(web);
+        QCOMPARE(placement->webLink(), web);
+        QCOMPARE(links.count(), 1);
+        QCOMPARE(links.at(0).at(0).toUrl(), web);
+
+        // The same address again changes nothing.
+        lastContext->setWebLink(web);
+        QCOMPARE(links.count(), 1);
+
+        // Only http and https addresses count.
+        lastContext->setWebLink(QUrl(QStringLiteral("module://notes/index.html")));
+        QVERIFY(placement->webLink().isEmpty());
+        const QUrl plain(QStringLiteral("http://example.com/"));
+        lastContext->setWebLink(plain);
+        QCOMPARE(placement->webLink(), plain);
+        lastContext->setWebLink(QUrl());
+        QVERIFY(placement->webLink().isEmpty());
+
+        // A new view starts without one.
+        lastContext->setWebLink(web);
+        changeItem(*model, QStringLiteral("n1"), [](Item &item) { item.config[QStringLiteral("text")] = QStringLiteral("two"); });
+        QCOMPARE(viewsMade, 2);
+        QVERIFY(placement->webLink().isEmpty());
+    }
+
+    // While a page is shown, the header opens the page instead of the view's
+    // link, which comes back with the view.
+    void pageHasItsOwnWebLink()
+    {
+        auto placement = make(QStringLiteral("n1"));
+        placement->show();
+        lastContext->setWebLink(QUrl(QStringLiteral("https://example.com/pull/1")));
+
+        const QUrl page(QStringLiteral("https://example.com/pull/1/files"));
+        lastContext->showPage(page);
+        QCOMPARE(placement->webLink(), page);
+
+        // A new link of the view waits for the page to close.
+        const QUrl later(QStringLiteral("https://example.com/pull/2"));
+        lastContext->setWebLink(later);
+        QCOMPARE(placement->webLink(), page);
+        QVERIFY(clickBack(*placement));
+        QCOMPARE(placement->webLink(), later);
+
+        // A page that is not on the web has no link.
+        lastContext->showPage(pageUrl);
+        QVERIFY(placement->webLink().isEmpty());
     }
 
     void unloadReturnsTheView()

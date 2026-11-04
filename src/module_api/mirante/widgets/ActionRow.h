@@ -36,7 +36,9 @@ public:
     void setBusy(const QString &id, bool busy);
 
     // The "Web" link at the end of the row, which opens url in the external
-    // browser. An empty url hides it.
+    // browser. An empty url hides it. For the item's own page, prefer
+    // ItemContext::setWebLink(), which the cell header shows; see decision
+    // 0148.
     void setWebLink(const QUrl &url);
     QUrl webLink() const;
 
