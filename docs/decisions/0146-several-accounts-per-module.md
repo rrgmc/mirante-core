@@ -1,4 +1,4 @@
-# 0144. A profile can hold several accounts of a module
+# 0146. A profile can hold several accounts of a module
 
 - Status: Accepted
 - Date: 2026-11-04

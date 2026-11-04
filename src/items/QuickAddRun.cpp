@@ -66,7 +66,7 @@ class RequestBase : public QObject
 {
 public:
     // accountId is the account of the module's server the request uses, and
-    // serverScreenId the screen that holds its values. See decision 0144.
+    // serverScreenId the screen that holds its values. See decision 0146.
     RequestBase(Model &model, ServerClients *servers, const QString &profileId, const QString &moduleId,
                 const QString &accountId, const QString &serverScreenId, QObject *parent)
         : QObject(parent)
@@ -245,7 +245,7 @@ struct QuickAddRun::Private
     std::vector<QPointer<RequestBase>> requests;
     // The account each module's requests use in the current run, by module
     // id: the one the link's host belongs to, else the default. The items
-    // made get it. See decision 0144.
+    // made get it. See decision 0146.
     mutable std::map<QString, QString> accountOf;
 
     // Everything offered in the current finder run: the proposal's items,

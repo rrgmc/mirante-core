@@ -1,5 +1,5 @@
 // Tests the other accounts of a module in a profile: how they are stored, read
-// and removed, and which account an item uses. See decision 0144.
+// and removed, and which account an item uses. See decision 0146.
 #include "core/Accounts.h"
 #include "core/Model.h"
 

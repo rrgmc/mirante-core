@@ -1136,7 +1136,7 @@ void TestEntityActions::deletingProfileRemovesTokens()
 
 // Another account of a module's server is added with its own name and token,
 // edited, and removed with its token. Its token also goes with its profile.
-// See decision 0144.
+// See decision 0146.
 void TestEntityActions::accountsAreAddedEditedAndRemoved()
 {
     const QString module = QStringLiteral("accts");

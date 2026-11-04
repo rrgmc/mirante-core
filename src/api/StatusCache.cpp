@@ -140,7 +140,7 @@ public:
     // folders holds the local path of each of the project's folders, by id,
     // and of the main folder under an empty id.
     // accountId is the item's account, and serverScreenId the screen that
-    // holds its values. See decision 0144.
+    // holds its values. See decision 0146.
     StatusJobImpl(QJsonObject config, QJsonObject projectSettings, QString profileId, QString moduleId,
                   QString accountId, QString serverScreenId, std::map<QString, QString> folders,
                   const Model &model, ApiClient &server, Done done)

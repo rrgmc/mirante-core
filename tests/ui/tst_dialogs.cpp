@@ -186,7 +186,7 @@ public:
 };
 
 // A type whose suggestions name the account it is given, in a module with a
-// server. See decision 0144.
+// server. See decision 0146.
 class AccountFieldsType : public ItemType
 {
 public:
@@ -599,7 +599,7 @@ void TestDialogs::itemFieldsOfTheProfile()
 }
 
 // The Account row shows the profile's other accounts of the item's module,
-// and the form's fields follow the chosen account. See decision 0144.
+// and the form's fields follow the chosen account. See decision 0146.
 void TestDialogs::itemAccount()
 {
     ItemTypeRegistry local;

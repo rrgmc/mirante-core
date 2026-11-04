@@ -21,7 +21,7 @@ QString secretKey(const QString &workspaceId, const QString &profileId, const QS
                   const QString &fieldKey);
 // The key of a token of an account: the one above for the default account,
 // whose id is empty, and "<workspace id>/<profile id>/<module id>/<account
-// id>/<field key>" for another. See decision 0144.
+// id>/<field key>" for another. See decision 0146.
 QString secretKey(const QString &workspaceId, const QString &profileId, const QString &moduleId,
                   const QString &accountId, const QString &fieldKey);
 

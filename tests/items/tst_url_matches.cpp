@@ -158,7 +158,7 @@ private slots:
     }
 
     // A link is read in the first account whose server is on its host: the
-    // default first, then the others by name. See decision 0144.
+    // default first, then the others by name. See decision 0146.
     void accountByHost()
     {
         ItemTypeRegistry registry;

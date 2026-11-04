@@ -68,7 +68,7 @@ public:
     // that profile, such as a field whose suggestions come from that
     // account's settings. An empty accountId is the default account. The
     // item dialog calls it with the account the edited item would use.
-    // Defaults to fieldsForProfile(). See decision 0144.
+    // Defaults to fieldsForProfile(). See decision 0146.
     virtual std::vector<Field> fieldsForAccount(const QString &profileId, const QString &accountId) const
     {
         Q_UNUSED(accountId)
@@ -103,7 +103,7 @@ public:
     // The same, read with the settings of one account of the module's server
     // in that profile. An empty accountId is the default account. The core
     // picks the account first, by the address's host. Defaults to fromUrl().
-    // See decision 0144.
+    // See decision 0146.
     virtual std::optional<UrlMatch> fromUrlForAccount(const QUrl &url, const QString &profileId,
                                                       const QString &accountId) const
     {

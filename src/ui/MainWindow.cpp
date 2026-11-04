@@ -1516,7 +1516,7 @@ struct MainWindow::Private
     // Each opens the screen's dialog for this profile. A module with a server
     // lists its server's screen once more for each other account, such as
     // "General Configuration: Bot…", and ends with Add Account… (decision
-    // 0144). Disabled, with "No module settings", when no module has
+    // 0146). Disabled, with "No module settings", when no module has
     // screens.
     void addModulesMenu(QMenu *menu, const QString &profileId)
     {

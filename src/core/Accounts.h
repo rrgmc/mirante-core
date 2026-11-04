@@ -13,7 +13,7 @@ class Model;
 // Another account of a module in a profile: one set of values of the screen
 // that the module's ServerType names, with its own token. The default account
 // is the screen's values in the profile's moduleSettings, and has no entry.
-// See docs/data-model.md#accounts and decision 0144.
+// See docs/data-model.md#accounts and decision 0146.
 struct Account
 {
     QString id;

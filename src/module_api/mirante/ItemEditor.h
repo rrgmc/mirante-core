@@ -23,7 +23,7 @@ struct EditorContext
     // The account of the module's server that the edited values belong to,
     // or that the edited item would use. Empty for the default account, and
     // where none applies. ItemEditor::setAccount() reports a later change.
-    // See decision 0144.
+    // See decision 0146.
     QString accountId;
     // The folders of the item's project: id and name.
     std::vector<std::pair<QString, QString>> folders;
@@ -69,7 +69,7 @@ public:
     virtual void setProfile(const QString &profileId) { Q_UNUSED(profileId) }
     // The account changed while the editor is open, such as when the user
     // picks another account in the item dialog. Does nothing by default. See
-    // decision 0144.
+    // decision 0146.
     virtual void setAccount(const QString &accountId) { Q_UNUSED(accountId) }
 
     // Tokens, on a settings screen only. An editor can write a token but never

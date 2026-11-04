@@ -112,7 +112,7 @@ public:
     // names, that account's own values; for any other screen, values(). An
     // account the profile does not have gives the default's. A view and a
     // status job get these through moduleSettings() already; this is for
-    // code given ids, such as ItemType::fieldsForAccount(). See decision 0144.
+    // code given ids, such as ItemType::fieldsForAccount(). See decision 0146.
     virtual QJsonObject accountValues(const QString &profileId, const QString &accountId,
                                       const QString &screenId) const
     {

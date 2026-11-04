@@ -62,7 +62,7 @@ public:
     // default: the title and the note name it, a Name row above the editor
     // holds its name, and a Remove Account button closes the dialog as
     // accepted with removeChosen() true. OK is refused without a name. See
-    // decision 0144.
+    // decision 0146.
     void setAccount(const QString &name);
     QString accountName() const;
     bool removeChosen() const;

@@ -238,7 +238,7 @@ Each module that talks to a server keeps it in its settings, one server per prof
 
 ## Accounts
 
-A profile can hold several accounts of a module's server, such as a personal GitHub account and a bot, or github.com and a GitHub Enterprise server. See [decision 0144](decisions/0144-several-accounts-per-module.md).
+A profile can hold several accounts of a module's server, such as a personal GitHub account and a bot, or github.com and a GitHub Enterprise server. See [decision 0146](decisions/0146-several-accounts-per-module.md).
 
 - **The default account** is the server as described above: the values of the server's screen in `moduleSettings`, and the token under the key above. It has no entry and no stored name; lists call it "Default".
 - **Other accounts** are kept in the profile's entry, under `accounts`: an object of module ids, each an array of accounts. Each has an `id`, a UUID, a `name`, and `values`, the values of the screen that the module's `ServerType` names, such as its own base URL, repositories, Jira email and deployment. Other keys of an entry are kept. An entry without an id, or with an id already listed, is skipped.
