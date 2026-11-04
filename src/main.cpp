@@ -15,6 +15,7 @@
 #include "items/ItemTypeRegistry.h"
 #include "items/ViewPool.h"
 #include "platform/AttachedDialogs.h"
+#include "platform/DialogScreens.h"
 #include "platform/Foreground.h"
 #include "platform/LoginItem.h"
 #include "platform/Platform.h"
@@ -61,6 +62,8 @@ int main(int argc, char *argv[])
     QApplication::setStyle(new mirante::AppStyle);
     // On macOS, dialogs stay attached to their window.
     mirante::platform::installAttachedDialogs();
+    // On Windows, dialogs open on the screen of their window.
+    mirante::platform::installDialogScreens();
     QApplication::setApplicationName(QStringLiteral(MIRANTE_APP_NAME));
     QApplication::setOrganizationName(QStringLiteral(MIRANTE_ORGANISATION));
     QApplication::setApplicationVersion(QStringLiteral(MIRANTE_VERSION));
