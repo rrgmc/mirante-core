@@ -671,15 +671,15 @@ void TestDialogs::profilesDialogDoubleClickRenames()
     });
     dialog.show();
     QVERIFY(QTest::qWaitForWindowExposed(&dialog));
-    auto *list = dialog.findChild<QListWidget *>(QStringLiteral("profileList"));
-    QVERIFY(list);
-    const QPoint centre = list->visualItemRect(list->item(0)).center();
+    auto *tree = dialog.findChild<QTreeWidget *>(QStringLiteral("profileTree"));
+    QVERIFY(tree);
+    const QPoint centre = tree->visualItemRect(tree->topLevelItem(0)).center();
     // The view handles a double click only on the row of the press before it.
-    QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::NoModifier, centre);
-    QTest::mouseDClick(list->viewport(), Qt::LeftButton, Qt::NoModifier, centre);
+    QTest::mouseClick(tree->viewport(), Qt::LeftButton, Qt::NoModifier, centre);
+    QTest::mouseDClick(tree->viewport(), Qt::LeftButton, Qt::NoModifier, centre);
     QVERIFY(!asked);
     QTRY_COMPARE(local.profile(kDefaultProfile)->name, QStringLiteral("Work"));
-    QCOMPARE(list->item(0)->text(), QStringLiteral("Work (default)"));
+    QCOMPARE(tree->topLevelItem(0)->text(0), QStringLiteral("Work (default)"));
 }
 
 void TestDialogs::profilesDialog()
@@ -703,11 +703,13 @@ void TestDialogs::profilesDialog()
     });
     QSignalSpy deleted(&dialog, &ProfilesDialog::profileDeleted);
     QCOMPARE(dialog.windowTitle(), QStringLiteral("Profiles"));
-    auto *list = dialog.findChild<QListWidget *>(QStringLiteral("profileList"));
-    auto *renameButton = dialog.findChild<QPushButton *>(QStringLiteral("renameProfile"));
-    auto *deleteButton = dialog.findChild<QPushButton *>(QStringLiteral("deleteProfile"));
-    auto *defaultButton = dialog.findChild<QPushButton *>(QStringLiteral("defaultProfile"));
-    QVERIFY(list && renameButton && deleteButton && defaultButton);
+    auto *tree = dialog.findChild<QTreeWidget *>(QStringLiteral("profileTree"));
+    QVERIFY(tree);
+    const auto text = [tree](int row) { return tree->topLevelItem(row)->text(0); };
+    // The General page's buttons, made again with each page.
+    const auto pageButton = [&dialog](const char *name) {
+        return dialog.currentPage() ? dialog.currentPage()->findChild<QPushButton *>(QLatin1String(name)) : nullptr;
+    };
 
     // The warning is shown: items in one profile share its logins, servers
     // and tokens.
@@ -719,26 +721,47 @@ void TestDialogs::profilesDialog()
     // The default is first and marked. It can be renamed and deleted, but is
     // already the default.
     QCOMPARE(dialog.ids(), (QStringList{kDefaultProfile, QStringLiteral("work")}));
-    QCOMPARE(list->item(0)->text(), QStringLiteral("Default (default)"));
-    QCOMPARE(list->item(1)->text(), QStringLiteral("Work"));
+    QCOMPARE(text(0), QStringLiteral("Default (default)"));
+    QCOMPARE(text(1), QStringLiteral("Work"));
     dialog.select(kDefaultProfile);
-    QVERIFY(renameButton->isEnabled());
-    QVERIFY(deleteButton->isEnabled());
-    QVERIFY(!defaultButton->isEnabled());
-    QVERIFY(!dialog.findChild<QPushButton *>(QStringLiteral("profileConnections")));
+    QVERIFY(pageButton("deleteProfile")->isEnabled());
+    QVERIFY(!pageButton("defaultProfile"));
+    QCOMPARE(dialog.currentPage()->findChild<QLabel *>(QStringLiteral("usage"))->text(),
+             QStringLiteral("No group or item chooses it."));
     answer = QStringLiteral("Personal");
     dialog.renameSelected();
     QCOMPARE(local.profile(kDefaultProfile)->name, QStringLiteral("Personal"));
-    QCOMPARE(list->item(0)->text(), QStringLiteral("Personal (default)"));
+    QCOMPARE(text(0), QStringLiteral("Personal (default)"));
+
+    // The name can be edited on the page too, and applied.
+    auto *name = dialog.currentPage()->findChild<QLineEdit *>(QStringLiteral("profileName"));
+    QVERIFY(name);
+    QCOMPARE(name->text(), QStringLiteral("Personal"));
+    auto *apply = dialog.findChild<QPushButton *>(QStringLiteral("applyPage"));
+    QVERIFY(!apply->isEnabled());
+    QTest::keyClicks(name, QStringLiteral("!"));
+    QVERIFY(apply->isEnabled());
+    QVERIFY(dialog.applyCurrent());
+    QCOMPARE(local.profile(kDefaultProfile)->name, QStringLiteral("Personal!"));
+    dialog.currentPage()->findChild<QLineEdit *>(QStringLiteral("profileName"))->setText(QStringLiteral("Work"));
+    QVERIFY(!dialog.applyCurrent());
+    QVERIFY(dialog.findChild<QLabel *>(QStringLiteral("message"))->isVisibleTo(&dialog));
+    dialog.revertCurrent();
+    QCOMPARE(dialog.currentPage()->findChild<QLineEdit *>(QStringLiteral("profileName"))->text(),
+             QStringLiteral("Personal!"));
+    answer = QStringLiteral("Personal");
+    dialog.renameSelected();
 
     // Set as Default moves the mark, and the default first.
     dialog.select(QStringLiteral("work"));
-    QVERIFY(defaultButton->isEnabled());
-    dialog.makeSelectedDefault();
+    QVERIFY(dialog.currentPage()->findChild<QLabel *>(QStringLiteral("usage"))->text().contains(
+        QStringLiteral("1 group")));
+    QVERIFY(pageButton("defaultProfile"));
+    pageButton("defaultProfile")->click();
     QCOMPARE(local.defaultProfile(), QStringLiteral("work"));
     QCOMPARE(dialog.ids(), (QStringList{QStringLiteral("work"), kDefaultProfile}));
-    QCOMPARE(list->item(0)->text(), QStringLiteral("Work (default)"));
-    QVERIFY(!defaultButton->isEnabled());
+    QCOMPARE(text(0), QStringLiteral("Work (default)"));
+    QTRY_VERIFY(!pageButton("defaultProfile"));
 
     // New: a blank name, or one in use, is refused.
     answer = QStringLiteral("  ");
@@ -796,7 +819,7 @@ void TestDialogs::profilesDialog()
 
     // The last profile stays.
     dialog.select(bank);
-    QVERIFY(!deleteButton->isEnabled());
+    QVERIFY(!pageButton("deleteProfile")->isEnabled());
     dialog.deleteSelected();
     QCOMPARE(deleted.count(), 2);
     QCOMPARE(local.profiles().size(), std::size_t(1));
@@ -809,7 +832,7 @@ void TestDialogs::profilesDialog()
         return clearYes;
     });
     QSignalSpy clearRequested(&dialog, &ProfilesDialog::profileClearRequested);
-    QVERIFY(dialog.findChild<QPushButton *>(QStringLiteral("clearProfile"))->isEnabled());
+    QVERIFY(pageButton("clearProfile")->isEnabled());
     dialog.clearSelected();
     QCOMPARE(clearAsked, QStringList{QStringLiteral("Banking")});
     QCOMPARE(clearRequested.count(), 0);

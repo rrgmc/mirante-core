@@ -46,7 +46,7 @@
 #include "ui/LogWindow.h"
 #include "ui/ModulesDialog.h"
 #include "ui/QuickAddDialog.h"
-#include "ui/ProfileSettingsDialog.h"
+#include "ui/ProfilesDialog.h"
 #include "ui/ImagePaste.h"
 #include <mirante/widgets/ImageMime.h>
 #include <mirante/widgets/ImagePasteDialog.h>
@@ -215,7 +215,6 @@ struct MainWindow::Private
     QPointer<LogWindow> logWindow;
     QPointer<SettingsDialog> settingsDialog;
     QPointer<ModulesDialog> modulesDialog;
-    QPointer<ProfileSettingsDialog> profileSettingsDialog;
     // Whether the sidebar tints the row of the hovered cell, from the device
     // settings. See applyDeviceSettings().
     bool sidebarHoverTint = true;
@@ -1076,7 +1075,7 @@ struct MainWindow::Private
     void openServerSettings(const ServerId &id)
     {
         if (const ServerType *server = types->serverType(id.moduleId))
-            actions->editModuleSettings(id.profileId, id.moduleId, server->screenId(), id.accountId);
+            actions->editProfiles(ProfilesDialog::Node{id.profileId, id.moduleId, server->screenId(), id.accountId});
     }
 
     // Opens a folder, or the sample data, through the Store, keeping the open
@@ -1429,8 +1428,8 @@ struct MainWindow::Private
         settings->addRecentWorkspace(folder);   // ignores the sample data's empty folder
     }
 
-    // The Profiles menu: Manage Profiles…, then a submenu for each profile,
-    // Default first, then by name. See docs/ui.md#profiles-menu.
+    // The Profiles menu: Manage Profiles…, then an entry for each profile,
+    // the default first, then by name. See docs/ui.md#profiles-menu.
     void buildProfilesMenu(QMenuBar *bar)
     {
         profilesMenu = bar->addMenu(MainWindow::tr("&Profiles"));
@@ -1468,9 +1467,6 @@ struct MainWindow::Private
 
     void fillProfilesMenu()
     {
-        // clear() keeps the submenus, which are children of the menu.
-        for (QAction *action : profilesMenu->actions())
-            delete action->menu();
         profilesMenu->clear();
         profilesShown = profileIdsAndNames();
         QAction *manage = profilesMenu->addAction(MainWindow::tr("&Manage Profiles…"));
@@ -1478,102 +1474,14 @@ struct MainWindow::Private
         manage->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_P));
         QObject::connect(manage, &QAction::triggered, q, [this] { actions->editProfiles(); });
         profilesMenu->addSeparator();
+        // Each profile opens the Profiles window at its General page. See
+        // decision 0147.
         for (const Profile &profile : profiles::all(*model)) {
-            QMenu *menu = profilesMenu->addMenu(profiles::listName(*model, profile));
-            menu->setObjectName(QStringLiteral("profileMenu.") + profile.id);
-            fillProfileMenu(menu, profile.id);
-        }
-    }
-
-    // One profile's submenu: what can be done with that profile. Modules is
-    // its first entry. Further entries, such as Rename… or Clear Data…, go
-    // here, one line each.
-    void fillProfileMenu(QMenu *menu, const QString &profileId)
-    {
-        addModulesMenu(menu, profileId);
-        QAction *makeDefault = menu->addAction(MainWindow::tr("Set as &Default"));
-        makeDefault->setObjectName(QStringLiteral("setDefaultProfile.") + profileId);
-        makeDefault->setEnabled(profileId != model->defaultProfile());
-        QObject::connect(makeDefault, &QAction::triggered, q, [this, profileId] {
-            if (model->profile(profileId))
-                model->setDefaultProfile(profileId);
-        });
-        menu->addSeparator();
-        QAction *profileSettings = menu->addAction(MainWindow::tr("&Settings…"));
-        profileSettings->setObjectName(QStringLiteral("profileSettings.") + profileId);
-        profileSettings->setEnabled(profiles != nullptr);
-        QObject::connect(profileSettings, &QAction::triggered, q, [this, profileId] { showProfileSettings(profileId); });
-    }
-
-    // The profile's settings window, which shows where its data is kept.
-    // One is open at a time.
-    void showProfileSettings(const QString &profileId)
-    {
-        const Profile *profile = model->profile(profileId);
-        if (!profile || !profiles)
-            return;
-        ProfileStorage storage;
-        storage.webData = profiles->storagePath(ProfileManager::storageName(profileId));
-        storage.cache = QDir(storage.webData).filePath(QStringLiteral("cache"));
-        // Every token key of the profile starts the same, whatever the module.
-        const QString anyKey = secretKey(model->workspaceId(), profileId, QStringLiteral("m"), QStringLiteral("f"));
-        storage.tokenPrefix = keychainEntryName(anyKey.left(anyKey.size() - 3));
-        delete profileSettingsDialog;
-        profileSettingsDialog = new ProfileSettingsDialog(profiles::listName(*model, *profile), storage, q);
-        profileSettingsDialog->setAttribute(Qt::WA_DeleteOnClose);
-        profileSettingsDialog->show();
-    }
-
-    // The profile's Modules submenu: a submenu for each module with settings
-    // screens, named after the module, listing its screens by their names.
-    // Each opens the screen's dialog for this profile. A module with a server
-    // lists its server's screen once more for each other account, such as
-    // "General Configuration: Bot…", and ends with Add Account… (decision
-    // 0146). Disabled, with "No module settings", when no module has
-    // screens.
-    void addModulesMenu(QMenu *menu, const QString &profileId)
-    {
-        QMenu *modules = menu->addMenu(MainWindow::tr("&Modules"));
-        modules->setObjectName(QStringLiteral("modulesMenu.") + profileId);
-        for (const QString &moduleId : types->moduleIds()) {
-            const std::vector<const SettingsScreen *> screens = types->settingsScreens(moduleId);
-            if (screens.empty())
-                continue;
-            QMenu *module = modules->addMenu(types->moduleName(moduleId));
-            module->setObjectName(QStringLiteral("modulesMenu.%1.%2").arg(profileId, moduleId));
-            const ServerType *server = types->serverType(moduleId);
-            for (const SettingsScreen *screen : screens) {
-                const QString screenId = screen->id();
-                QAction *action = module->addAction(screen->name() + QStringLiteral("…"));
-                action->setObjectName(QStringLiteral("moduleSettings.%1.%2.%3").arg(profileId, moduleId, screenId));
-                QObject::connect(action, &QAction::triggered, q, [this, profileId, moduleId, screenId] {
-                    actions->editModuleSettings(profileId, moduleId, screenId);
-                });
-                if (!server || server->screenId() != screenId)
-                    continue;
-                for (const Account &account : accounts::others(*model, profileId, moduleId)) {
-                    QAction *accountAction = module->addAction(
-                        MainWindow::tr("%1: %2…").arg(screen->name(), account.name));
-                    accountAction->setObjectName(
-                        QStringLiteral("moduleSettings.%1.%2.%3.%4").arg(profileId, moduleId, screenId, account.id));
-                    const QString accountId = account.id;
-                    QObject::connect(accountAction, &QAction::triggered, q,
-                                     [this, profileId, moduleId, screenId, accountId] {
-                                         actions->editModuleSettings(profileId, moduleId, screenId, accountId);
-                                     });
-                }
-            }
-            if (server) {
-                module->addSeparator();
-                QAction *add = module->addAction(MainWindow::tr("Add Account…"));
-                add->setObjectName(QStringLiteral("addAccount.%1.%2").arg(profileId, moduleId));
-                QObject::connect(add, &QAction::triggered, q,
-                                 [this, profileId, moduleId] { actions->addAccount(profileId, moduleId); });
-            }
-        }
-        if (modules->isEmpty()) {
-            modules->addAction(MainWindow::tr("No module settings"))->setEnabled(false);
-            modules->setEnabled(false);
+            QAction *open = profilesMenu->addAction(profiles::listName(*model, profile) + QStringLiteral("…"));
+            open->setObjectName(QStringLiteral("profile.") + profile.id);
+            const QString id = profile.id;
+            QObject::connect(open, &QAction::triggered, q,
+                             [this, id] { actions->editProfiles(ProfilesDialog::Node{id, {}, {}, {}}); });
         }
     }
 

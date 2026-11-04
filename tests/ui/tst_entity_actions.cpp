@@ -40,6 +40,8 @@
 #include <QTemporaryDir>
 #include <QRegularExpression>
 #include <QTest>
+#include <QTreeWidget>
+#include <QTreeWidgetItemIterator>
 
 #include <algorithm>
 #include <functional>
@@ -334,6 +336,7 @@ private slots:
     void tokenStateAndRemove();
     void deletingProfileRemovesTokens();
     void accountsAreAddedEditedAndRemoved();
+    void profilesWindowEditsModules();
 };
 
 void TestEntityActions::initTestCase()
@@ -1205,6 +1208,100 @@ void TestEntityActions::accountsAreAddedEditedAndRemoved()
     });
     actions->editProfiles();
     QCOMPARE(secrets.state(accountKey(workProfile, other)), SecretStore::State::NotSet);
+}
+
+// The Profiles window lists each profile's modules and accounts, opens at a
+// given node, edits a page with Apply, asks before leaving a changed page,
+// and adds and removes accounts. See decision 0147.
+void TestEntityActions::profilesWindowEditsModules()
+{
+    const QString module = QStringLiteral("accts");
+    const QString screen = QStringLiteral("general");
+    SecretStore secrets(makeMemoryBackend());
+    actions->setSecretStore(&secrets);
+    const auto accountKey = [&](const QString &accountId) {
+        return secretKey(fixtureWorkspaceId, workProfile, module, accountId, QStringLiteral("token"));
+    };
+    using Node = ProfilesDialog::Node;
+
+    bool ran = false;
+    actions->setEditProfiles([&](ProfilesDialog &dialog) {
+        ran = true;
+        // It opened at the default account of the module.
+        QCOMPARE(dialog.currentNode(), (Node{workProfile, module, screen, QString()}));
+        ModuleSettingsPage *page = dialog.currentSettingsPage();
+        QVERIFY(page);
+        QVERIFY(!page->isAccount());
+
+        // A module without a server and with one screen is that screen.
+        auto *tree = dialog.findChild<QTreeWidget *>(QStringLiteral("profileTree"));
+        bool tokensIsScreen = false;
+        for (QTreeWidgetItemIterator it(tree); *it; ++it) {
+            const QStringList ids = (*it)->data(0, Qt::UserRole).toStringList();
+            if (ids.value(0) == workProfile && ids.value(1) == QLatin1String("tokens"))
+                tokensIsScreen = ids.value(2) == screen && (*it)->childCount() == 0;
+        }
+        QVERIFY(tokensIsScreen);
+
+        // Typing makes the page changed; leaving asks, and can stay.
+        auto *server = qobject_cast<QLineEdit *>(
+            qobject_cast<FieldForm *>(page->editor())->editorFor(QStringLiteral("server")));
+        QVERIFY(server);
+        server->setText(QStringLiteral("https://default.example"));
+        QVERIFY(page->isModified());
+        QStringList asked;
+        ProfilesDialog::Unsaved choice = ProfilesDialog::Unsaved::Stay;
+        dialog.setAskUnsaved([&](const QString &title) {
+            asked << title;
+            return choice;
+        });
+        dialog.selectNode(Node{workProfile, module, QString(), QString()});
+        QCOMPARE(asked.size(), 1);
+        // The tree goes back to the changed page after the selection.
+        QTRY_COMPARE(tree->currentItem()->data(0, Qt::UserRole).toStringList(),
+                     (QStringList{workProfile, module, screen, QString()}));
+        QCOMPARE(dialog.currentNode(), (Node{workProfile, module, screen, QString()}));
+        QCOMPARE(dialog.currentSettingsPage(), page);
+        // Apply stores it.
+        choice = ProfilesDialog::Unsaved::Apply;
+        dialog.selectNode(Node{workProfile, module, QString(), QString()});
+        QCOMPARE(asked.size(), 2);
+        QCOMPARE(model.moduleSettings(workProfile, module, screen).value(QStringLiteral("server")).toString(),
+                 QStringLiteral("https://default.example"));
+        QCOMPARE(dialog.currentNode(), (Node{workProfile, module, QString(), QString()}));
+
+        // The module's page adds an account, which is then selected.
+        QVERIFY(dialog.currentPage()->findChild<QPushButton *>(QStringLiteral("addAccount")));
+        dialog.addAccountToSelected();
+        const std::vector<Account> added = accounts::others(model, workProfile, module);
+        QCOMPARE(added.size(), size_t(1));
+        const QString id = added.front().id;
+        QCOMPARE(dialog.currentNode(), (Node{workProfile, module, screen, id}));
+        page = dialog.currentSettingsPage();
+        QVERIFY(page && page->isAccount());
+        QVERIFY(dialog.findChild<QPushButton *>(QStringLiteral("removeAccount"))->isVisibleTo(&dialog));
+        page->findChild<QLineEdit *>(QStringLiteral("accountName"))->setText(QStringLiteral("Bot"));
+        qobject_cast<QLineEdit *>(qobject_cast<FieldForm *>(page->editor())->editorFor(QStringLiteral("token")))
+            ->setText(QStringLiteral(" bot-token "));
+        page->setModified(true);
+        QVERIFY(dialog.applyCurrent());
+        QCOMPARE(accounts::nameOf(model, workProfile, module, id), QStringLiteral("Bot"));
+        QCOMPARE(secrets.cached(accountKey(id)), std::optional<QString>(QStringLiteral("bot-token")));
+        // The tree names it.
+        bool named = false;
+        for (QTreeWidgetItemIterator it(tree); *it; ++it)
+            named = named || (*it)->text(0) == QLatin1String("Bot");
+        QVERIFY(named);
+
+        // Removing asks, then takes its token along.
+        answer = true;
+        dialog.removeSelectedAccount();
+        QVERIFY(!accounts::find(model, workProfile, module, id));
+        QCOMPARE(secrets.state(accountKey(id)), SecretStore::State::NotSet);
+        QCOMPARE(dialog.currentNode(), (Node{workProfile, module, QString(), QString()}));
+    });
+    actions->editProfiles(Node{workProfile, module, screen, QString()});
+    QVERIFY(ran);
 }
 
 QTEST_MAIN(TestEntityActions)

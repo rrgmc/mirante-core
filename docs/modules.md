@@ -281,7 +281,7 @@ void registerModule(ModuleRegistrar &registrar)
           done(choices, QString());
       });
   }
-  ```- **Menu.** The core adds a submenu named after the module to each profile's Modules submenu in the [Profiles menu](ui.md#profiles-menu), with one entry per screen. Its dialog edits that profile's values. A module without screens does not appear there.
+  ```- **Menu.** The core lists the module under each profile in the [Profiles window](ui.md#profiles), with one node per screen. Its dialog edits that profile's values. A module without screens does not appear there.
 
 ## Items from a link
 
@@ -475,7 +475,7 @@ Synced data can reach a build that does not include a module. For example, one d
 - **Items:** shows a placeholder: "This item needs the jira module, which this build does not include." The item's `type` and `config` are kept unchanged.
 - **Removed types:** an item whose module is in the build but no longer registers its type, such as `claude.session.local` ([decision 0084](decisions/0084-no-local-claude-sessions.md)), is handled the same way. Its placeholder says "This item type is no longer available: claude.session.local." The item dialog changes only its name.
 - **Project settings:** keeps the module's settings unchanged and does not show them.
-- **Module settings:** keeps the values of the module's settings screens unchanged in each profile in `workspace.mirante`. The Profiles menu has no entry for the module.
+- **Module settings:** keeps the values of the module's settings screens unchanged in each profile in `workspace.mirante`. The Profiles window does not list the module.
 - **Cells and Focus:** show the item's name. No status or attention is computed for it.
 
 Everything is written back exactly as it was loaded. See [sync](sync.md#the-data-folder).
