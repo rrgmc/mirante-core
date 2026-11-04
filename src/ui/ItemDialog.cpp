@@ -62,6 +62,7 @@ struct ItemDialog::Private
     QLabel *typeIcon = nullptr;
     QLabel *typeName = nullptr;
     QLineEdit *name = nullptr;
+    QLineEdit *dashboardTitle = nullptr;
     QFormLayout *form = nullptr;
     QComboBox *profile = nullptr;       // shown for types that use a profile
     QCheckBox *watch = nullptr;         // shown for types that report status
@@ -522,6 +523,13 @@ ItemDialog::ItemDialog(const Item &item, bool creating, const ItemTypeRegistry &
     d->name->setObjectName(QStringLiteral("name"));
     form->addRow(tr("Name:"), d->name);
 
+    d->dashboardTitle = new QLineEdit(item.dashboardTitle, d->itemPage);
+    d->dashboardTitle->setObjectName(QStringLiteral("dashboardTitle"));
+    d->dashboardTitle->setPlaceholderText(tr("Same as the name"));
+    d->dashboardTitle->setToolTip(tr("Optional. Dashboards show this title instead of the name, "
+                                     "for example to tell apart several items named \"TODO\"."));
+    form->addRow(tr("Dashboard title:"), d->dashboardTitle);
+
     d->profile = new QComboBox(d->itemPage);
     d->profile->setObjectName(QStringLiteral("profile"));
     d->profile->setToolTip(tr("The item uses the logins and module settings of its profile. It can "
@@ -551,9 +559,9 @@ ItemDialog::ItemDialog(const Item &item, bool creating, const ItemTypeRegistry &
         // decision 0084.
         const bool removed = types.moduleIds().contains(moduleOf(d->item.type));
         auto *missing = new QLabel(
-            removed ? tr("This item type is no longer available, so only the name can be changed. "
+            removed ? tr("This item type is no longer available, so only the name and the dashboard title can be changed. "
                          "The rest of the item is kept.")
-                    : tr("The module of this item type is not available, so only the name can be changed. "
+                    : tr("The module of this item type is not available, so only the name and the dashboard title can be changed. "
                          "The rest of the item is kept."),
             d->itemPage);
         missing->setObjectName(QStringLiteral("missing"));
@@ -641,6 +649,7 @@ Item ItemDialog::value() const
 {
     Item item = d->item;
     item.name = d->name->text().trimmed();
+    item.dashboardTitle = d->dashboardTitle->text().trimmed();
     if (d->editor)
         item.config = d->editor->config();
     // Only an item whose type uses a profile chooses one. Another keeps what

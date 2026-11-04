@@ -37,6 +37,9 @@ public:
 
     std::optional<CellRef> ref() const;
 
+    // Replaces the item name given to the constructor, such as after the
+    // item's dashboard title changed.
+    void setItemName(const QString &text);
     // A grey pill after the item name that says where the item comes from,
     // such as "backend › Overview". Used for items placed directly in a root
     // dashboard. Empty hides it.

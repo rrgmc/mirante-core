@@ -70,11 +70,11 @@ QWidget *DashboardCellFactory::createCell(const std::optional<CellRef> &ref, boo
         return new CellFrame(ref, true, nullptr, QString(), parent);
     // An item of a task in the trash keeps its reference, so a restore brings it back.
     if (d->services.model->taskInTrash(d->dashboard.isRoot() ? ref->task : d->dashboard.taskId)) {
-        auto *trashed = new CellFrame(ref, true, d->type(*item), item->name, parent);
+        auto *trashed = new CellFrame(ref, true, d->type(*item), item->dashboardName(), parent);
         trashed->setMessage(QCoreApplication::translate("DashboardCellFactory", "In trash"));
         return trashed;
     }
-    auto *frame = new CellFrame(ref, false, d->type(*item), item->name, parent);
+    auto *frame = new CellFrame(ref, false, d->type(*item), item->dashboardName(), parent);
     // In a task dashboard every item is of that task. In a root dashboard an
     // item can come from anywhere, so its header names its project and task.
     if (d->dashboard.isRoot())
@@ -97,6 +97,18 @@ QWidget *DashboardCellFactory::createCell(const std::optional<CellRef> &ref, boo
         QObject::connect(model, &Model::projectChanged, frame, tint);
         QObject::connect(model, &Model::groupChanged, frame, tint);
         QObject::connect(model, &Model::modelReset, frame, tint);
+
+        // The header follows the item's dashboard title and name.
+        const QString itemId = ref->item;
+        const auto rename = [model, taskId, itemId, frame] {
+            if (const Item *current = model->item(taskId, itemId))
+                frame->setItemName(current->dashboardName());
+        };
+        QObject::connect(model, &Model::taskChanged, frame, [rename, taskId](const QString &changed) {
+            if (changed == taskId)
+                rename();
+        });
+        QObject::connect(model, &Model::modelReset, frame, rename);
     }
 
     // The item's view, made when the cell is first shown.

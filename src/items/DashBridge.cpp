@@ -244,7 +244,7 @@ QJsonObject DashBridge::currentTask() const
         const bool known = types && types->contains(item.type);
         items.append(QJsonObject{
             {QStringLiteral("id"), item.id},
-            {QStringLiteral("name"), item.name},
+            {QStringLiteral("name"), item.dashboardName()},
             {QStringLiteral("type"), item.type},
             {QStringLiteral("typeName"), known ? types->type(item.type).shortName() : QString()},
             {QStringLiteral("hasStatus"), known && types->type(item.type).hasStatus()},

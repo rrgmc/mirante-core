@@ -1006,14 +1006,6 @@
         <translation>Perfil:</translation>
     </message>
     <message>
-        <source>This item type is no longer available, so only the name can be changed. The rest of the item is kept.</source>
-        <translation>Este tipo de item não está mais disponível, então só o nome pode ser alterado. O resto do item é mantido.</translation>
-    </message>
-    <message>
-        <source>The module of this item type is not available, so only the name can be changed. The rest of the item is kept.</source>
-        <translation>O módulo deste tipo de item não está disponível, então só o nome pode ser alterado. O resto do item é mantido.</translation>
-    </message>
-    <message>
         <source>Next</source>
         <translation>Avançar</translation>
     </message>
@@ -1064,6 +1056,26 @@
     <message>
         <source>Keys for the page:</source>
         <translation>Teclas da página:</translation>
+    </message>
+    <message>
+        <source>Same as the name</source>
+        <translation>Igual ao nome</translation>
+    </message>
+    <message>
+        <source>Optional. Dashboards show this title instead of the name, for example to tell apart several items named &quot;TODO&quot;.</source>
+        <translation>Opcional. Os painéis mostram este título no lugar do nome, por exemplo para distinguir vários itens chamados &quot;TODO&quot;.</translation>
+    </message>
+    <message>
+        <source>Dashboard title:</source>
+        <translation>Título no painel:</translation>
+    </message>
+    <message>
+        <source>This item type is no longer available, so only the name and the dashboard title can be changed. The rest of the item is kept.</source>
+        <translation>Este tipo de item não está mais disponível, então só o nome e o título no painel podem ser alterados. O resto do item é mantido.</translation>
+    </message>
+    <message>
+        <source>The module of this item type is not available, so only the name and the dashboard title can be changed. The rest of the item is kept.</source>
+        <translation>O módulo deste tipo de item não está disponível, então só o nome e o título no painel podem ser alterados. O resto do item é mantido.</translation>
     </message>
 </context>
 <context>
