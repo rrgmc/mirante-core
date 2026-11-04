@@ -56,7 +56,7 @@ The app speaks English and Brazilian Portuguese. Every text the user sees is wri
 
 **Extension.** The code that an app gives for an extension point: a folder that the manifest names, compiled into the module in place of the point's defaults.
 
-**Settings screen.** A configuration screen of a whole module, such as GitLab's "General Configuration", opened from a profile's Modules submenu in the Profiles menu. Its values are the module's settings. Each profile has its own, kept in the workspace and synced. See [settings screens](modules.md#settings-screens).
+**Settings screen.** A configuration screen of a whole module, such as GitLab's "General Configuration", edited under the profile in the Profiles window ([decision 0147](decisions/0147-profile-settings-in-one-window.md)). Its values are the module's settings. Each profile has its own, kept in the workspace and synced. See [settings screens](modules.md#settings-screens).
 
 
 **Placement.** One place where an item is shown: a cell, or the preview slot. Each visible placement has its own view, unless the item type allows only one.

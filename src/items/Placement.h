@@ -86,7 +86,7 @@ public:
     // The address the cell header's "Open in browser" button opens: the page
     // of showPage() while one is shown, else the view's ItemContext::setWebLink().
     // Empty when there is none, or it is not an http or https address. See
-    // decision 0147.
+    // decision 0148.
     QUrl webLink() const;
 
     // What the cell header shows about the item's status. Kind::None for a

@@ -281,7 +281,7 @@ void registerModule(ModuleRegistrar &registrar)
           done(choices, QString());
       });
   }
-  ```- **Menu.** The core adds a submenu named after the module to each profile's Modules submenu in the [Profiles menu](ui.md#profiles-menu), with one entry per screen. Its dialog edits that profile's values. A module without screens does not appear there.
+  ```- **Menu.** The core lists the module under each profile in the [Profiles window](ui.md#profiles), with one node per screen. Its dialog edits that profile's values. A module without screens does not appear there.
 
 ## Items from a link
 
@@ -339,7 +339,7 @@ Each item's code gets an `ItemContext`. It gives access to the configuration the
 | `onConfigChanged(receiver, changed)` | Reports a change to the type's `viewKeys()`, which does not make the view again. See [decision 0081](decisions/0081-views-that-keep-their-own-keys.md). | M7 |
 | `updateConfig(config)` | Changes the item's configuration through `Model` | M4 |
 | `showPage(url)` | Shows a web page in place of the view, with a way back. See [decision 0069](decisions/0069-open-page-in-the-placement.md). | M6 |
-| `setWebLink(url)` | The item's address on the web, such as a pull request's page. The cell header shows an **Open in browser** button for an `http` or `https` address; an empty one hides it. Call it again when the address changes. A web view of `createWebView()` sets it by itself. See [decision 0147](decisions/0147-web-link-in-the-cell-header.md). | after M13 |
+| `setWebLink(url)` | The item's address on the web, such as a pull request's page. The cell header shows an **Open in browser** button for an `http` or `https` address; an empty one hides it. Call it again when the address changes. A web view of `createWebView()` sets it by itself. See [decision 0148](decisions/0148-web-link-in-the-cell-header.md). | after M13 |
 | `addItemToTask(typeId, name, config)` | Adds an item to the item's task, for "Add to task as item" | M6 |
 
 ### Servers and tokens
@@ -476,7 +476,7 @@ Synced data can reach a build that does not include a module. For example, one d
 - **Items:** shows a placeholder: "This item needs the jira module, which this build does not include." The item's `type` and `config` are kept unchanged.
 - **Removed types:** an item whose module is in the build but no longer registers its type, such as `claude.session.local` ([decision 0084](decisions/0084-no-local-claude-sessions.md)), is handled the same way. Its placeholder says "This item type is no longer available: claude.session.local." The item dialog changes only its name.
 - **Project settings:** keeps the module's settings unchanged and does not show them.
-- **Module settings:** keeps the values of the module's settings screens unchanged in each profile in `workspace.mirante`. The Profiles menu has no entry for the module.
+- **Module settings:** keeps the values of the module's settings screens unchanged in each profile in `workspace.mirante`. The Profiles window does not list the module.
 - **Cells and Focus:** show the item's name. No status or attention is computed for it.
 
 Everything is written back exactly as it was loaded. See [sync](sync.md#the-data-folder).

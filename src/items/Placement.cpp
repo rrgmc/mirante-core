@@ -114,7 +114,7 @@ struct Placement::Private
     QPointer<QWidget> pageHeader;       // the back button and the page's toolbar
     QPointer<QWidget> viewHeader;       // the view's header widget, while a page is shown
     QString pageProfile;                // the profile the page was made in
-    // The web links of decision 0147: the view's, from its context, and the
+    // The web links of decision 0148: the view's, from its context, and the
     // page's while one is shown. The header opens shownLink.
     QUrl viewLink;
     QUrl pageLink;

@@ -150,8 +150,9 @@ Each file records one design decision: what was decided, what else was considere
 | [0143](0143-claude-agents-list.md) | A list of local Claude agents, from `claude agents --json` | Accepted |
 | [0144](0144-recent-dates-as-a-distance.md) | Recent dates in lists read as a distance | Accepted |
 | [0145](0145-tasks-without-dashboards.md) | A task may have no dashboards | Accepted |
-| [0146](0146-several-accounts-per-module.md) | A profile can hold several accounts of a module | Accepted |
-| [0147](0147-web-link-in-the-cell-header.md) | The cell header opens an item's web link | Accepted |
+| [0146](0146-several-accounts-per-module.md) | A profile can hold several accounts of a module | Accepted; its menu entries superseded by 0147 |
+| [0147](0147-profile-settings-in-one-window.md) | A profile's settings are edited in one window | Accepted |
+| [0148](0148-web-link-in-the-cell-header.md) | The cell header opens an item's web link | Accepted |
 
 ## Template
 

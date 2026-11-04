@@ -36,6 +36,7 @@
 #include "ui/SettingsDialog.h"
 #include "ui/SidebarModel.h"
 #include "ui/Shortcuts.h"
+#include "ui/ModuleSettingsPage.h"
 #include "ui/ProfilesDialog.h"
 #include "web/ProfileManager.h"
 #include "web/WebPanel.h"
@@ -2335,23 +2336,28 @@ private slots:
         QWidget *line = f.window->findChild<QWidget *>(QStringLiteral("failingServer"));
         QCOMPARE(line->findChild<QLabel *>()->text(), QStringLiteral("Srv in the profile Default refused the token."));
 
-        // "Set Token…" opens the server's screen in that profile.
-        QString title;
-        f.window->entityActions()->setExec([&title](QDialog &dialog) {
-            title = dialog.windowTitle();
-            auto *form = dialog.findChild<FieldForm *>(QStringLiteral("editor"));
+        // "Set Token…" opens the Profiles window at the server's account in
+        // that profile.
+        ProfilesDialog::Node opened;
+        bool typed = false;
+        f.window->entityActions()->setEditProfiles([&](ProfilesDialog &dialog) {
+            opened = dialog.currentNode();
+            ModuleSettingsPage *page = dialog.currentSettingsPage();
+            auto *form = page ? qobject_cast<FieldForm *>(page->editor()) : nullptr;
             auto *token = form ? qobject_cast<QLineEdit *>(form->editorFor(QStringLiteral("token"))) : nullptr;
             if (!token)
-                return false;
+                return;
             // The token is set, and the screen says so without showing it.
             const QString set = QStringLiteral("Set on this device. Type to replace it.");
             if (!QTest::qWaitFor([token, &set] { return token->placeholderText() == set; }))
-                return false;
+                return;
             token->setText(QStringLiteral("right"));
-            return true;
+            typed = dialog.applyCurrent();
         });
         line->findChild<QPushButton *>(QStringLiteral("setToken"))->click();
-        QCOMPARE(title, QStringLiteral("Default: Srv General Configuration"));
+        QCOMPARE(opened, (ProfilesDialog::Node{QStringLiteral("default"), QStringLiteral("srv"),
+                                               QStringLiteral("general"), QString()}));
+        QVERIFY(typed);
         QCOMPARE(api.secrets.cached(srvTokenKey(kSampleWorkspaceId)), std::optional<QString>(QStringLiteral("right")));
         QTRY_VERIFY(f.window->findChildren<QWidget *>(QStringLiteral("failingServer")).isEmpty());
         QVERIFY(!api.servers.failing(QStringLiteral("default"), QStringLiteral("srv")));
@@ -2480,36 +2486,42 @@ private slots:
 
     // Profiles > <profile> > Settings… shows where the profile's data is
     // kept. Without web profiles there is nothing to show.
+    // Each profile's entry in the Profiles menu opens the Profiles window at
+    // its General page, which shows where its data is kept when there are
+    // web profiles.
     void profileSettingsShowStorage()
     {
         {
             Fixture f;
-            auto *settings = f.window->findChild<QAction *>(QStringLiteral("profileSettings.default"));
-            QVERIFY(settings);
-            QVERIFY(!settings->isEnabled());
+            auto *open = f.window->findChild<QAction *>(QStringLiteral("profile.default"));
+            QVERIFY(open);
+            bool storageShown = true;
+            f.window->entityActions()->setEditProfiles([&](ProfilesDialog &dialog) {
+                storageShown = dialog.currentPage()->findChild<QLineEdit *>(QStringLiteral("webDataPath"));
+            });
+            open->trigger();
+            QVERIFY(!storageShown);
         }
         Fixture f(true);
-        auto *settings = f.window->findChild<QAction *>(QStringLiteral("profileSettings.default"));
-        QVERIFY(settings);
-        QVERIFY(settings->isEnabled());
-        settings->trigger();
-        auto *dialog = f.window->findChild<QDialog *>(QStringLiteral("profileSettingsDialog"));
-        QVERIFY(dialog);
-        QVERIFY(dialog->isVisible());
+        auto *open = f.window->findChild<QAction *>(QStringLiteral("profile.default"));
+        QVERIFY(open);
+        QStringList fields;
+        ProfilesDialog::Node opened;
+        f.window->entityActions()->setEditProfiles([&](ProfilesDialog &dialog) {
+            opened = dialog.currentNode();
+            for (const char *name : {"webDataPath", "cachePath", "tokenPrefix"}) {
+                auto *field = dialog.currentPage()->findChild<QLineEdit *>(QLatin1String(name));
+                fields << (field ? field->text() : QString());
+            }
+        });
+        open->trigger();
+        QCOMPARE(opened, (ProfilesDialog::Node{QStringLiteral("default"), {}, {}, {}}));
         const QString folder = f.profiles->storagePath(ProfileManager::storageName(QStringLiteral("default")));
-        QCOMPARE(dialog->findChild<QLineEdit *>(QStringLiteral("webDataPath"))->text(),
-                 QDir::toNativeSeparators(folder));
-        QCOMPARE(dialog->findChild<QLineEdit *>(QStringLiteral("cachePath"))->text(),
-                 QDir::toNativeSeparators(QDir(folder).filePath(QStringLiteral("cache"))));
         const QString prefix = keychainEntryName(f.model.workspaceId() + QStringLiteral("/default/"));
-        QCOMPARE(dialog->findChild<QLineEdit *>(QStringLiteral("tokenPrefix"))->text(), prefix + QStringLiteral("…"));
+        QCOMPARE(fields, (QStringList{QDir::toNativeSeparators(folder),
+                                      QDir::toNativeSeparators(QDir(folder).filePath(QStringLiteral("cache"))),
+                                      prefix + QStringLiteral("…")}));
         QVERIFY(prefix.startsWith(QStringLiteral("mirante/")));
-
-        // A second opening replaces the first window.
-        const QPointer<QDialog> first = dialog;
-        settings->trigger();
-        QTRY_VERIFY(!first);
-        QVERIFY(f.window->findChild<QDialog *>(QStringLiteral("profileSettingsDialog")));
     }
 
 private:

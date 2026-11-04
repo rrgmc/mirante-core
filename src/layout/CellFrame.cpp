@@ -237,7 +237,7 @@ CellFrame::CellFrame(const std::optional<CellRef> &ref, bool removed, const Item
 
     // "Open in browser", for the item's web link, hidden without one. A
     // header widget, such as a web toolbar, goes between the row and it, so
-    // it stays beside a page's address. See decision 0147.
+    // it stays beside a page's address. See decision 0148.
     d->webButton = new QToolButton(d->header);
     d->webButton->setObjectName(QStringLiteral("openInBrowserButton"));
     d->webButton->setAutoRaise(true);
