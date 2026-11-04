@@ -18,7 +18,7 @@ class ServerChoiceDialog;
 
 // Edits the values of one module settings screen in one profile, alone, for
 // EntityActions::editModuleSettings(). The app opens the Profiles window
-// instead (decision 0145). It shows a ModuleSettingsPage: the screen's own
+// instead (decision 0147). It shows a ModuleSettingsPage: the screen's own
 // editor, or else a FieldForm built from its fields. Keys the editor does
 // not show are kept. OK is refused while the editor reports problems. A list
 // the module's server can fill has an "Add from Server…" button. See

@@ -1,4 +1,4 @@
-# 0145. A profile's settings are edited in one window
+# 0147. A profile's settings are edited in one window
 
 - Status: Accepted
 - Date: 2026-11-04

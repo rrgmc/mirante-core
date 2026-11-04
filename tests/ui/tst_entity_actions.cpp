@@ -1211,7 +1211,7 @@ void TestEntityActions::accountsAreAddedEditedAndRemoved()
 
 // The Profiles window lists each profile's modules and accounts, opens at a
 // given node, edits a page with Apply, asks before leaving a changed page,
-// and adds and removes accounts. See decision 0145.
+// and adds and removes accounts. See decision 0147.
 void TestEntityActions::profilesWindowEditsModules()
 {
     const QString module = QStringLiteral("accts");

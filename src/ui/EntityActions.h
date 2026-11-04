@@ -70,7 +70,7 @@ public:
 
     // Opens the profiles dialog, Profiles > Manage Profiles…. See docs/ui.md#profiles.
     // It opens at start: a profile's General page, a module, an account or a
-    // screen. An empty node opens at the default profile. See decision 0145.
+    // screen. An empty node opens at the default profile. See decision 0147.
     void editProfiles(const ProfilesDialog::Node &start = ProfilesDialog::Node());
 
     // Opens the dialog of a module's settings screen in one profile, from

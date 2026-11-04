@@ -148,8 +148,8 @@ Each file records one design decision: what was decided, what else was considere
 | [0141](0141-one-menu-entry-for-links.md) | One menu entry adds items from a link | Accepted |
 | [0142](0142-item-dashboard-title.md) | Items have an optional title for dashboards | Accepted |
 | [0143](0143-claude-agents-list.md) | A list of local Claude agents, from `claude agents --json` | Accepted |
-| [0144](0144-several-accounts-per-module.md) | A profile can hold several accounts of a module | Accepted; its menu entries superseded by 0145 |
-| [0145](0145-profile-settings-in-one-window.md) | A profile's settings are edited in one window | Accepted |
+| [0144](0144-several-accounts-per-module.md) | A profile can hold several accounts of a module | Accepted; its menu entries superseded by 0147 |
+| [0147](0147-profile-settings-in-one-window.md) | A profile's settings are edited in one window | Accepted |
 
 ## Template
 

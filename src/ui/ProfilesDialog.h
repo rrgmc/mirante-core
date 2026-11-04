@@ -23,7 +23,7 @@ struct ProfileStorage
 };
 
 // The Profiles window, opened with Profiles > Manage Profiles…, and the one
-// place where profiles and their settings are edited (decision 0145).
+// place where profiles and their settings are edited (decision 0147).
 //
 // A tree on the left lists the profiles, the default first. Under each, each
 // module with settings screens; under a module with a server, its accounts,

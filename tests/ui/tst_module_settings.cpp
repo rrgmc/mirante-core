@@ -248,7 +248,7 @@ class TestModuleSettings : public QObject
 private slots:
     // Manage Profiles… first, then an entry per profile, the default first,
     // each opening the Profiles window at that profile. No submenus. See
-    // decision 0145.
+    // decision 0147.
     void menu()
     {
         Fixture f(true);

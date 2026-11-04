@@ -1462,7 +1462,7 @@ struct MainWindow::Private
         QObject::connect(manage, &QAction::triggered, q, [this] { actions->editProfiles(); });
         profilesMenu->addSeparator();
         // Each profile opens the Profiles window at its General page. See
-        // decision 0145.
+        // decision 0147.
         for (const Profile &profile : profiles::all(*model)) {
             QAction *open = profilesMenu->addAction(profiles::listName(*model, profile) + QStringLiteral("…"));
             open->setObjectName(QStringLiteral("profile.") + profile.id);
