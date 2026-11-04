@@ -6,6 +6,7 @@
 // removed with their profile.
 #include "api/SecretBackend.h"
 #include "api/SecretStore.h"
+#include "core/Accounts.h"
 #include "core/DeviceSettings.h"
 #include "core/GroupColours.h"
 #include "core/Model.h"
@@ -19,10 +20,12 @@
 #include "ui/ImagePaste.h"
 #include <mirante/widgets/ImagePasteDialog.h>
 #include "ui/ItemDialog.h"
+#include "ui/ModuleSettingsDialog.h"
 #include "ui/ProfilesDialog.h"
 #include "ui/ProjectDialog.h"
 #include "ui/TaskDialog.h"
 
+#include <mirante/ApiClient.h>
 #include <mirante/ItemEditor.h>
 #include <mirante/Module.h>
 
@@ -188,6 +191,23 @@ void registerTokenModule(ModuleRegistrar &registrar)
     registrar.addSettingsScreen(std::make_unique<TokenScreen>());
 }
 
+// The server of the module "accts", on the token screen, for its accounts.
+class AccountServerType : public ServerType
+{
+public:
+    QString screenId() const override { return QStringLiteral("general"); }
+    QString tokenKey() const override { return QStringLiteral("token"); }
+    QUrl baseUrl(const QJsonObject &) const override { return QUrl(QStringLiteral("https://srv.example")); }
+    void authorize(QNetworkRequest &, const QString &, const QJsonObject &) const override {}
+};
+
+void registerAccountModule(ModuleRegistrar &registrar)
+{
+    registrar.setModuleName(QStringLiteral("Accounts"));
+    registrar.addSettingsScreen(std::make_unique<TokenScreen>());
+    registrar.setServerType(std::make_unique<AccountServerType>());
+}
+
 const QString fixtureWorkspaceId = QStringLiteral("5a3e9c1d-7b2f-5e48-a6d0-3c8f1b2e4d97");
 const QString defaultProfile = QStringLiteral("default");
 const QString workProfile = QStringLiteral("3f6c2a8e-5d1b-4c7a-9e2f-8b0d4a6c1e93");
@@ -313,6 +333,7 @@ private slots:
     void ownEditorHandlesTokens();
     void tokenStateAndRemove();
     void deletingProfileRemovesTokens();
+    void accountsAreAddedEditedAndRemoved();
 };
 
 void TestEntityActions::initTestCase()
@@ -320,6 +341,7 @@ void TestEntityActions::initTestCase()
     types.registerModule(QStringLiteral("testmod"), registerTestModule);
     types.registerModule(QStringLiteral("tokens"), registerTokenModule);
     types.registerModule(QStringLiteral("owntokens"), registerOwnTokenModule);
+    types.registerModule(QStringLiteral("accts"), registerAccountModule);
     store = std::make_unique<Store>(model);
 }
 
@@ -1110,6 +1132,78 @@ void TestEntityActions::deletingProfileRemovesTokens()
     QVERIFY(!model.profile(workProfile));
     QCOMPARE(secrets.state(tokenKey(workProfile)), SecretStore::State::NotSet);
     QCOMPARE(secrets.state(tokenKey(defaultProfile)), SecretStore::State::Set);
+}
+
+// Another account of a module's server is added with its own name and token,
+// edited, and removed with its token. Its token also goes with its profile.
+// See decision 0144.
+void TestEntityActions::accountsAreAddedEditedAndRemoved()
+{
+    const QString module = QStringLiteral("accts");
+    const QString screen = QStringLiteral("general");
+    SecretStore secrets(makeMemoryBackend());
+    actions->setSecretStore(&secrets);
+    const auto accountKey = [&](const QString &profileId, const QString &accountId) {
+        return secretKey(fixtureWorkspaceId, profileId, module, accountId, QStringLiteral("token"));
+    };
+    const auto named = [](const QString &name, const QString &token) {
+        return [name, token](QDialog &dialog) {
+            auto *settings = qobject_cast<ModuleSettingsDialog *>(&dialog);
+            QVERIFY(settings);
+            auto *nameLine = dialog.findChild<QLineEdit *>(QStringLiteral("accountName"));
+            QVERIFY(nameLine);
+            nameLine->setText(name);
+            if (!token.isEmpty())
+                tokenLine(dialog)->setText(token);
+        };
+    };
+
+    // Cancelled, nothing is added. A module without a server adds none.
+    accept = false;
+    QVERIFY(actions->addAccount(workProfile, module).isEmpty());
+    accept = true;
+    QVERIFY(accounts::others(model, workProfile, module).empty());
+    QVERIFY(actions->addAccount(workProfile, QStringLiteral("tokens")).isEmpty());
+
+    fill = named(QStringLiteral("Bot"), QStringLiteral(" bot-token "));
+    const QString id = actions->addAccount(workProfile, module);
+    QVERIFY(!id.isEmpty());
+    QCOMPARE(accounts::nameOf(model, workProfile, module, id), QStringLiteral("Bot"));
+    QCOMPARE(secrets.cached(accountKey(workProfile, id)), std::optional<QString>(QStringLiteral("bot-token")));
+    QVERIFY(secrets.state(secretKey(fixtureWorkspaceId, workProfile, module, QStringLiteral("token")))
+            != SecretStore::State::Set);
+
+    // An empty name is refused.
+    fill = named(QString(), QString());
+    actions->editModuleSettings(workProfile, module, screen, id);
+    QCOMPARE(accounts::nameOf(model, workProfile, module, id), QStringLiteral("Bot"));
+
+    fill = named(QStringLiteral("Robot"), QString());
+    actions->editModuleSettings(workProfile, module, screen, id);
+    QCOMPARE(accounts::nameOf(model, workProfile, module, id), QStringLiteral("Robot"));
+    QCOMPARE(secrets.cached(accountKey(workProfile, id)), std::optional<QString>(QStringLiteral("bot-token")));
+
+    // Removing asks first.
+    fill = [](QDialog &dialog) { qobject_cast<ModuleSettingsDialog *>(&dialog)->chooseRemove(); };
+    answer = false;
+    actions->editModuleSettings(workProfile, module, screen, id);
+    QCOMPARE(questions.size(), 1);
+    QVERIFY(accounts::find(model, workProfile, module, id));
+    answer = true;
+    actions->editModuleSettings(workProfile, module, screen, id);
+    QVERIFY(!accounts::find(model, workProfile, module, id));
+    QCOMPARE(secrets.state(accountKey(workProfile, id)), SecretStore::State::NotSet);
+
+    // Deleting the profile removes its accounts' tokens.
+    fill = named(QStringLiteral("Other"), QStringLiteral("other-token"));
+    const QString other = actions->addAccount(workProfile, module);
+    QCOMPARE(secrets.state(accountKey(workProfile, other)), SecretStore::State::Set);
+    actions->setEditProfiles([](ProfilesDialog &dialog) {
+        dialog.select(workProfile);
+        dialog.deleteSelected();
+    });
+    actions->editProfiles();
+    QCOMPARE(secrets.state(accountKey(workProfile, other)), SecretStore::State::NotSet);
 }
 
 QTEST_MAIN(TestEntityActions)

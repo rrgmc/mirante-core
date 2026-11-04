@@ -359,6 +359,11 @@ struct ItemDialog::Private
         std::vector<Account> others;
         if (model && types->contains(item.type) && types->serverType(moduleId))
             others = accounts::others(*model, effectiveProfile(), moduleId);
+        // An account chosen here that the profile lacks goes back to the
+        // default; only the one the item names is kept.
+        if (!wantedAccount.isEmpty() && wantedAccount != original.account
+            && std::none_of(others.begin(), others.end(), [this](const Account &a) { return a.id == wantedAccount; }))
+            wantedAccount.clear();
         const bool shown = !others.empty() || (!wantedAccount.isEmpty() && types->serverType(moduleId));
         form->setRowVisible(account, shown && model);
         if (!shown || !model)

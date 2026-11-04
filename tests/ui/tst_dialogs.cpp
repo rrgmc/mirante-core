@@ -3,6 +3,7 @@
 // editor, an item of a missing module), the type tree of a new item, the
 // item's profile and the form fields of that profile, creating, renaming and
 // deleting profiles.
+#include "core/Accounts.h"
 #include "core/DeviceSettings.h"
 #include "core/GroupColours.h"
 #include "core/Model.h"
@@ -18,6 +19,7 @@
 #include "ui/ProjectDialog.h"
 #include "ui/TaskDialog.h"
 
+#include <mirante/ApiClient.h>
 #include <mirante/ItemEditor.h>
 #include <mirante/Module.h>
 
@@ -183,6 +185,41 @@ public:
     }
 };
 
+// A type whose suggestions name the account it is given, in a module with a
+// server. See decision 0144.
+class AccountFieldsType : public ItemType
+{
+public:
+    QString id() const override { return QStringLiteral("accmod.thing"); }
+    QString name() const override { return QStringLiteral("Account thing"); }
+    QIcon icon() const override { return {}; }
+
+    std::vector<Field> fields() const override
+    {
+        Field project;
+        project.key = QStringLiteral("project");
+        project.label = QStringLiteral("Project");
+        return {project};
+    }
+
+    std::vector<Field> fieldsForAccount(const QString &, const QString &accountId) const override
+    {
+        std::vector<Field> result = fields();
+        result.front().suggestions = {(accountId.isEmpty() ? QStringLiteral("default") : accountId)
+                                      + QStringLiteral("/app")};
+        return result;
+    }
+};
+
+class AccountModuleServer : public ServerType
+{
+public:
+    QString screenId() const override { return QStringLiteral("general"); }
+    QString tokenKey() const override { return QStringLiteral("token"); }
+    QUrl baseUrl(const QJsonObject &) const override { return {}; }
+    void authorize(QNetworkRequest &, const QString &, const QJsonObject &) const override {}
+};
+
 void registerTestModule(ModuleRegistrar &registrar)
 {
     registrar.addItemType(std::make_unique<FormType>());
@@ -229,6 +266,7 @@ private slots:
     void itemOfMissingModule();
     void itemProfile();
     void itemFieldsOfTheProfile();
+    void itemAccount();
     void itemWatch();
     void itemPageKeys();
     void itemDashboardTitle();
@@ -558,6 +596,64 @@ void TestDialogs::itemFieldsOfTheProfile()
     auto *newCombo = qobject_cast<QComboBox *>(newForm->editorFor(QStringLiteral("project")));
     QVERIFY(newCombo);
     QCOMPARE(newCombo->itemText(0), QStringLiteral("work/app"));
+}
+
+// The Account row shows the profile's other accounts of the item's module,
+// and the form's fields follow the chosen account. See decision 0144.
+void TestDialogs::itemAccount()
+{
+    ItemTypeRegistry local;
+    local.registerModule(QStringLiteral("accmod"), [](ModuleRegistrar &registrar) {
+        registrar.setServerType(std::make_unique<AccountModuleServer>());
+        registrar.addItemType(std::make_unique<AccountFieldsType>());
+    });
+    Model accountsModel;
+    accountsModel.setProfiles({profile(kDefaultProfile, QStringLiteral("Default")),
+                               profile(QStringLiteral("work"), QStringLiteral("Work"))});
+    Account bot;
+    bot.id = QStringLiteral("bot");
+    bot.name = QStringLiteral("Bot");
+    accounts::set(accountsModel, QStringLiteral("work"), QStringLiteral("accmod"), bot);
+
+    Item item;
+    item.id = QStringLiteral("a1");
+    item.type = QStringLiteral("accmod.thing");
+    item.name = QStringLiteral("Thing");
+    ItemDialog dialog(item, false, local, {});
+    dialog.setProfiles(profiles::all(accountsModel), QStringLiteral("work"), QStringLiteral("Work"));
+    // Without the model, no accounts are known.
+    QVERIFY(!dialog.showsAccount());
+    dialog.setModel(&accountsModel);
+    QVERIFY(dialog.showsAccount());
+    auto *account = dialog.findChild<QComboBox *>(QStringLiteral("account"));
+    QVERIFY(account);
+    QCOMPARE(account->count(), 2);
+    QCOMPARE(account->itemText(0), accounts::defaultName());
+    QCOMPARE(account->itemText(1), QStringLiteral("Bot"));
+
+    const auto firstSuggestion = [&dialog] {
+        auto *form = qobject_cast<FieldForm *>(dialog.editor());
+        auto *combo = form ? qobject_cast<QComboBox *>(form->editorFor(QStringLiteral("project"))) : nullptr;
+        return combo && combo->count() > 0 ? combo->itemText(0) : QString();
+    };
+    QCOMPARE(firstSuggestion(), QStringLiteral("default/app"));
+    dialog.setAccount(QStringLiteral("bot"));
+    QCOMPARE(firstSuggestion(), QStringLiteral("bot/app"));
+    QCOMPARE(dialog.value().account, QStringLiteral("bot"));
+
+    // A profile without other accounts hides the row, and the item uses the default.
+    dialog.setProfile(kDefaultProfile);
+    QVERIFY(!dialog.showsAccount());
+    QCOMPARE(firstSuggestion(), QStringLiteral("default/app"));
+
+    // An account the profile does not have is kept, named as unknown.
+    item.account = QStringLiteral("gone");
+    ItemDialog lost(item, false, local, {});
+    lost.setProfiles(profiles::all(accountsModel), QStringLiteral("work"), QStringLiteral("Work"));
+    lost.setModel(&accountsModel);
+    QVERIFY(lost.showsAccount());
+    QCOMPARE(lost.value().account, QStringLiteral("gone"));
+    QCOMPARE(lost.findChild<QComboBox *>(QStringLiteral("account"))->count(), 3);
 }
 
 // A double-click renames. The rename rebuilds the list, so it runs after the
