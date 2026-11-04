@@ -142,6 +142,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0135](0135-mirante-is-a-custom-build.md) | Mirante is built from a manifest, like every app | Accepted |
 | [0136](0136-github-releases-from-the-changelog.md) | GitHub releases from the changelog | Accepted |
 | [0137](0137-the-setup-does-not-start-mirante-at-sign-in-by-default.md) | The Windows setup does not start Mirante at sign-in by default | Accepted |
+| [0138](0138-add-list-values-from-the-server.md) | Settings lists can be filled from the module's server | Accepted |
 
 ## Template
 

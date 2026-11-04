@@ -246,6 +246,11 @@ private slots:
     void destroyedReceiverGetsNoCallback();
     void queuedGetOfDestroyedReceiverIsNotSent();
     void clearDropsRequestsInFlight();
+    void clientForUsesFormValuesAndTypedToken();
+    void clientForUsesStoredToken();
+    void clientForRemovedTokenSendsNothing();
+    void clientForRefusedDoesNotFail();
+    void clientForOnlyForServerModules();
 
 private:
     ApiClient *client() { return m_clients->client(kProfile, kModule); }
@@ -884,5 +889,72 @@ void TestServerClient::clearDropsRequestsInFlight()
     QVERIFY(client());
 }
 
+// Sends a GET through a client and waits for its answer.
+static ApiReply getWith(ApiClient &client, const QString &path)
+{
+    ApiReply result;
+    bool done = false;
+    QObject receiver;
+    client.get(path, {}, {}, &receiver, [&](const ApiReply &reply) {
+        result = reply;
+        done = true;
+    });
+    if (!QTest::qWaitFor([&] { return done; }, 2000))
+        qWarning("no answer");
+    return result;
+}
+
+void TestServerClient::clientForUsesFormValuesAndTypedToken()
+{
+    m_network->handler = [](const FakeNetwork::Sent &) { return Answer{200, "[]", {}}; };
+    // A pasted token is trimmed, as when it is stored.
+    auto client = m_clients->clientFor(kProfile, kModule,
+                                       {{QStringLiteral("baseUrl"), QStringLiteral("https://other.example/")}},
+                                       {{QStringLiteral("token"), QStringLiteral(" typed-1\n")}}, {});
+    QVERIFY(client);
+    QCOMPARE(client->baseUrl(), QUrl(QStringLiteral("https://other.example/")));
+    QVERIFY(getWith(*client, QStringLiteral("user/repos")).ok());
+    QCOMPARE(m_network->url(0), QStringLiteral("https://other.example/user/repos"));
+    QCOMPARE(header(m_network->sent.at(0), "X-Token"), QByteArray("typed-1"));
+}
+
+void TestServerClient::clientForUsesStoredToken()
+{
+    m_network->handler = [](const FakeNetwork::Sent &) { return Answer{200, "[]", {}}; };
+    // Another token field than the server's is not its token.
+    auto client = m_clients->clientFor(kProfile, kModule,
+                                       {{QStringLiteral("baseUrl"), QStringLiteral("https://git.example/")}},
+                                       {{QStringLiteral("other"), QStringLiteral("x")}}, {QStringLiteral("other")});
+    QVERIFY(getWith(*client, QStringLiteral("user")).ok());
+    QCOMPARE(header(m_network->sent.at(0), "X-Token"), QByteArray("secret-1"));
+}
+
+void TestServerClient::clientForRemovedTokenSendsNothing()
+{
+    auto client = m_clients->clientFor(kProfile, kModule,
+                                       {{QStringLiteral("baseUrl"), QStringLiteral("https://git.example/")}}, {},
+                                       {QStringLiteral("token")});
+    QCOMPARE(getWith(*client, QStringLiteral("user")).error, ApiReply::Error::NoToken);
+    QVERIFY(m_network->sent.isEmpty());
+}
+
+void TestServerClient::clientForRefusedDoesNotFail()
+{
+    m_network->handler = [](const FakeNetwork::Sent &) { return Answer{401, {}, {}}; };
+    QSignalSpy failing(m_clients.get(), &ServerClients::failingChanged);
+    auto client = m_clients->clientFor(kProfile, kModule,
+                                       {{QStringLiteral("baseUrl"), QStringLiteral("https://git.example/")}},
+                                       {{QStringLiteral("token"), QStringLiteral("wrong")}}, {});
+    QCOMPARE(getWith(*client, QStringLiteral("user")).error, ApiReply::Error::Refused);
+    // The profile's own server goes on with the stored token.
+    QCOMPARE(failing.count(), 0);
+    QVERIFY(!m_clients->failing(kProfile, kModule));
+    QVERIFY(m_clients->failingServers().isEmpty());
+}
+
+void TestServerClient::clientForOnlyForServerModules()
+{
+    QVERIFY(!m_clients->clientFor(kProfile, QStringLiteral("plain"), {}, {}, {}));
+}
 QTEST_MAIN(TestServerClient)
 #include "tst_server_client.moc"

@@ -2837,6 +2837,7 @@ void MainWindow::setApiServices(const ApiServices &services)
 {
     d->api = services;
     d->actions->setSecretStore(services.secrets);
+    d->actions->setServerClients(services.servers);
     // Placements made from now on show status. Without profiles, cells keep
     // their placeholders and show none.
     d->placements.status = services.status;

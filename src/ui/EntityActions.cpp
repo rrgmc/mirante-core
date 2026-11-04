@@ -1,6 +1,7 @@
 #include "ui/EntityActions.h"
 
 #include "api/SecretStore.h"
+#include "api/ServerClient.h"
 #include "core/DeviceSettings.h"
 #include "core/Edits.h"
 #include "core/GroupColours.h"
@@ -121,6 +122,7 @@ struct EntityActions::Private
     std::function<bool(const QString &)> askFile;
     std::function<void(const QString &)> tellFile;
     SecretStore *secrets = nullptr;
+    ServerClients *servers = nullptr;
     ImagePaste imagePaste{model, store, types};
 
     bool shiftHeld() const { return modifiers && (modifiers() & Qt::ShiftModifier); }
@@ -258,6 +260,8 @@ void EntityActions::setProfileManager(ProfileManager *manager) { d->profiles = m
 
 void EntityActions::setSecretStore(SecretStore *store) { d->secrets = store; }
 
+void EntityActions::setServerClients(ServerClients *servers) { d->servers = servers; }
+
 void EntityActions::setEditProfiles(std::function<void(ProfilesDialog &)> edit)
 {
     d->editProfiles = std::move(edit);
@@ -309,6 +313,14 @@ void EntityActions::editModuleSettings(const QString &profileId, const QString &
     context.profileId = profileId;
     ModuleSettingsDialog dialog(profiles::nameOf(d->model, profileId), d->types.moduleName(moduleId), *screen,
                                 d->model.moduleSettings(profileId, moduleId, screenId), context, d->dialogParent);
+    // "Add from Server…" asks the module's server with the values in the form.
+    if (ServerClients *servers = d->servers; servers && d->types.serverType(moduleId)) {
+        dialog.setServerFactory([servers, profileId, moduleId](const QJsonObject &values,
+                                                               const QJsonObject &typedSecrets,
+                                                               const QStringList &removedSecrets) {
+            return servers->clientFor(profileId, moduleId, values, typedSecrets, removedSecrets);
+        });
+    }
     const QString workspaceId = d->model.workspaceId();
     ItemEditor *editor = dialog.editor();
     // Only a declared Secret field may be stored, since a key the core does

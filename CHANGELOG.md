@@ -8,6 +8,7 @@ The changes to the module interface, and what a module must do about them, are i
 
 ### Added
 
+- A list in a module's settings, such as GitHub's repositories, can have an **Add from Server…** button. It lists what the server offers with the token in the dialog, saved or not, to check and add. See [modules](docs/ui.md#modules).
 - A list tells its module when the user changes a filter, so the module can keep the choice for the next start.
 
 ## [0.8.5] - 2026-11-03
