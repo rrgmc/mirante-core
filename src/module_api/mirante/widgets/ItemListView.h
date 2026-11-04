@@ -103,6 +103,11 @@ signals:
     void rowLinkActivated(const QString &key, const QString &linkId);
     // visibleKeys() has a new value, for a view that asks more about those rows.
     void visibleKeysChanged();
+    // The user changed the values chosen in a column's filter, such as to
+    // keep them for the next start with setFilterDefault(). The values are
+    // sorted, and empty means "All". It is not sent for setFilterDefault(),
+    // nor when setRows() removes a chosen value.
+    void filterChanged(int column, const QStringList &values);
 
 private:
     struct Private;

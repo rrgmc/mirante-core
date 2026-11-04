@@ -1056,6 +1056,36 @@ private slots:
         QCOMPARE(view.visibleKeys(), QStringList{QStringLiteral("b")});
     }
 
+    void aUserChoiceOfAFilterIsReported()
+    {
+        ItemListView view;
+        view.setColumns(fourColumns(), UpdatedColumn);
+        view.addFilter(AuthorColumn, QStringLiteral("Author"));
+        QSignalSpy spy(&view, &ItemListView::filterChanged);
+
+        // Defaults and new rows are not the user's choice.
+        view.setFilterDefault(AuthorColumn, {QStringLiteral("bob")});
+        view.setRows({authoredRow(QStringLiteral("a"), 1, QStringLiteral("carol")),
+                      authoredRow(QStringLiteral("b"), 2, QStringLiteral("bob"))});
+        QCOMPARE(spy.count(), 0);
+
+        QComboBox *box = authorFilter(view);
+        box->setCurrentIndex(box->findText(QStringLiteral("carol")));
+        QCOMPARE(spy.count(), 1);
+        QCOMPARE(spy.at(0).at(0).toInt(), int(AuthorColumn));
+        QCOMPARE(spy.at(0).at(1).toStringList(), QStringList{QStringLiteral("carol")});
+
+        // "All" is reported as no values.
+        box->setCurrentIndex(0);
+        QCOMPARE(spy.count(), 2);
+        QVERIFY(spy.at(1).at(1).toStringList().isEmpty());
+
+        // A value that leaves with the rows is not a choice of the user.
+        box->setCurrentIndex(box->findText(QStringLiteral("carol")));
+        view.setRows({authoredRow(QStringLiteral("b"), 2, QStringLiteral("bob"))});
+        QCOMPARE(spy.count(), 3);
+    }
+
     void filtersAndPagesWorkTogether()
     {
         ItemListView view;
