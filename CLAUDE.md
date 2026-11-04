@@ -9,6 +9,7 @@ This repository is part of the trial of custom builds, with `mirante-modules` an
 Several sessions may work on this repository at the same time, so each piece of work happens in its own Git worktree.
 
 - Before the first edit, create a worktree with its own branch (`EnterWorktree` in Claude Code, or `git worktree add -b <branch> <dir>`). Name the branch after the work, for example `m2-layout-engine`.
+- A new branch in the main checkout is not enough, so never run `git checkout` or `git switch` there.
 - Never edit files in the main checkout on `master` directly. It stays clean, so other sessions can branch from it.
 - Commit as work progresses, one focused commit per finished piece.
 - `master` is protected on GitHub. Changes reach it only through a pull request whose required CI checks pass. Never merge into `master` locally and never push `master`. See [decision 0109](docs/decisions/0109-pull-requests-into-master.md).
