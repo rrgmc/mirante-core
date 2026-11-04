@@ -122,7 +122,7 @@ void RootTabBar::contextMenuEvent(QContextMenuEvent *event)
     QAction *close = index >= 0 ? menu.addAction(tr("Close tab")) : nullptr;
     // Only root dashboard tabs can be detached. Their tab data says so.
     const bool root = index >= 0 && tabData(index).toBool();
-    QAction *rename = root ? menu.addAction(tr("Rename dashboard…")) : nullptr;
+    QAction *rename = root ? menu.addAction(tr("Edit dashboard…")) : nullptr;
     QAction *detach = root ? menu.addAction(tr("Detach into Window")) : nullptr;
     menu.addSeparator();
     QAction *list = menu.addAction(tr("All dashboards…"));

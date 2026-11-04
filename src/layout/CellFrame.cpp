@@ -1,4 +1,5 @@
 #include "layout/CellFrame.h"
+#include "layout/BusyIndicators.h"
 
 #include "items/ItemContextImpl.h"
 #include "items/UnknownItemType.h"
@@ -134,6 +135,8 @@ struct CellFrame::Private
     QToolButton *problemButton = nullptr;   // a problem with a fix, such as "Token not set"
     QLabel *staleText = nullptr;
     QToolButton *refreshButton = nullptr;
+    SpinningIcon *refreshSpinner = nullptr;  // turns the refresh icon while fetching
+    BusyBar *busyBar = nullptr;              // under the header, while fetching
 
     // Images dropped from other apps; see setImageDrop().
     ImageReader readImage;
@@ -234,7 +237,7 @@ CellFrame::CellFrame(const std::optional<CellRef> &ref, bool removed, const Item
 
     // "Open in browser", for the item's web link, hidden without one. A
     // header widget, such as a web toolbar, goes between the row and it, so
-    // it stays beside a page's address. See decision 0143.
+    // it stays beside a page's address. See decision 0146.
     d->webButton = new QToolButton(d->header);
     d->webButton->setObjectName(QStringLiteral("openInBrowserButton"));
     d->webButton->setAutoRaise(true);
@@ -277,7 +280,7 @@ CellFrame::CellFrame(const std::optional<CellRef> &ref, bool removed, const Item
     d->refreshButton = new QToolButton(d->header);
     d->refreshButton->setObjectName(QStringLiteral("refreshButton"));
     d->refreshButton->setAutoRaise(true);
-    d->refreshButton->setIcon(QIcon(QStringLiteral(":/icons/reload.svg")));
+    d->refreshSpinner = new SpinningIcon(d->refreshButton, QIcon(QStringLiteral(":/icons/reload.svg")));
     d->refreshButton->setToolTip(tr("Refresh"));
     d->refreshButton->setVisible(false);
     connect(d->refreshButton, &QToolButton::clicked, this, &CellFrame::refreshRequested);
@@ -320,6 +323,8 @@ CellFrame::CellFrame(const std::optional<CellRef> &ref, bool removed, const Item
     headerLayout->addWidget(d->openAloneButton);
 
     layout->addWidget(d->header);
+    d->busyBar = new BusyBar(this);
+    layout->addWidget(d->busyBar);
 
     // Body: a placeholder in M2.
     d->body = new QStackedWidget(this);
@@ -574,6 +579,15 @@ void CellFrame::setStatus(const CellStatus &status)
 CellStatus CellFrame::status() const { return d->status; }
 
 void CellFrame::setRefreshVisible(bool visible) { d->refreshButton->setVisible(visible); }
+
+void CellFrame::setRefreshing(bool refreshing)
+{
+    d->refreshSpinner->setSpinning(refreshing);
+    d->busyBar->setBusy(refreshing);
+    d->refreshButton->setToolTip(refreshing ? tr("Refreshing…") : tr("Refresh"));
+}
+
+bool CellFrame::isRefreshing() const { return d->refreshSpinner->isSpinning(); }
 
 void CellFrame::setImageDrop(ImageReader read, std::function<void(const QImage &image)> dropped)
 {

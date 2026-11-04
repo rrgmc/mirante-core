@@ -339,7 +339,7 @@ Each item's code gets an `ItemContext`. It gives access to the configuration the
 | `onConfigChanged(receiver, changed)` | Reports a change to the type's `viewKeys()`, which does not make the view again. See [decision 0081](decisions/0081-views-that-keep-their-own-keys.md). | M7 |
 | `updateConfig(config)` | Changes the item's configuration through `Model` | M4 |
 | `showPage(url)` | Shows a web page in place of the view, with a way back. See [decision 0069](decisions/0069-open-page-in-the-placement.md). | M6 |
-| `setWebLink(url)` | The item's address on the web, such as a pull request's page. The cell header shows an **Open in browser** button for an `http` or `https` address; an empty one hides it. Call it again when the address changes. A web view of `createWebView()` sets it by itself. See [decision 0143](decisions/0143-web-link-in-the-cell-header.md). | after M13 |
+| `setWebLink(url)` | The item's address on the web, such as a pull request's page. The cell header shows an **Open in browser** button for an `http` or `https` address; an empty one hides it. Call it again when the address changes. A web view of `createWebView()` sets it by itself. See [decision 0146](decisions/0146-web-link-in-the-cell-header.md). | after M13 |
 | `addItemToTask(typeId, name, config)` | Adds an item to the item's task, for "Add to task as item" | M6 |
 
 ### Servers and tokens
@@ -397,7 +397,7 @@ Native views of different modules need the same small widgets, and modules rarel
 - `FieldForm`: the form the core builds from a list of fields, one row per field, as an `ItemEditor`. A custom editor can place one inside its own widgets, and `setFieldEditor()` replaces the editor of one field with a `FieldEditor`. See [custom screens](#custom-screens).
 - `ImagePasteDialog` and `ImageCropView`: the dialog every image paste opens first, with a preview and a crop. See [pasting images](ui.md#pasting-images).
 - `imageFromMime()`: the image a drag from another app carries.
-- `compactDate()`: a date for a table, in local time: `10-30 14:32` in this year, `2025-10-30` otherwise.
+- `compactDate()`: a date for a table. Up to 6 days away it reads as a distance in one unit, such as "10 minutes ago", "1 hour ago", "3 days ago" or "in 2 hours". Further away it is in local time: `10-30 14:32` in this year, `2025-10-30` otherwise. `relativeDate(when, now)` gives the distance alone.
 - `MarkdownView`: a read-only `QTextBrowser` that shows Markdown with GitHub's extensions. Before Qt reads the text, void HTML elements such as `<img ...>` and `<br>` are written as self-closing, outside code, because Qt's importer would otherwise drop all the text after them. Code blocks and code spans get a light background, and the text has a 10-pixel margin. Web and mail links open in the external programs. Loading images is off by default, as the Notes preview needs. `setResourceFetcher()` turns it on: the view asks the fetcher for each image, resolved against the base given to `setMarkdownText()`, and lays the document out again when it arrives. The Notes preview and the document items use it. See [decision 0104](decisions/0104-document-items.md).
 
 ### Testing

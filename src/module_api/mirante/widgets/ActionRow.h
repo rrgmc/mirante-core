@@ -38,7 +38,7 @@ public:
     // The "Web" link at the end of the row, which opens url in the external
     // browser. An empty url hides it. For the item's own page, prefer
     // ItemContext::setWebLink(), which the cell header shows; see decision
-    // 0143.
+    // 0146.
     void setWebLink(const QUrl &url);
     QUrl webLink() const;
 

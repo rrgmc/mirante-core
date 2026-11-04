@@ -113,7 +113,7 @@ struct Placement::Private
     QPointer<QWidget> pageHeader;       // the back button and the page's toolbar
     QPointer<QWidget> viewHeader;       // the view's header widget, while a page is shown
     QString pageProfile;                // the profile the page was made in
-    // The web links of decision 0143: the view's, from its context, and the
+    // The web links of decision 0146: the view's, from its context, and the
     // page's while one is shown. The header opens shownLink.
     QUrl viewLink;
     QUrl pageLink;
@@ -761,6 +761,10 @@ Placement::Placement(const PlacementServices &services, const QString &taskId, c
     connect(&d->ageTimer, &QTimer::timeout, this, [this] { d->updateStatus(); });
     if (StatusCache *status = services.status) {
         status->source(itemId).subscribe(this, [this](const ItemStatus &) { d->updateStatus(); });
+        connect(status, &StatusCache::fetchingChanged, this, [this](const QString &id, bool fetching) {
+            if (id == d->itemId)
+                emit fetchingChanged(fetching);
+        });
         if (Model *model = services.model) {
             connect(model, &Model::taskChanged, this, [this](const QString &id) {
                 if (id == d->taskId)
@@ -811,6 +815,8 @@ QUrl Placement::webLink() const { return d->shownLink; }
 CellStatus Placement::cellStatus() const { return d->cellStatus; }
 
 bool Placement::hasStatus() const { return d->statusType() != nullptr; }
+
+bool Placement::isFetching() const { return d->services.status && d->services.status->isFetching(d->itemId); }
 
 void Placement::refresh()
 {

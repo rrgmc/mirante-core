@@ -516,10 +516,11 @@ QString QuickAddRun::create(const QString &projectId, const QString &title, cons
         tabs.children.push_back(cell);
         tabs.titles.push_back(item.name);
     }
-    if (tabs.children.size() == 1) {
-        task.dashboards.front().layout = tabs.children.front();
-    } else if (!tabs.children.empty()) {
-        task.dashboards.front().layout = tabs;
+    // A new task has no dashboard, so the items get one of their own.
+    if (!tabs.children.empty()) {
+        Dashboard dashboard = edits::newMainDashboard();
+        dashboard.layout = tabs.children.size() == 1 ? tabs.children.front() : tabs;
+        task = edits::addDashboard(task, dashboard);
     }
 
     d->model.setTask(task);

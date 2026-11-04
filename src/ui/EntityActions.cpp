@@ -808,7 +808,7 @@ void EntityActions::removeDashboard(const QString &taskId, const QString &dashbo
 {
     const Task *task = d->model.task(taskId);
     const Dashboard *dashboard = d->model.taskDashboard(taskId, dashboardId);
-    if (!task || !dashboard || task->dashboards.size() <= 1)
+    if (!task || !dashboard)
         return;
     if (!d->confirm(tr("Delete dashboard %1?").arg(dashboard->name)))
         return;
@@ -1022,9 +1022,7 @@ void EntityActions::fillMenu(QMenu *menu, SidebarModel::Kind kind, const QString
             menu->addAction(tr("Set as default"), this, [this, taskId, id] { setDefaultDashboard(taskId, id); });
         setDefault->setEnabled(task->defaultDashboardId != id);
         menu->addSeparator();
-        QAction *remove =
-            menu->addAction(tr("Delete dashboard…"), this, [this, taskId, id] { removeDashboard(taskId, id); });
-        remove->setEnabled(task->dashboards.size() > 1);
+        menu->addAction(tr("Delete dashboard…"), this, [this, taskId, id] { removeDashboard(taskId, id); });
         break;
     }
     }

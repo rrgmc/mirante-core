@@ -133,6 +133,7 @@ struct Dashboard
 struct RootDashboard : Dashboard
 {
     int order = 0;
+    QString colour;             // "#rrggbb", shown in its tab; empty if not set
 
     static std::optional<RootDashboard> fromJson(const QJsonObject &json, QString *error = nullptr);
     QJsonObject toJson() const;

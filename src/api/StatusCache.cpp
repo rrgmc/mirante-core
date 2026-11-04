@@ -429,6 +429,7 @@ struct StatusCache::Private
         if (e.job) {
             e.job->abandon();
             e.job = nullptr;
+            emit q->fetchingChanged(e.itemId, false);
         }
     }
 
@@ -507,6 +508,7 @@ struct StatusCache::Private
                                       });
         e.job = job;
         e.jobStarted = now();
+        emit q->fetchingChanged(itemId, true);
         type->fetchStatus(*job);
     }
 
@@ -518,6 +520,7 @@ struct StatusCache::Private
         e->job = nullptr;
         setHeads(*e, job->heads());
         store(*e, status);
+        emit q->fetchingChanged(itemId, false);
     }
 
     // Keeps a new status. An error keeps the data of the last good one.
@@ -625,6 +628,12 @@ ItemStatus StatusCache::status(const QString &itemId) const
 ItemStatusSource &StatusCache::source(const QString &itemId)
 {
     return d->entry(itemId);
+}
+
+bool StatusCache::isFetching(const QString &itemId) const
+{
+    const StatusEntry *e = d->findEntry(itemId);
+    return e && e->job;
 }
 
 void StatusCache::refresh(const QString &itemId)

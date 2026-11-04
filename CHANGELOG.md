@@ -8,7 +8,7 @@ The changes to the module interface, and what a module must do about them, are i
 
 ### Added
 
-- Item cells have an **Open in browser** button in their header when the item has a page on the web. Item types give the address with `ItemContext::setWebLink()`. See [decision 0143](docs/decisions/0143-web-link-in-the-cell-header.md).
+- Item cells have an **Open in browser** button in their header when the item has a page on the web. Item types give the address with `ItemContext::setWebLink()`. See [decision 0146](docs/decisions/0146-web-link-in-the-cell-header.md).
 
 ### Changed
 

@@ -79,7 +79,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
 - After an action succeeds, the status is fetched again. A failed action shows its message in the action row. A `403` says that the token cannot do this, and names the `api` scope.
 - Only cancelling and triggering a pipeline ask first.
 - "Open page" shows the page in the same cell, as in [decision 0069](decisions/0069-open-page-in-the-placement.md), or in the external browser if the user holds `Shift`.
-- **The Web link** is the **Open in browser** button of the cell header, which the view gives with `ItemContext::setWebLink()`. It opens the same address in the external browser, and it hides without a web address. See [decision 0143](decisions/0143-web-link-in-the-cell-header.md). The address is `web_url` in the data. Without one, for a merge request or an issue, it is built from the base URL and the configuration, as for the page types. A link to a job's log also opens in the external browser.
+- **The Web link** is the **Open in browser** button of the cell header, which the view gives with `ItemContext::setWebLink()`. It opens the same address in the external browser, and it hides without a web address. See [decision 0146](decisions/0146-web-link-in-the-cell-header.md). The address is `web_url` in the data. Without one, for a merge request or an issue, it is built from the base URL and the configuration, as for the page types. A link to a job's log also opens in the external browser.
 - Dates are local and short. Text from the server is plain text, so it is never read as markup.
 
 ### GitLab MR (summary)
@@ -132,7 +132,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
   - Author;
   - Pipeline, a pill with the head pipeline's status;
   - Approvals, such as `1/2`, or just the count when none are required;
-  - Updated, compact, such as `10-30 14:32`, or `2025-10-30` for another year, sorted by the date;
+  - Updated, compact: "10 minutes ago" or "3 days ago" up to 6 days back, then `10-30 14:32`, or `2025-10-30` for another year, sorted by the date;
   - the links of the row, which never hide.
 - **A narrow cell** hides columns in this order: Author, Approvals, Updated, Pipeline, Ref.
 - **Pipeline and Approvals** are filled by the view, for the first 25 rows of the current page. It asks while it is visible, after each new status, each time it shows, and when a new page, sort or filter brings other rows. What is on the way for a row that leaves is dropped. The other rows show a dash, and so does a row whose request failed. A cell keeps its last answer until the new one comes. A hidden column asks for nothing. See decisions [0067](decisions/0067-lists-report-status.md) and [0071](decisions/0071-lists-link-out-without-a-preview.md).
@@ -442,6 +442,16 @@ Module `claude`.
 - **Shows:** the claude.ai page, in the item's [profile](web-views.md#profiles). If `url` is empty or is not an `http` or `https` address, the cell says "Set the address in the item's settings."
 
 There is no public API for these sessions, so the app has no status or summary for them. See [decision 0008](decisions/0008-claude-sessions.md).
+
+### Claude agents
+
+`claude.agents`, native.
+
+- **Configuration:** `folder`, a project folder, optional: only sessions in it, through `--cwd`. `includeFinished`, bool, default false: also finished background sessions, through `--all`. `accounts`, a text list of Claude Code config folders on this device, one per account; empty uses the default account.
+- **Shows:** a sortable table of the Claude Code sessions on this device, with the columns Title, Status, Repository, Account and Started, sorted on Started, newest first. The status is a pill: amber for Working, red for Needs input and Failed, green for Done, grey for Idle and Stopped. A drop-down filters the rows by status. Repository is the folder name of the Git repository that holds the session's folder, the main one for a worktree, with the branch. Account shows only for more than one account. No session text is shown.
+- **Row menu:** "Show folder" and "Copy session ID".
+- **Status:** runs `claude agents --json` once per account, with `CLAUDE_CONFIG_DIR` set to its folder. The status line reads like "3 agents · 1 waiting for input". An account that fails is named above the table; when all fail, the status is an error. A list raises no attention, and never counts as closed. See [decision 0146](decisions/0143-claude-agents-list.md).
+- **Not listed:** cloud sessions on claude.ai and Remote Control sessions of another computer, which have no documented API.
 
 ### Claude session (local), removed
 

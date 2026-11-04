@@ -87,12 +87,13 @@ Each device maps a folder id to a local path in its own settings. A device witho
 | `order` | Manual position among its siblings |
 | `items` | List of [items](#item) |
 | `dashboards` | List of task [dashboards](#dashboard) |
-| `defaultDashboardId` | The dashboard shown when the task is opened |
+| `defaultDashboardId` | The dashboard shown when the task is opened; empty if the task has no dashboards |
 | `trashedAt` | Optional. When the task went to the [trash](#trash), as an ISO 8601 UTC string |
 
 Rules:
 
-- A new task gets one dashboard with a single empty cell.
+- A new task has no dashboards. The user adds one with "New dashboard…". Quick add gives a new task one dashboard, "Main", that holds its new items.
+- Any dashboard can be deleted, the last one too. A task with no dashboards opens nothing; its items still show in the sidebar. See [decision 0145](decisions/0145-tasks-without-dashboards.md).
 - The order of `items` and of `dashboards` is their order in the sidebar. The user changes it by dragging. A new item or dashboard goes last.
 - The user sets the state. The app suggests "done" when all linked merge requests are merged and all linked Jira issues are closed. It never changes the state on its own.
 
@@ -247,7 +248,7 @@ There are two kinds:
 
 A root dashboard refers to a task's dashboard. It does not copy it. Changing the layout of a task inside a root dashboard changes that task dashboard everywhere it is shown. To show a task differently in one place, create another task dashboard and choose it in that cell. See [decision 0011](decisions/0011-root-cells-reference-task-dashboards.md).
 
-Root dashboards have an `order` field for their position in the tab bar.
+Root dashboards have an `order` field for their position in the tab bar, and an optional `colour` field, a `#rrggbb` string. Its tab shows a dot of that colour before the name.
 
 ## Layout tree
 

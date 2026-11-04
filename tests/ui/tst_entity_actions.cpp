@@ -465,8 +465,8 @@ void TestEntityActions::newTask()
     QCOMPARE(task->state, TaskState::Active);
     QCOMPARE(task->priority, Priority::Normal);
     QCOMPARE(task->order, 5);       // last in backend, after its five tasks (0 to 4)
-    QCOMPARE(task->dashboards.size(), size_t(1));
-    QCOMPARE(task->defaultDashboardId, task->dashboards.front().id);
+    QVERIFY(task->dashboards.empty());
+    QVERIFY(task->defaultDashboardId.isEmpty());
 }
 
 void TestEntityActions::newItem()
@@ -674,8 +674,9 @@ void TestEntityActions::lastDashboard()
     const Task original = *model.task(upgradeGo);
     QCOMPARE(original.dashboards.size(), size_t(1));
     actions->removeDashboard(upgradeGo, original.dashboards.front().id);
-    QVERIFY(questions.isEmpty());
-    QCOMPARE(*model.task(upgradeGo), original);
+    QCOMPARE(questions, QStringList{QStringLiteral("Delete dashboard %1?").arg(original.dashboards.front().name)});
+    QVERIFY(model.task(upgradeGo)->dashboards.empty());
+    QVERIFY(model.task(upgradeGo)->defaultDashboardId.isEmpty());
 }
 
 void TestEntityActions::priorityAndState()
@@ -795,10 +796,10 @@ void TestEntityActions::menus()
     actionNamed(other, QStringLiteral("Set as default"))->trigger();
     QCOMPARE(model.task(fixLoginTimeout)->defaultDashboardId, review);
 
-    // The last dashboard cannot be deleted.
+    // The last dashboard can be deleted too.
     QMenu last;
     actions->fillMenu(&last, SidebarModel::Kind::Dashboard, model.task(upgradeGo)->dashboards.front().id, upgradeGo);
-    QVERIFY(!actionNamed(last, QStringLiteral("Delete dashboard…"))->isEnabled());
+    QVERIFY(actionNamed(last, QStringLiteral("Delete dashboard…"))->isEnabled());
 
     // An unknown id adds nothing.
     QMenu unknown;
