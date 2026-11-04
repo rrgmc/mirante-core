@@ -108,7 +108,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
 `gitlab.mr.page`, web. The merge request's web page, in the item's [profile](web-views.md#profiles). Its configuration is the summary's: `project` and `iid`.
 
 - **Address:** `<baseUrl>/<project>/-/merge_requests/<iid>`, where `baseUrl` is the GitLab base URL of the item's profile. An empty `project` uses the project's `gitlab.project` setting.
-- **With a base URL that is not a web address,** the cell says "Set the GitLab base URL in this profile's Modules > GitLab > General Configuration, in the Profiles menu."
+- **With a base URL that is not a web address,** the cell says "Set the GitLab base URL in Profiles > Manage Profiles…, under this profile's GitLab."
 - **Without a project or a number,** the cell says "Set the project and number in the item's settings."
 - **Status and attention** are the summary's, so a page in a cell shows the same badge. See [decision 0061](decisions/0061-attention-from-status-of-any-rendering.md).
 
@@ -281,7 +281,7 @@ The types follow the GitLab types. A pull request is GitLab's merge request, an 
 `github.pr.page`, web. The pull request's web page, in the item's [profile](web-views.md#profiles). Its configuration is the summary's: `repository` and `number`.
 
 - **Address:** `<web address>/<repository>/pull/<number>`.
-- **With a base URL that is not a web address,** the cell says "Set the GitHub base URL in this profile's Modules > GitHub > General Configuration, in the Profiles menu."
+- **With a base URL that is not a web address,** the cell says "Set the GitHub base URL in Profiles > Manage Profiles…, under this profile's GitHub."
 - **Without a repository or a number,** the cell says "Set the repository and number in the item's settings."
 - **Status and attention** are the summary's.
 
@@ -404,7 +404,7 @@ A project can set its Jira project key in the project dialog's Jira section, sto
 `jira.issue.page`, web. The issue's web page. Its configuration is the summary's: `key`.
 
 - **Address:** `<baseUrl>/browse/<key>`, where `baseUrl` is the Jira base URL of the item's profile.
-- **Without a Jira base URL,** the cell says "Set the Jira base URL in this profile's Modules > Jira > General Configuration, in the Profiles menu."
+- **Without a Jira base URL,** the cell says "Set the Jira base URL in Profiles > Manage Profiles…, under this profile's Jira."
 - **Without an issue key,** the cell says "Set the issue key in the item's settings."
 - **Status and attention:** the same as the summary's, from a smaller request: the issue's summary, status, assignee, priority, type and last update.
 
