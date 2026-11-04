@@ -20,7 +20,7 @@ class ModuleDirectory;
 class SecretStore;
 
 // One module's server: the account of a module in a profile. The default
-// account has an empty accountId. See decision 0144.
+// account has an empty accountId. See decision 0146.
 struct ServerId
 {
     QString profileId;

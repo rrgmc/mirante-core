@@ -33,7 +33,7 @@ struct TypeMatch
 // The account of the module's server in the profile that a link to url
 // belongs to: the first whose base URL is on the same host, the default
 // account first, then the others by name. Else the default, whose id is
-// empty. See decision 0144.
+// empty. See decision 0146.
 QString accountFor(const ItemTypeRegistry &types, const Model &model, const QString &profileId,
                    const QString &moduleId, const QUrl &url);
 

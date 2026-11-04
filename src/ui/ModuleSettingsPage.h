@@ -22,7 +22,7 @@ class ServerChoiceDialog;
 // does not show are kept. A list the module's server can fill has an "Add
 // from Server…" button. The Profiles window shows it as a page, and
 // ModuleSettingsDialog alone. See docs/ui.md#profiles and decisions 0044,
-// 0138, 0144 and 0147. Implemented in ModuleSettingsPage.cpp.
+// 0138, 0146 and 0147. Implemented in ModuleSettingsPage.cpp.
 class ModuleSettingsPage : public QWidget
 {
     Q_OBJECT

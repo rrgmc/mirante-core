@@ -5,7 +5,7 @@
 
 ## Context
 
-A profile's settings were spread over several places. Profiles > Manage Profiles… created, renamed and deleted profiles. Each profile had a submenu in the Profiles menu, with Modules > <module> > <screen> for each settings screen, Set as Default, and Settings…, which opened a separate window with the profile's storage. [Decision 0144](0144-several-accounts-per-module.md) added an entry for each account and Add Account… to the module submenus. The user found the menus too deep, and asked for everything to be in the profiles window.
+A profile's settings were spread over several places. Profiles > Manage Profiles… created, renamed and deleted profiles. Each profile had a submenu in the Profiles menu, with Modules > <module> > <screen> for each settings screen, Set as Default, and Settings…, which opened a separate window with the profile's storage. [Decision 0146](0146-several-accounts-per-module.md) added an entry for each account and Add Account… to the module submenus. The user found the menus too deep, and asked for everything to be in the profiles window.
 
 ## Decision
 

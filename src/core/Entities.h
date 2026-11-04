@@ -55,7 +55,7 @@ struct Profile
     // each an object of screen ids, each the values of that screen.
     QJsonObject moduleSettings;
     // The modules' other accounts: an object of module ids, each an array of
-    // {"id", "name", "values"}. See core/Accounts.h and decision 0144.
+    // {"id", "name", "values"}. See core/Accounts.h and decision 0146.
     QJsonObject accounts;
     QJsonObject extra;
 
@@ -109,7 +109,7 @@ struct Item
     QString dashboardTitle;     // shown in dashboards instead of name; empty if not set
     QJsonObject config;         // fields of the item type; opaque to the core
     QString profile;            // id of a profile overriding the group's; empty if not set
-    QString account;            // id of another account of its module; empty for the default; decision 0144
+    QString account;            // id of another account of its module; empty for the default; decision 0146
     bool watch = false;         // counts on the tray and notifies; decision 0087
     QStringList pageKeys;       // keys its web page keeps, in PortableText; decision 0088
     QJsonObject extra;
@@ -137,6 +137,7 @@ struct Dashboard
 struct RootDashboard : Dashboard
 {
     int order = 0;
+    QString colour;             // "#rrggbb", shown in its tab; empty if not set
 
     static std::optional<RootDashboard> fromJson(const QJsonObject &json, QString *error = nullptr);
     QJsonObject toJson() const;

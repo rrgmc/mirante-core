@@ -71,7 +71,7 @@ public:
 
     // The workspace, whose profiles hold the modules' other accounts. Without
     // it, every item uses the default account and the Account row stays
-    // hidden. See decision 0144.
+    // hidden. See decision 0146.
     void setModel(const Model *model);
     void setAccount(const QString &id);   // empty for the default account
     bool showsAccount() const;

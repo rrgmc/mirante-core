@@ -388,6 +388,7 @@ std::optional<RootDashboard> RootDashboard::fromJson(const QJsonObject &json, QS
     // order is still in extra, because Dashboard does not know it.
     Reader r(base->extra);
     r.integer(QStringLiteral("order"), &dashboard.order);
+    r.string(QStringLiteral("colour"), &dashboard.colour);
     dashboard.extra = r.extra();
     return dashboard;
 }
@@ -397,6 +398,8 @@ QJsonObject RootDashboard::toJson() const
     QJsonObject json = Dashboard::toJson();
     if (!extra.contains(QStringLiteral("order")))
         json.insert(QStringLiteral("order"), order);
+    if (!colour.isEmpty() && !extra.contains(QStringLiteral("colour")))
+        json.insert(QStringLiteral("colour"), colour);
     return json;
 }
 

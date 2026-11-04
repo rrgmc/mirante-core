@@ -87,6 +87,8 @@ public:
     CellStatus cellStatus() const;
     // True for a type with status: the cell header then shows a refresh button.
     bool hasStatus() const;
+    // Whether the item's status is being fetched, by a poll or a refresh.
+    bool isFetching() const;
 
 public slots:
     // Fetches the item's status at once.
@@ -97,6 +99,7 @@ public slots:
 signals:
     void headerWidgetChanged(QWidget *widget);
     void cellStatusChanged(const mirante::CellStatus &status);
+    void fetchingChanged(bool fetching);
 
 private:
     struct Private;

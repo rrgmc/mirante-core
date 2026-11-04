@@ -67,7 +67,7 @@ public:
     // Reads the values of one screen for an account of the module's server,
     // such as accounts::screenValues(). Without one,
     // ModuleSettings::accountValues() reads the SettingsReader. See decision
-    // 0144.
+    // 0146.
     using AccountReader = std::function<QJsonObject(const QString &profileId, const QString &moduleId,
                                                     const QString &accountId, const QString &screenId)>;
     void setAccountReader(AccountReader reader);

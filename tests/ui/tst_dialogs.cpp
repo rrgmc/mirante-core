@@ -11,6 +11,7 @@
 #include "core/Profiles.h"
 #include "items/ItemTypeRegistry.h"
 #include "layout/Presets.h"
+#include "ui/ColourChooser.h"
 #include "ui/DashboardDialog.h"
 #include <mirante/widgets/FieldForm.h>
 #include "ui/GroupDialog.h"
@@ -186,7 +187,7 @@ public:
 };
 
 // A type whose suggestions name the account it is given, in a module with a
-// server. See decision 0144.
+// server. See decision 0146.
 class AccountFieldsType : public ItemType
 {
 public:
@@ -599,7 +600,7 @@ void TestDialogs::itemFieldsOfTheProfile()
 }
 
 // The Account row shows the profile's other accounts of the item's module,
-// and the form's fields follow the chosen account. See decision 0144.
+// and the form's fields follow the chosen account. See decision 0146.
 void TestDialogs::itemAccount()
 {
     ItemTypeRegistry local;
@@ -1490,6 +1491,24 @@ void TestDialogs::dashboard()
     renaming.accept();
     QCOMPARE(renaming.result(), int(QDialog::Accepted));
     QCOMPARE(renaming.value().name, QStringLiteral("Review"));
+    QVERIFY(!renaming.findChild<ColourChooser *>());
+    QVERIFY(renaming.colour().isEmpty());
+
+    // A root dashboard's colour: "None" first, then the palette.
+    DashboardDialog colouring(original, false);
+    colouring.offerColour(QStringLiteral("#ABCDEF"));
+    auto *chooser = colouring.findChild<ColourChooser *>(QStringLiteral("colour"));
+    QVERIFY(chooser);
+    QCOMPARE(colouring.colour(), QStringLiteral("#abcdef"));
+    auto *custom = chooser->findChild<QToolButton *>(QStringLiteral("customColour"));
+    QVERIFY(custom && custom->isChecked());
+    auto *none = chooser->findChild<QToolButton *>(QStringLiteral("noColour"));
+    QVERIFY(none);
+    none->click();
+    QVERIFY(colouring.colour().isEmpty());
+    QVERIFY(none->isChecked());
+    chooser->findChild<QToolButton *>(QStringLiteral("colourSwatch1"))->click();
+    QCOMPARE(colouring.colour(), groupcolours::palette().at(1));
 
     Dashboard fresh;
     fresh.id = QStringLiteral("d2");

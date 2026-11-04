@@ -140,7 +140,7 @@ public:
     // folders holds the local path of each of the project's folders, by id,
     // and of the main folder under an empty id.
     // accountId is the item's account, and serverScreenId the screen that
-    // holds its values. See decision 0144.
+    // holds its values. See decision 0146.
     StatusJobImpl(QJsonObject config, QJsonObject projectSettings, QString profileId, QString moduleId,
                   QString accountId, QString serverScreenId, std::map<QString, QString> folders,
                   const Model &model, ApiClient &server, Done done)
@@ -442,6 +442,7 @@ struct StatusCache::Private
         if (e.job) {
             e.job->abandon();
             e.job = nullptr;
+            emit q->fetchingChanged(e.itemId, false);
         }
     }
 
@@ -523,6 +524,7 @@ struct StatusCache::Private
                                       });
         e.job = job;
         e.jobStarted = now();
+        emit q->fetchingChanged(itemId, true);
         type->fetchStatus(*job);
     }
 
@@ -534,6 +536,7 @@ struct StatusCache::Private
         e->job = nullptr;
         setHeads(*e, job->heads());
         store(*e, status);
+        emit q->fetchingChanged(itemId, false);
     }
 
     // Keeps a new status. An error keeps the data of the last good one.
@@ -641,6 +644,12 @@ ItemStatus StatusCache::status(const QString &itemId) const
 ItemStatusSource &StatusCache::source(const QString &itemId)
 {
     return d->entry(itemId);
+}
+
+bool StatusCache::isFetching(const QString &itemId) const
+{
+    const StatusEntry *e = d->findEntry(itemId);
+    return e && e->job;
 }
 
 void StatusCache::refresh(const QString &itemId)

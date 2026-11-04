@@ -37,6 +37,9 @@ public:
     ItemStatusSource &source(const QString &itemId);
     // Fetches the item at once.
     void refresh(const QString &itemId);
+    // Whether a fetch of the item's status is running, from a poll or a
+    // refresh.
+    bool isFetching(const QString &itemId) const;
 
     // A placement of the item was shown or hidden. Counted per call, so two
     // visible cells of one item need two hides.
@@ -60,6 +63,9 @@ public:
 
 signals:
     void statusChanged(const QString &itemId);
+    // A fetch of the item's status started or ended. It ends after the new
+    // status is kept, so statusChanged comes first.
+    void fetchingChanged(const QString &itemId, bool fetching);
 
 private:
     struct Private;

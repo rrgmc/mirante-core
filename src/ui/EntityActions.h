@@ -81,14 +81,14 @@ public:
     // accountId names another account of the module's server, whose values
     // the server's screen then edits, with its name and a Remove Account
     // button. Empty is the default account. Nothing happens for an account
-    // the profile does not have, or for another screen. See decision 0144.
+    // the profile does not have, or for another screen. See decision 0146.
     void editModuleSettings(const QString &profileId, const QString &moduleId, const QString &screenId,
                             const QString &accountId = QString());
 
     // Adds another account of the module's server to the profile, from
     // Profiles > <profile> > Modules > <module> > Add Account…: opens the
     // server's screen for it, and stores it on OK. Returns its id, or empty
-    // if cancelled or the module has no server. See decision 0144.
+    // if cancelled or the module has no server. See decision 0146.
     QString addAccount(const QString &profileId, const QString &moduleId);
 
     // What the Profiles window does with module settings, through

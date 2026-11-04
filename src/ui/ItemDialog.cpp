@@ -350,7 +350,7 @@ struct ItemDialog::Private
 
     // The Account row: shown for a type whose module has a server, when the
     // profile the item would use has other accounts of it, or the item names
-    // one. "Default" first, then the others by name. See decision 0144.
+    // one. "Default" first, then the others by name. See decision 0146.
     void fillAccounts()
     {
         const QSignalBlocker blocker(account);

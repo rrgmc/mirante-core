@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
         return model.moduleSettings(profileId, moduleId, screenId);
     });
     // Another account of a module's server has its own values for the
-    // server's screen. See decision 0144.
+    // server's screen. See decision 0146.
     types.setAccountReader([&model, &types](const QString &profileId, const QString &moduleId,
                                             const QString &accountId, const QString &screenId) {
         const mirante::ServerType *server = types.serverType(moduleId);
