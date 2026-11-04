@@ -420,7 +420,7 @@ Quick add is generic. The core passes the pasted text to every quick add handler
 
 The core then passes the task's title and its items' text, such as a branch name, to every related-item finder. A finder can offer more items. For example, the `gitlab` module finds merge requests whose branch contains a Jira key, and the `jira` module recognises a Jira key in a merge request title.
 
-The core either creates a task with the chosen items, or adds them to an existing task. See [decision 0083](decisions/0083-quick-add-into-a-task.md).
+When no handler takes a web address, the core proposes one item of the type whose `fromUrl()` takes it best; see [items from a link](#items-from-a-link) and [decision 0141](decisions/0141-one-menu-entry-for-links.md). The core either creates a task with the chosen items, or adds them to an existing task. See [decision 0083](decisions/0083-quick-add-into-a-task.md).
 
 This lets the `jira` and `gitlab` modules work together without depending on each other. See [ui](ui.md#quick-add) and [decision 0078](decisions/0078-quick-add-dialog.md).
 

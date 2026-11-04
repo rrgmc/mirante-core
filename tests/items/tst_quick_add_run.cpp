@@ -1,11 +1,14 @@
 // Tests QuickAddRun with fake handlers and finders: answers in any order, a
 // handler that never finishes, stale answers dropped, projects matched, items
-// already offered dropped, the task that create() makes, and the items that
-// addToTask() adds, leaving out what the task already has.
+// already offered dropped, the task that create() makes, the items that
+// addToTask() adds, leaving out what the task already has, and the item a
+// web address becomes when no handler takes it.
 #include "core/Model.h"
 #include "items/ItemTypeRegistry.h"
 #include "items/QuickAddRun.h"
 
+#include <mirante/Fields.h>
+#include <mirante/ItemType.h>
 #include <mirante/Module.h>
 #include <mirante/QuickAdd.h>
 
@@ -83,14 +86,62 @@ private:
     QString m_moduleId;
 };
 
+// Takes any address, as Web page does, named after its host.
+class PageType : public ItemType
+{
+public:
+    QString id() const override { return QStringLiteral("alpha.page"); }
+    QString name() const override { return QStringLiteral("Page"); }
+    QIcon icon() const override { return {}; }
+
+    std::vector<Field> fields() const override
+    {
+        Field url;
+        url.key = QStringLiteral("url");
+        Field zoom;
+        zoom.key = QStringLiteral("zoom");
+        zoom.defaultValue = 100;
+        return {url, zoom};
+    }
+
+    std::optional<UrlMatch> fromUrl(const QUrl &url, const QString &) const override
+    {
+        UrlMatch match;
+        match.config.insert(QStringLiteral("url"), url.toString());
+        match.name = url.host();
+        match.generic = true;
+        return match;
+    }
+};
+
+// Takes the addresses of b.example only, as a module's type does.
+class ServerType : public ItemType
+{
+public:
+    QString id() const override { return QStringLiteral("beta.doc"); }
+    QString name() const override { return QStringLiteral("Doc"); }
+    QIcon icon() const override { return {}; }
+
+    std::optional<UrlMatch> fromUrl(const QUrl &url, const QString &) const override
+    {
+        if (url.host() != QLatin1String("b.example"))
+            return std::nullopt;
+        UrlMatch match;
+        match.config.insert(QStringLiteral("path"), url.path());
+        return match;
+    }
+};
+
 void registerAlpha(ModuleRegistrar &registrar)
 {
+    registrar.addItemType(std::make_unique<PageType>());
     registrar.addQuickAddHandler(std::make_unique<FakeHandler>(QStringLiteral("alpha")));
     registrar.addRelatedItemFinder(std::make_unique<FakeFinder>(QStringLiteral("alpha")));
 }
 
 void registerBeta(ModuleRegistrar &registrar)
 {
+    registrar.addItemType(std::make_unique<ServerType>());
     registrar.addQuickAddHandler(std::make_unique<FakeHandler>(QStringLiteral("beta")));
     registrar.addRelatedItemFinder(std::make_unique<FakeFinder>(QStringLiteral("beta")));
 }
@@ -250,6 +301,62 @@ private slots:
         QCOMPARE(proposed.count(), 1);
         QCOMPARE(done.count(), 1);
         QVERIFY(!run.busy());
+    }
+
+    void webAddressWithoutHandler()
+    {
+        handlerScripts[QStringLiteral("alpha")] = [](QuickAddRequest &request) { request.finish(std::nullopt); };
+        handlerScripts[QStringLiteral("beta")] = [](QuickAddRequest &request) { request.finish(std::nullopt); };
+        QuickAddRun run(model, types, nullptr);
+        QSignalSpy proposed(&run, &QuickAddRun::proposed);
+        QSignalSpy done(&run, &QuickAddRun::proposalsDone);
+
+        // Text that is not a web address stays unrecognised.
+        run.propose(QStringLiteral("just words"), QString());
+        QCOMPARE(proposed.count(), 0);
+        QCOMPARE(done.count(), 1);
+
+        // Any web address becomes one item of the generic type, with the
+        // type's defaults under what it made of the link.
+        run.propose(QStringLiteral(" https://www.example.org/docs "), QString());
+        QCOMPARE(proposed.count(), 1);
+        QCOMPARE(done.count(), 2);
+        const auto page = proposed.at(0).at(0).value<QuickAddRun::Proposal>();
+        QCOMPARE(page.moduleId, QStringLiteral("alpha"));
+        QCOMPARE(page.proposal.title, QStringLiteral("www.example.org"));
+        QVERIFY(!page.proposal.project);
+        QCOMPARE(page.proposal.items.size(), size_t(1));
+        QCOMPARE(page.proposal.items.front().typeId, QStringLiteral("alpha.page"));
+        QCOMPARE(page.proposal.items.front().name, QStringLiteral("www.example.org"));
+        QCOMPARE(page.proposal.items.front().config,
+                 (QJsonObject{{QStringLiteral("url"), QStringLiteral("https://www.example.org/docs")},
+                              {QStringLiteral("zoom"), 100}}));
+
+        // A module's type goes before the generic one. Without a name from
+        // the link, the item takes the type's name and the task the link.
+        run.propose(QStringLiteral("https://b.example/x"), QString());
+        QCOMPARE(proposed.count(), 2);
+        const auto doc = proposed.at(1).at(0).value<QuickAddRun::Proposal>();
+        QCOMPARE(doc.moduleId, QStringLiteral("beta"));
+        QCOMPARE(doc.proposal.title, QStringLiteral("https://b.example/x"));
+        QCOMPARE(doc.proposal.items.front().typeId, QStringLiteral("beta.doc"));
+        QCOMPARE(doc.proposal.items.front().name, QStringLiteral("Doc"));
+
+        // A task that has the item already is offered nothing more.
+        const QString taskId = run.create(QStringLiteral("p1"), QStringLiteral("Docs"), page.proposal.items);
+        run.setTask(taskId);
+        run.propose(QStringLiteral("https://www.example.org/docs"), QString());
+        QCOMPARE(proposed.count(), 3);
+        QVERIFY(proposed.at(2).at(0).value<QuickAddRun::Proposal>().proposal.items.empty());
+
+        // A handler that takes the address wins: no item of a type is added.
+        run.setTask(QString());
+        handlerScripts[QStringLiteral("beta")] = [](QuickAddRequest &request) {
+            request.finish(proposal(QStringLiteral("Handled")));
+        };
+        run.propose(QStringLiteral("https://b.example/x"), QString());
+        QCOMPARE(proposed.count(), 4);
+        QCOMPARE(proposed.at(3).at(0).value<QuickAddRun::Proposal>().proposal.title, QStringLiteral("Handled"));
     }
 
     void timesOut()

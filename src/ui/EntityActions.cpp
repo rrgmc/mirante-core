@@ -10,7 +10,6 @@
 #include "core/Store.h"
 #include <mirante/FieldValidation.h>
 #include "items/ItemTypeRegistry.h"
-#include "items/UrlMatches.h"
 #include "layout/Presets.h"
 #include "ui/DashboardDialog.h"
 #include <mirante/widgets/FieldForm.h>
@@ -36,7 +35,6 @@
 #include <QImage>
 #include <QMenu>
 #include <QMessageBox>
-#include <QMimeData>
 #include <QTimer>
 
 #include <algorithm>
@@ -455,30 +453,6 @@ QString EntityActions::newItem(const QString &taskId, const QString &url)
     const Item value = dialog.value();
     d->model.setTask(edits::addItem(*task, value));
     return item.id;
-}
-
-QString EntityActions::pasteUrl(const QString &taskId)
-{
-    const QUrl url = clipboardUrl();
-    if (url.isEmpty())
-        return {};
-    return newItem(taskId, url.toString());
-}
-
-QUrl EntityActions::clipboardUrl()
-{
-    const QClipboard *clipboard = QGuiApplication::clipboard();
-    const QMimeData *data = clipboard ? clipboard->mimeData() : nullptr;
-    if (!data)
-        return {};
-    if (data->hasUrls()) {
-        for (const QUrl &url : data->urls()) {
-            const QUrl address = urlmatches::webAddress(url.toString());
-            if (!address.isEmpty())
-                return address;
-        }
-    }
-    return data->hasText() ? urlmatches::webAddress(data->text()) : QUrl();
 }
 
 QString EntityActions::newDashboard(const QString &taskId)
@@ -1003,7 +977,6 @@ void EntityActions::fillMenu(QMenu *menu, SidebarModel::Kind kind, const QString
         if (!task)
             return;
         menu->addAction(tr("New item…"), this, [this, id] { newItem(id); });
-        menu->addAction(tr("Paste URL…"), this, [this, id] { pasteUrl(id); })->setEnabled(!clipboardUrl().isEmpty());
         addPasteImage(menu, id);
         menu->addAction(tr("Add Items from Link…"), this, [this, id] { emit addItemsFromLinkRequested(id); });
         menu->addAction(tr("New dashboard…"), this, [this, id] { newDashboard(id); });
@@ -1024,8 +997,6 @@ void EntityActions::fillMenu(QMenu *menu, SidebarModel::Kind kind, const QString
         if (!model.task(taskId))
             return;
         menu->addAction(tr("New item…"), this, [this, taskId] { newItem(taskId); });
-        menu->addAction(tr("Paste URL…"), this, [this, taskId] { pasteUrl(taskId); })
-            ->setEnabled(!clipboardUrl().isEmpty());
         addPasteImage(menu, taskId);
         menu->addAction(tr("Add Items from Link…"), this, [this, taskId] { emit addItemsFromLinkRequested(taskId); });
         break;

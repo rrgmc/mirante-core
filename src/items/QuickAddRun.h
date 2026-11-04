@@ -48,7 +48,9 @@ public:
 
     // Runs every handler on text, in the profile, at once. Stops a run that is
     // still going, and drops its answers. Emits proposed() for each handler
-    // that takes the text, as answers arrive, then proposalsDone().
+    // that takes the text, as answers arrive, then proposalsDone(). If none
+    // takes a web address, proposed() first offers one item of the type that
+    // shows it best, as the item dialog would choose it. See decision 0141.
     void propose(const QString &text, const QString &profileId);
 
     // The projects outside the trash whose moduleSettings.<moduleId>.<key>

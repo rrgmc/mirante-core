@@ -9,10 +9,12 @@ The changes to the module interface, and what a module must do about them, are i
 ### Changed
 
 - Every build has **Help > Show Log** and keeps the log messages from the start. The `--log` option is removed. See [decision 0140](docs/decisions/0140-log-window-in-all-builds.md).
+- **Add Items from Link…** and **New Task from Link…** take any web address. When no module recognises it, they offer one item of the type that shows it best, such as a Web page. See [decision 0141](docs/decisions/0141-one-menu-entry-for-links.md).
 
 ### Removed
 
 - Release builds no longer have **Help > Open Sample Data**. The sample data still opens at start when there is no workspace.
+- **Paste URL…** in the context menu of a task and of its Items row. Use **Add Items from Link…**, or the link field of **New item…** to choose another type.
 
 ### Fixed
 
