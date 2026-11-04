@@ -127,6 +127,7 @@ Jira priority is shown in the summary but never used for sorting. See [decision 
 
 - **Remote Control and cloud sessions** open as claude.ai pages in a [web view](web-views.md). There is no public API to list them or read their state, so the app shows no status for them.
 - **Local Claude Code sessions** have no item. M7 had one that ran `claude --resume <id>` in a terminal; [decision 0084](decisions/0084-no-local-claude-sessions.md) removed it.
+- **Local Claude agents** are listed by `claude agents --json` ([decision 0143](decisions/0143-claude-agents-list.md)). The optional `mirante-bridge` plugin adds activity, model, usage and rate limits through files in an exchange folder ([decision 0148](decisions/0148-claude-bridge-plugin.md)).
 - The app does not use the undocumented endpoints behind the claude.ai web interface, and it does not read Claude Code's stored login credentials. See [decision 0008](decisions/0008-claude-sessions.md).
 
 If Anthropic publishes an API for sessions later, a new decision record will cover adding it.
