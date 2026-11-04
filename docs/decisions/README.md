@@ -144,6 +144,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0137](0137-the-setup-does-not-start-mirante-at-sign-in-by-default.md) | The Windows setup does not start Mirante at sign-in by default | Accepted |
 | [0138](0138-add-list-values-from-the-server.md) | Settings lists can be filled from the module's server | Accepted |
 | [0139](0139-text-lists-offer-their-suggestions.md) | Text lists offer their suggestions in a checklist | Accepted |
+| [0140](0140-log-window-in-all-builds.md) | The log window in every build, the sample data menu in debug builds only | Accepted |
 
 ## Template
 

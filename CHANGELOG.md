@@ -6,6 +6,14 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+### Changed
+
+- Every build has **Help > Show Log** and keeps the log messages from the start. The `--log` option is removed. See [decision 0140](docs/decisions/0140-log-window-in-all-builds.md).
+
+### Removed
+
+- Release builds no longer have **Help > Open Sample Data**. The sample data still opens at start when there is no workspace.
+
 ### Fixed
 
 - A module's section in the project dialog has a **Remove** button. Before, a section added with **Add settings** could not be taken away.
