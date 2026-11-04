@@ -12,6 +12,7 @@ The changes to the module interface, and what a module must do about them, are i
 
 ### Changed
 
+- **Profiles > Manage Profiles…** is now the one place for profile settings: a tree of profiles, their modules and the modules' accounts, with the selected one's page beside it, each with Apply and Revert. Each profile in the Profiles menu opens it at that profile, and **Set Token…** opens it at the account. The profiles' Modules, Set as Default and Settings… submenus, and the Profile Settings window, are removed. See [decision 0147](docs/decisions/0147-profile-settings-in-one-window.md).
 - Every build has **Help > Show Log** and keeps the log messages from the start. The `--log` option is removed. See [decision 0140](docs/decisions/0140-log-window-in-all-builds.md).
 - **Add Items from Link…** and **New Task from Link…** take any web address. When no module recognises it, they offer one item of the type that shows it best, such as a Web page. See [decision 0141](docs/decisions/0141-one-menu-entry-for-links.md).
 
