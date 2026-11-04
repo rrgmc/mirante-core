@@ -494,6 +494,21 @@
         <source>Maximise (%1)</source>
         <translation>Maximizar (%1)</translation>
     </message>
+    <message>
+        <source>Refreshing…</source>
+        <translation>Atualizando…</translation>
+    </message>
+</context>
+<context>
+    <name>mirante::ColourChooser</name>
+    <message>
+        <source>None</source>
+        <translation>Nenhuma</translation>
+    </message>
+    <message>
+        <source>Other…</source>
+        <translation>Outra…</translation>
+    </message>
 </context>
 <context>
     <name>mirante::ConflictBar</name>
@@ -633,6 +648,18 @@
     <message>
         <source>Enter a name.</source>
         <translation>Digite um nome.</translation>
+    </message>
+    <message>
+        <source>Dashboard colour</source>
+        <translation>Cor do painel</translation>
+    </message>
+    <message>
+        <source>Colour:</source>
+        <translation>Cor:</translation>
+    </message>
+    <message>
+        <source>A dot of this colour shows before the name in the dashboard&apos;s tab.</source>
+        <translation>Um ponto desta cor aparece antes do nome na aba do painel.</translation>
     </message>
 </context>
 <context>
@@ -889,10 +916,6 @@
     <message>
         <source>Edit group</source>
         <translation>Editar grupo</translation>
-    </message>
-    <message>
-        <source>Other…</source>
-        <translation>Outra…</translation>
     </message>
     <message>
         <source>Group colour</source>
@@ -1629,6 +1652,10 @@
         <source>Default</source>
         <translation>Padrão</translation>
     </message>
+    <message>
+        <source>Edit dashboard</source>
+        <translation>Editar painel</translation>
+    </message>
 </context>
 <context>
     <name>mirante::ModuleSettingsDialog</name>
@@ -2235,16 +2262,16 @@ Os dados são de %2.</translation>
         <translation>Fechar aba</translation>
     </message>
     <message>
-        <source>Rename dashboard…</source>
-        <translation>Renomear painel…</translation>
-    </message>
-    <message>
         <source>Detach into Window</source>
         <translation>Destacar em janela</translation>
     </message>
     <message>
         <source>All dashboards…</source>
         <translation>Todos os painéis…</translation>
+    </message>
+    <message>
+        <source>Edit dashboard…</source>
+        <translation>Editar painel…</translation>
     </message>
 </context>
 <context>
@@ -2759,6 +2786,61 @@ Os dados são de %2.</translation>
     <message>
         <source>Send</source>
         <translation>Enviar</translation>
+    </message>
+</context>
+<context>
+    <name>mirante::widgets::CompactDate</name>
+    <message>
+        <source>just now</source>
+        <translation>agora mesmo</translation>
+    </message>
+    <message>
+        <source>1 day ago</source>
+        <translation>há 1 dia</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>há %1 dias</translation>
+    </message>
+    <message>
+        <source>in 1 day</source>
+        <translation>em 1 dia</translation>
+    </message>
+    <message>
+        <source>in %1 days</source>
+        <translation>em %1 dias</translation>
+    </message>
+    <message>
+        <source>1 hour ago</source>
+        <translation>há 1 hora</translation>
+    </message>
+    <message>
+        <source>%1 hours ago</source>
+        <translation>há %1 horas</translation>
+    </message>
+    <message>
+        <source>in 1 hour</source>
+        <translation>em 1 hora</translation>
+    </message>
+    <message>
+        <source>in %1 hours</source>
+        <translation>em %1 horas</translation>
+    </message>
+    <message>
+        <source>1 minute ago</source>
+        <translation>há 1 minuto</translation>
+    </message>
+    <message>
+        <source>%1 minutes ago</source>
+        <translation>há %1 minutos</translation>
+    </message>
+    <message>
+        <source>in 1 minute</source>
+        <translation>em 1 minuto</translation>
+    </message>
+    <message>
+        <source>in %1 minutes</source>
+        <translation>em %1 minutos</translation>
     </message>
 </context>
 <context>

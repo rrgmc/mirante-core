@@ -8,23 +8,42 @@ namespace mirante::widgets {
 
 namespace {
 
+const char *const context = "mirante::widgets::CompactDate";
+
 constexpr qint64 minute = 60;
 constexpr qint64 hour = 60 * minute;
 constexpr qint64 day = 24 * hour;
 // Dates up to this many days away read as a distance.
 constexpr qint64 relativeDays = 6;
 
-// Marks a text for lupdate; text() translates it.
-#define N(source) QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", source)
-
-// The text for one or for several. Both languages have only these two
-// forms, and the module widgets' tests run without translations, where a
-// "%n minute(s)" text would show as it is written.
-QString text(const char *one, const char *several, qint64 count)
+// A unit of distance and its texts, for one and for several, in the past and
+// to come. Both languages have only these two forms, and the module widgets'
+// tests run without translations, where a "%n minute(s)" text would show as
+// it is written.
+struct Unit
 {
-    return count == 1 ? QCoreApplication::translate("mirante::widgets::CompactDate", one)
-                      : QCoreApplication::translate("mirante::widgets::CompactDate", several).arg(count);
-}
+    qint64 seconds;
+    const char *agoOne;
+    const char *agoSeveral;
+    const char *inOne;
+    const char *inSeveral;
+};
+
+// The largest unit first.
+const Unit units[] = {
+    {day, QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "1 day ago"),
+     QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "%1 days ago"),
+     QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "in 1 day"),
+     QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "in %1 days")},
+    {hour, QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "1 hour ago"),
+     QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "%1 hours ago"),
+     QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "in 1 hour"),
+     QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "in %1 hours")},
+    {minute, QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "1 minute ago"),
+     QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "%1 minutes ago"),
+     QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "in 1 minute"),
+     QT_TRANSLATE_NOOP("mirante::widgets::CompactDate", "in %1 minutes")},
+};
 
 } // namespace
 
@@ -38,18 +57,15 @@ QString relativeDate(const QDateTime &when, const QDateTime &now)
     if (distance >= (relativeDays + 1) * day)
         return {};
     // One unit only, rounded down: "1 hour ago" for 1 h 59 min.
-    if (distance < minute)
-        return QCoreApplication::translate("mirante::widgets::CompactDate", "just now");
-    if (distance < hour) {
-        return past ? text(N("1 minute ago"), N("%1 minutes ago"), distance / minute)
-                    : text(N("in 1 minute"), N("in %1 minutes"), distance / minute);
+    for (const Unit &unit : units) {
+        if (distance < unit.seconds)
+            continue;
+        const qint64 count = distance / unit.seconds;
+        if (count == 1)
+            return QCoreApplication::translate(context, past ? unit.agoOne : unit.inOne);
+        return QCoreApplication::translate(context, past ? unit.agoSeveral : unit.inSeveral).arg(count);
     }
-    if (distance < day) {
-        return past ? text(N("1 hour ago"), N("%1 hours ago"), distance / hour)
-                    : text(N("in 1 hour"), N("in %1 hours"), distance / hour);
-    }
-    return past ? text(N("1 day ago"), N("%1 days ago"), distance / day)
-                : text(N("in 1 day"), N("in %1 days"), distance / day);
+    return QCoreApplication::translate("mirante::widgets::CompactDate", "just now");
 }
 
 QString compactDate(const QDateTime &when)
@@ -66,7 +82,5 @@ QString compactDate(const QDateTime &when)
                                          ? QStringLiteral("MM-dd HH:mm")
                                          : QStringLiteral("yyyy-MM-dd"));
 }
-
-#undef N
 
 } // namespace mirante::widgets

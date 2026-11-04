@@ -9,7 +9,7 @@ namespace mirante::widgets {
 // "just now", "10 minutes ago", "1 hour ago", "3 days ago", or "in 2 hours"
 // for a date to come. Further away it is in local time: "10-30 14:32" in this
 // year, "2025-10-30" otherwise. An invalid date gives an empty text. See
-// decisions 0071 and 0143.
+// decisions 0071 and 0144.
 QString compactDate(const QDateTime &when);
 
 // The distance part of compactDate, from now: an empty text if when is 7 days
