@@ -20,7 +20,7 @@ struct LogEntry
     QString message;
 };
 
-// Keeps the latest Qt log messages for the log window of debug builds. It
+// Keeps the latest Qt log messages for the log window. It
 // installs itself as Qt's message handler and passes every message on to the
 // handler that was there before, so the console output does not change.
 // Implemented in LogBuffer.cpp.

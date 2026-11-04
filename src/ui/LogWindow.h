@@ -9,8 +9,7 @@ namespace mirante {
 class LogBuffer;
 
 // A window that lists the Qt log messages a LogBuffer keeps, as they arrive,
-// with a level filter and a text filter. Debug builds open it from
-// Help > Show Log. Implemented in LogWindow.cpp.
+// with a level filter and a text filter. Help > Show Log opens it. Implemented in LogWindow.cpp.
 class LogWindow : public QWidget
 {
     Q_OBJECT

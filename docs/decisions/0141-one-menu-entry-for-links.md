@@ -1,4 +1,4 @@
-# 0140. One menu entry adds items from a link
+# 0141. One menu entry adds items from a link
 
 - Status: Accepted
 - Date: 2026-11-04

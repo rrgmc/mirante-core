@@ -1,6 +1,6 @@
 # 0049. Item types read a pasted link, and the item dialog offers the types that take it
 
-- Status: Accepted; the connection parts superseded by [0054](0054-module-settings-replace-connections.md), earlier changed by [0050](0050-profiles-hold-logins-connections-and-settings.md); point 4, "Paste URL…", superseded by [0140](0140-one-menu-entry-for-links.md)
+- Status: Accepted; the connection parts superseded by [0054](0054-module-settings-replace-connections.md), earlier changed by [0050](0050-profiles-hold-logins-connections-and-settings.md); point 4, "Paste URL…", superseded by [0141](0141-one-menu-entry-for-links.md)
 - Date: 2026-10-29
 
 ## Context

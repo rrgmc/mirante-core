@@ -305,7 +305,7 @@ struct QuickAddRun::Private
 
     // Every handler has answered. Without a proposal, a web address becomes
     // one item of the type that shows it best, as the item dialog would
-    // choose it: a module's type, else Web page. See decision 0140.
+    // choose it: a module's type, else Web page. See decision 0141.
     void proposalsEnded(int run)
     {
         if (proposals == 0) {

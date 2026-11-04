@@ -212,7 +212,7 @@ The menu bar has File, View, Profiles, Tools and Help. On macOS there is no Tool
 - **View:** Sidebar (show or hide, `Ctrl+B`), Focus Sidebar (`Ctrl+Shift+E`; shows the sidebar and puts the keyboard focus in its tree, on its selected row or else its first), Expand All Tasks, Collapse All Tasks, Full Screen (`F11`, `Ctrl+Cmd+F` on macOS; leaving it brings back the maximized or normal window, and a window closed in full screen opens as it was before; in full screen the menu bar hides and shows while the mouse is at the top edge or a menu is open, and every shortcut keeps working, while macOS shows its own menu bar), Go To… (`Ctrl+K`, the [quick switcher](#keyboard)), All Dashboards… (`Ctrl+D`), and New Dashboard (`Ctrl+Shift+D`).
 - **Profiles:** Manage Profiles…, then a submenu for each profile with its Modules submenu. See [Profiles menu](#profiles-menu).
 - **Tools:** Settings…, which opens the [settings window](#settings). Windows and Linux only.
-- **Help:** Modules…, which opens the [Modules window](#modules-window), and Open Sample Data, which opens the read-only [sample data](README.md#glossary). After a separator, About Mirante, with the version and the edition, the author, the project's address, and each module's name with the release it was built from, such as "Claude: 0.8.0", or the short commit of a module pinned to a commit, or "local"; and About Qt. Debug builds, and release builds started with `--log`, also have Show Log (`Ctrl+Shift+L`), a window that lists the app's Qt log messages as they arrive, including the JavaScript console of web pages, with a level and a text filter. Chromium's own messages go to the console only.
+- **Help:** Modules…, which opens the [Modules window](#modules-window), and, in debug builds only, Open Sample Data, which opens the read-only [sample data](README.md#glossary). After a separator, About Mirante, with the version and the edition, the author, the project's address, and each module's name with the release it was built from, such as "Claude: 0.8.0", or the short commit of a module pinned to a commit, or "local"; and About Qt. After another separator, Show Log (`Ctrl+Shift+L`), a window that lists the app's Qt log messages as they arrive, including the JavaScript console of web pages, with a level and a text filter. Chromium's own messages go to the console only. See [decision 0141](decisions/0140-log-window-in-all-builds.md).
 
 ## Opening tasks
 
@@ -420,7 +420,7 @@ Attention can also reach the user outside the app, through the tray icon and des
 Quick add creates a task from a link, or adds items to a task from a link. It has two entries, named after what they do (see [decision 0083](decisions/0083-quick-add-into-a-task.md)):
 
 - **New Task from Link…**, in the File menu, as a link icon button in the sidebar header, and with `Ctrl+Shift+N`, creates a task. The dialog's title is "New Task from Link".
-- **Add Items from Link…**, in the context menu of a task and of its Items row in the sidebar, adds items to that task. The dialog's title is "Add Items from Link: <task title>". It is the menu's one entry for a link ([decision 0140](decisions/0140-one-menu-entry-for-links.md)).
+- **Add Items from Link…**, in the context menu of a task and of its Items row in the sidebar, adds items to that task. The dialog's title is "Add Items from Link: <task title>". It is the menu's one entry for a link ([decision 0141](decisions/0141-one-menu-entry-for-links.md)).
 
 Open either, then paste a link. What it recognises depends on the [modules](modules.md#quick-add) in the build. With the `gitlab` and `jira` modules:
 
@@ -432,7 +432,7 @@ Open either, then paste a link. What it recognises depends on the [modules](modu
   - The task is named after the merge request title.
   - An MR summary item and a CI Pipeline item for its branch are added.
   - A Jira key found in the title or branch adds the issue too.
-- **Any other web address:** one item of the type that shows the link best, as the [item dialog](#item-dialog) would select it: a module's type, else Web page. The task and the item are named as the type names the link, such as a Web page after its host. See [decision 0140](decisions/0140-one-menu-entry-for-links.md).
+- **Any other web address:** one item of the type that shows the link best, as the [item dialog](#item-dialog) would select it: a module's type, else Web page. The task and the item are named as the type names the link, such as a Web page after its host. See [decision 0141](decisions/0141-one-menu-entry-for-links.md).
 
 The project is chosen by matching the merge request's GitLab project or the issue's Jira project key against the projects' module settings. If no project matches, or several do, the app asks.
 

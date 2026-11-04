@@ -1685,8 +1685,12 @@ struct MainWindow::Private
         // Keeps macOS from moving it to the application menu by its text.
         modules->setMenuRole(QAction::NoRole);
         QObject::connect(modules, &QAction::triggered, q, &MainWindow::showModules);
+#ifndef NDEBUG
+        // Release builds open the sample data only at start, when there is
+        // no workspace. See docs/decisions/0140-log-window-in-all-builds.md.
         QAction *sample = help->addAction(MainWindow::tr("Open &Sample Data"));
         QObject::connect(sample, &QAction::triggered, q, &MainWindow::openSampleData);
+#endif
         help->addSeparator();
         QAction *about = help->addAction(MainWindow::tr("&About Mirante"));
         about->setMenuRole(QAction::AboutRole);
@@ -1694,8 +1698,8 @@ struct MainWindow::Private
         QAction *aboutQt = help->addAction(MainWindow::tr("About &Qt"));
         aboutQt->setMenuRole(QAction::AboutQtRole);
         QObject::connect(aboutQt, &QAction::triggered, q, [] { QApplication::aboutQt(); });
-        // Debug builds, and release builds started with --log, keep the log
-        // messages for a window. See main.cpp.
+        // The app keeps the log messages for a window from the start. See
+        // main.cpp. Tests may run without a buffer.
         if (LogBuffer::installedBuffer()) {
             help->addSeparator();
             QAction *log = help->addAction(MainWindow::tr("Show &Log"));

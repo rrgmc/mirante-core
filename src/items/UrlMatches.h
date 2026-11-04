@@ -13,7 +13,7 @@ class ItemType;
 class ItemTypeRegistry;
 
 // Asks the item types what they make of a pasted web address. The new item
-// dialog and quick add use it. See decisions 0049 and 0140. Implemented in
+// dialog and quick add use it. See decisions 0049 and 0141. Implemented in
 // UrlMatches.cpp.
 namespace urlmatches {
 
