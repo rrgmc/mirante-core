@@ -443,6 +443,16 @@ Module `claude`.
 
 There is no public API for these sessions, so the app has no status or summary for them. See [decision 0008](decisions/0008-claude-sessions.md).
 
+### Claude agents
+
+`claude.agents`, native.
+
+- **Configuration:** `folder`, a project folder, optional: only sessions in it, through `--cwd`. `includeFinished`, bool, default false: also finished background sessions, through `--all`. `accounts`, a text list of Claude Code config folders on this device, one per account; empty uses the default account.
+- **Shows:** a sortable table of the Claude Code sessions on this device, with the columns Title, Status, Repository, Account and Started, sorted on Started, newest first. The status is a pill: amber for Working, red for Needs input and Failed, green for Done, grey for Idle and Stopped. A drop-down filters the rows by status. Repository is the folder name of the Git repository that holds the session's folder, the main one for a worktree, with the branch. Account shows only for more than one account. No session text is shown.
+- **Row menu:** "Show folder" and "Copy session ID".
+- **Status:** runs `claude agents --json` once per account, with `CLAUDE_CONFIG_DIR` set to its folder. The status line reads like "3 agents · 1 waiting for input". An account that fails is named above the table; when all fail, the status is an error. A list raises no attention, and never counts as closed. See [decision 0143](decisions/0143-claude-agents-list.md).
+- **Not listed:** cloud sessions on claude.ai and Remote Control sessions of another computer, which have no documented API.
+
 ### Claude session (local), removed
 
 M7 added `claude.session.local`, a Claude Code session resumed in a terminal. [Decision 0084](decisions/0084-no-local-claude-sessions.md) removed it. An item of that type that is still in a workspace is kept unchanged. Its cell says "This item type is no longer available: claude.session.local.", and the user can delete it.
