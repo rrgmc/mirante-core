@@ -2,6 +2,7 @@
 // in which they give way in a narrow cell.
 #include "layout/HeaderPill.h"
 
+#include <QFontMetricsF>
 #include <QPixmap>
 #include <QTest>
 
@@ -16,6 +17,7 @@ private slots:
     void shrinkOrder();
     void typePillKeepsItsIcon();
     void moduleHues();
+    void widthCoversFractionalText();
 };
 
 namespace {
@@ -116,4 +118,20 @@ void TestHeaderPill::moduleHues()
 }
 
 QTEST_MAIN(TestHeaderPill)
+// The width is never less than the text's fractional width, so a pill at its
+// size hint shows the whole text instead of eliding it.
+void TestHeaderPill::widthCoversFractionalText()
+{
+    for (const QString &text : {QStringLiteral("My open Jira issues"), QStringLiteral("General"),
+                                QStringLiteral("Backend"), QStringLiteral("MRs")}) {
+        HeaderPill pill;
+        pill.setText(text);
+        QVERIFY(pill.sizeHint().width() >= QFontMetricsF(pill.font()).horizontalAdvance(text));
+        QFont bold = pill.font();
+        bold.setBold(true);
+        pill.setFont(bold);
+        QVERIFY(pill.sizeHint().width() >= QFontMetricsF(bold).horizontalAdvance(text));
+    }
+}
+
 #include "tst_header_pill.moc"

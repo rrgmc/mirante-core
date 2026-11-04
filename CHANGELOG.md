@@ -19,6 +19,7 @@ The changes to the module interface, and what a module must do about them, are i
 ### Fixed
 
 - A module's section in the project dialog has a **Remove** button. Before, a section added with **Add settings** could not be taken away.
+- Cell and page headers show their whole titles when there is room. Before, on macOS, a title could end in an ellipsis even though it fit.
 
 ## [0.8.6] - 2026-11-04
 

@@ -1,11 +1,13 @@
 #include "layout/HeaderPill.h"
 
 #include <QEvent>
+#include <QFontMetricsF>
 #include <QHash>
 #include <QPainter>
 #include <QStyle>
 
 #include <algorithm>
+#include <cmath>
 
 namespace mirante {
 
@@ -102,12 +104,20 @@ int HeaderPill::iconSize() const
     return std::min(style()->pixelMetric(QStyle::PM_SmallIconSize, nullptr, this), fontMetrics().height());
 }
 
+// The text's width, rounded up. Glyph widths are fractional on macOS, and
+// QFontMetrics::horizontalAdvance() rounds them, so a pill of that width can
+// be a fraction of a pixel too narrow and elide text that fits.
+int HeaderPill::textWidth() const
+{
+    return int(std::ceil(QFontMetricsF(font()).horizontalAdvance(text())));
+}
+
 QSize HeaderPill::sizeHint() const
 {
     const QFontMetrics metrics = fontMetrics();
     int width = 2 * padding() + iconSize();
     if (!text().isEmpty())
-        width += (iconSize() > 0 ? iconGap : 0) + metrics.horizontalAdvance(text());
+        width += (iconSize() > 0 ? iconGap : 0) + textWidth();
     const int height = std::max(metrics.height(), iconSize()) + (m_fill == Fill::None ? 0 : 2);
     return {width, height};
 }
@@ -134,10 +144,14 @@ void HeaderPill::paintEvent(QPaintEvent *)
     // and the pill shrinks around the icon.
     int x = area.left() + pad;
     const int textLeft = x + icon + (icon > 0 ? iconGap : 0);
-    QString shown = metrics.elidedText(text(), Qt::ElideRight, std::max(0, area.right() - pad - textLeft + 1));
+    const int available = std::max(0, area.right() - pad - textLeft + 1);
+    QString shown = available >= textWidth()
+                        ? text()
+                        : QFontMetricsF(font()).elidedText(text(), Qt::ElideRight, qreal(available));
     if (icon > 0 && (shown.isEmpty() || shown == ellipsis))
         shown.clear();
-    const int contentRight = shown.isEmpty() ? x + icon : textLeft + metrics.horizontalAdvance(shown);
+    const int contentRight =
+        shown.isEmpty() ? x + icon : textLeft + int(std::ceil(QFontMetricsF(font()).horizontalAdvance(shown)));
     const int pillWidth = std::min(area.width(), contentRight + pad - area.left());
 
     const QColor background = fillColour(palette());

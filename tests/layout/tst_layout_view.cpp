@@ -225,6 +225,7 @@ private slots:
     void factoryMakesPlacements();
     void factoryConnectsStatus();
     void factoryOpenAloneButton();
+    void factoryDashboardTitle();
 };
 
 void TestLayoutView::buildsWidgets()
@@ -1139,6 +1140,42 @@ void TestLayoutView::factoryOpenAloneButton()
     QVERIFY(!button->icon().isNull());
     button->click();
     QCOMPARE(opened, QStringList{QStringLiteral("t1/i1")});
+}
+
+// The header shows the item's dashboard title, else its name, and follows
+// changes to the item. See decision 0142.
+void TestLayoutView::factoryDashboardTitle()
+{
+    ItemTypeRegistry types;
+    types.registerModule(QStringLiteral("view"), &registerViewType);
+    Model model;
+    Task task;
+    task.id = QStringLiteral("t1");
+    Item item;
+    item.id = QStringLiteral("i1");
+    item.type = QStringLiteral("view.type");
+    item.name = QStringLiteral("TODO");
+    task.items.push_back(item);
+    model.reset({}, {}, {task}, {});
+
+    LayoutServices services;
+    services.model = &model;
+    services.types = &types;
+    DashboardCellFactory factory(services, DashboardRef{QString(), QStringLiteral("r1")});
+    std::unique_ptr<QWidget> cell(
+        factory.createCell(CellRef{QStringLiteral("i1"), QStringLiteral("t1"), QString()}, false, nullptr));
+    QWidget *name = cell->findChild<QWidget *>(QStringLiteral("cellName"));
+    QVERIFY(name);
+    QCOMPARE(name->toolTip(), QStringLiteral("TODO"));
+
+    item.dashboardTitle = QStringLiteral("Backend TODO");
+    model.setItem(QStringLiteral("t1"), item);
+    QCOMPARE(name->toolTip(), QStringLiteral("Backend TODO"));
+
+    item.dashboardTitle.clear();
+    item.name = QStringLiteral("Notes");
+    model.setItem(QStringLiteral("t1"), item);
+    QCOMPARE(name->toolTip(), QStringLiteral("Notes"));
 }
 
 QTEST_MAIN(TestLayoutView)

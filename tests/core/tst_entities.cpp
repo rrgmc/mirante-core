@@ -260,6 +260,25 @@ private slots:
         QVERIFY(!old->toJson().contains(QStringLiteral("webProfile")));
     }
 
+    // dashboardTitle is written only when set. dashboardName() falls back to
+    // the name. See decision 0142.
+    void itemDashboardTitle()
+    {
+        const auto item = Item::fromJson(parse(R"({ "id": "i-1", "type": "notes.note",
+            "name": "TODO", "dashboardTitle": "Backend TODO" })"));
+        QVERIFY(item);
+        QCOMPARE(item->dashboardTitle, QStringLiteral("Backend TODO"));
+        QCOMPARE(item->dashboardName(), QStringLiteral("Backend TODO"));
+        QVERIFY(item->extra.isEmpty());
+        QCOMPARE(item->toJson(), parse(R"({ "id": "i-1", "type": "notes.note", "name": "TODO",
+            "dashboardTitle": "Backend TODO", "config": {} })"));
+
+        Item cleared = *item;
+        cleared.dashboardTitle.clear();
+        QCOMPARE(cleared.dashboardName(), QStringLiteral("TODO"));
+        QVERIFY(!cleared.toJson().contains(QStringLiteral("dashboardTitle")));
+    }
+
     // watch and pageKeys are written only when set, so other items keep their
     // files unchanged. A pageKeys that is not a list of strings stays as it was.
     void itemWatchAndPageKeys()

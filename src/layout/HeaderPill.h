@@ -51,6 +51,7 @@ protected:
 private:
     int padding() const;
     int iconSize() const;
+    int textWidth() const;
 
     QIcon m_icon;
     Fill m_fill = Fill::None;

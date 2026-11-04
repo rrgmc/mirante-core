@@ -317,6 +317,7 @@ std::optional<Item> Item::fromJson(const QJsonObject &json, QString *error)
         || !r.required(QStringLiteral("type"), &item.type, error))
         return std::nullopt;
     r.string(QStringLiteral("name"), &item.name);
+    r.string(QStringLiteral("dashboardTitle"), &item.dashboardTitle);
     r.object(QStringLiteral("config"), &item.config);
     // "webProfile" is the name used before decision 0050. "profile" wins.
     r.string(QStringLiteral("webProfile"), &item.profile);
@@ -335,6 +336,8 @@ QJsonObject Item::toJson() const
         {QStringLiteral("name"), name},
         {QStringLiteral("config"), config},
     };
+    if (!dashboardTitle.isEmpty())
+        json.insert(QStringLiteral("dashboardTitle"), dashboardTitle);
     if (!profile.isEmpty())
         json.insert(QStringLiteral("profile"), profile);
     if (watch)

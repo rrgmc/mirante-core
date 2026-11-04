@@ -231,6 +231,7 @@ private slots:
     void itemFieldsOfTheProfile();
     void itemWatch();
     void itemPageKeys();
+    void itemDashboardTitle();
     void profilesDialog();
     void profilesDialogDoubleClickRenames();
     void dashboard();
@@ -1323,6 +1324,34 @@ void TestDialogs::itemOfMissingModule()
     Item expected = item;
     expected.name = QStringLiteral("Renamed");
     QCOMPARE(dialog.value(), expected);
+}
+
+// The dashboard title row edits the item's dashboardTitle, trimmed. Empty
+// leaves it unset. See decision 0142.
+void TestDialogs::itemDashboardTitle()
+{
+    Item item;
+    item.id = QStringLiteral("i11");
+    item.type = webType;
+    item.name = QStringLiteral("TODO");
+    item.dashboardTitle = QStringLiteral("Old title");
+    ItemDialog dialog(item, false, types, {});
+    auto *field = dialog.findChild<QLineEdit *>(QStringLiteral("dashboardTitle"));
+    QVERIFY(field);
+    QCOMPARE(field->text(), QStringLiteral("Old title"));
+    QCOMPARE(dialog.value(), item);
+
+    field->setText(QStringLiteral("  Backend TODO "));
+    QCOMPARE(dialog.value().dashboardTitle, QStringLiteral("Backend TODO"));
+    field->clear();
+    QVERIFY(dialog.value().dashboardTitle.isEmpty());
+
+    // An item of a missing module can change it too.
+    Item lost = item;
+    lost.type = QStringLiteral("gone.thing");
+    ItemDialog lostDialog(lost, false, types, {});
+    lostDialog.findChild<QLineEdit *>(QStringLiteral("dashboardTitle"))->setText(QStringLiteral("New"));
+    QCOMPARE(lostDialog.value().dashboardTitle, QStringLiteral("New"));
 }
 
 void TestDialogs::dashboard()
