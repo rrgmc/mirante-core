@@ -125,6 +125,8 @@ The Profiles menu, between View and Help, opens the [Profiles window](#profiles)
 
 "Edit item…" opens the second page only. The type of an existing item cannot change. An item whose module is missing shows its name and dashboard title only, and keeps the rest unchanged.
 
+"Duplicate item…" opens the new item dialog on its second page, filled with a copy of the item: its type, name, dashboard title, profile, account, watch, keys for the page and configuration. OK adds the copy to the same task, on no dashboard. **Back** returns to the type tree, as for a new item. An item whose module is missing cannot be duplicated, so the entry is disabled.
+
 **Dashboard title.** An item can have a second title for dashboards. When it is set, dashboards show it instead of the name: in the cell header, in the title of a new layout tab made around the item, and in the task summary panel. The sidebar, the tabs of item pages, the quick switcher and the other places keep the name. The field is empty by default, and its placeholder says "Same as the name". For example, a Notes item named "TODO" in the sidebar can show "Backend TODO" in a root dashboard. See [decision 0142](decisions/0142-item-dashboard-title.md).
 
 ## Modules
@@ -275,8 +277,9 @@ Some work, such as signing in to a site, is easier on a large page than in a sma
 
 - **Maximise.** The maximise button in the cell header, the cell menu entry "Maximise", or `Ctrl+Shift+M` for the focused cell, shows the cell over the whole dashboard area and gives it the focus. The button's tooltip names the shortcut. The same cell moves, so a web page keeps its state, including a login in progress. The button, the menu entry "Restore" or the shortcut again puts the cell back in its place. Maximising another cell puts the first one back. Changing the root tab or closing the tab also puts it back.
 - **Open Alone.** The cell menu entry "Open Alone" opens the item alone in the preview slot, as a double click on the item in the sidebar does. See [decision 0023](decisions/0023-item-tabs.md). The preview has a view of its own, in the same web profile, so a login made there reaches the cell when its page reloads. An item preview already shows its item alone, so it does not offer "Open Alone". Every item cell also has an "Open Alone" button, last in its header, as a task cell has its own. The cell menu button (⋮) shows only while the dashboard is unlocked; locked, these buttons cover its view commands, and a right click on the cell still opens the menu.
-- **Changing the item from its cell.** The menu of an item cell also offers two entries that change the item, not the layout, so they work on a locked dashboard and in an item preview too:
+- **Changing the item from its cell.** The menu of an item cell also offers entries that change the item, not the layout, so they work on a locked dashboard and in an item preview too:
   - "Edit Item…" opens the item dialog.
+  - "Duplicate Item…" opens the new item dialog filled with a copy of the item, as "Duplicate item…" in the sidebar does. See [the item dialog](#item-dialog). It is missing for an item whose module is missing.
   - "Watch", checked while the item is [watched](#watched-items), for a type that reports status. It turns watching on or off.
   - "Use Current Address" is there for a cell that shows a web page, when the item's type has an address field. It saves the address the page shows now in that field, such as the Address of a Web page item. It is disabled when the two are already the same, and its tooltip shows the address.
 

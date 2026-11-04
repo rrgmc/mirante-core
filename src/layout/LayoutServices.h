@@ -48,6 +48,9 @@ struct LayoutServices
     // Opens the item dialog. The cell menu offers it while the dashboard is
     // being edited.
     std::function<void(const QString &taskId, const QString &itemId)> editItem;
+    // Opens the new item dialog filled with a copy of the item. The cell menu
+    // offers it next to editItem.
+    std::function<void(const QString &taskId, const QString &itemId)> duplicateItem;
 
     // Images dropped from other apps onto the cell of an item whose type
     // takes pasted images. readImageDrop gives the image a drag carries, or a
