@@ -205,7 +205,8 @@ bool LayoutEditor::Private::accepts(const DashboardRef &dashboard, const CellRef
     return false;
 }
 
-// The title of a tab made around a node: the item name, the task title or "Tab".
+// The title of a tab made around a node: the item's dashboard title, the task
+// title or "Tab".
 QString LayoutEditor::Private::titleFor(const DashboardRef &dashboard, const LayoutNode *node) const
 {
     if (node && node->kind == Kind::Cell && node->ref && !node->removed) {
@@ -216,8 +217,8 @@ QString LayoutEditor::Private::titleFor(const DashboardRef &dashboard, const Lay
                 if (const Task *task = model.taskOfItem(ref.item))
                     taskId = task->id;
             }
-            if (const Item *item = model.item(taskId, ref.item); item && !item->name.isEmpty())
-                return item->name;
+            if (const Item *item = model.item(taskId, ref.item); item && !item->dashboardName().isEmpty())
+                return item->dashboardName();
         } else if (ref.isTask()) {
             if (const Task *task = model.task(ref.task); task && !task->title.isEmpty())
                 return task->title;

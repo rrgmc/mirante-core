@@ -146,6 +146,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0139](0139-text-lists-offer-their-suggestions.md) | Text lists offer their suggestions in a checklist | Accepted |
 | [0140](0140-log-window-in-all-builds.md) | The log window in every build, the sample data menu in debug builds only | Accepted |
 | [0141](0141-one-menu-entry-for-links.md) | One menu entry adds items from a link | Accepted |
+| [0142](0142-item-dashboard-title.md) | Items have an optional title for dashboards | Accepted |
 
 ## Template
 

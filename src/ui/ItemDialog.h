@@ -25,12 +25,13 @@ class ItemTypeRegistry;
 // one, the grid shows only the types whose fromUrl() takes it, and choosing
 // one starts from the configuration and name it made. See decision 0049.
 //
-// The second page holds the name, the profile (only for a type that uses one,
-// see ItemTypeRegistry::usesProfile()), and the configuration, edited by the
-// type's own editor or else a FieldForm built from the type's
-// fieldsForProfile() for the profile the item would use. Choosing another
-// profile builds the form again, keeping what was entered. An item of a missing module shows its name only and keeps
-// its configuration. OK is refused while the name is empty or the editor
+// The second page holds the name, the optional dashboard title, the profile
+// (only for a type that uses one, see ItemTypeRegistry::usesProfile()), and
+// the configuration, edited by the type's own editor or else a FieldForm built
+// from the type's fieldsForProfile() for the profile the item would use.
+// Choosing another profile builds the form again, keeping what was entered.
+// An item of a missing module shows its name and dashboard title only, and
+// keeps its configuration. See decision 0142. OK is refused while the name is empty or the editor
 // reports problems. See docs/ui.md#item-dialog and decision 0043.
 // Implemented in ItemDialog.cpp.
 class ItemDialog : public QDialog
