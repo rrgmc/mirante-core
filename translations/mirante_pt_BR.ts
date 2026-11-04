@@ -797,10 +797,6 @@
         <translation>Novo item…</translation>
     </message>
     <message>
-        <source>Paste URL…</source>
-        <translation>Colar URL…</translation>
-    </message>
-    <message>
         <source>Add Items from Link…</source>
         <translation>Adicionar itens de link…</translation>
     </message>
