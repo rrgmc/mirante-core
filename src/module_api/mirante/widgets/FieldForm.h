@@ -19,7 +19,8 @@ namespace mirante::widgets {
 // dropped from another app on the field does the same as "Paste" (decision
 // 0085). A text
 // field with suggestions is an editable combo box. A text list is edited one
-// entry per line. A field's help text shows under its editor, and fields of a
+// entry per line, and one with suggestions has "Add from List…" under it,
+// which opens a ChoiceListDialog (decision 0139). A field's help text shows under its editor, and fields of a
 // group sit in a titled box. See the M3 plan, part 5, and decisions 0044 and
 // 0122. Implemented in FieldForm.cpp.
 class FieldForm : public ItemEditor

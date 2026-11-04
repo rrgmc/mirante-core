@@ -2242,24 +2242,8 @@ Os dados são de %2.</translation>
         <translation>Carregando…</translation>
     </message>
     <message>
-        <source>Filter</source>
-        <translation>Filtro</translation>
-    </message>
-    <message>
-        <source>Add</source>
-        <translation>Adicionar</translation>
-    </message>
-    <message>
         <source>The server could not list them: %1</source>
         <translation>O servidor não conseguiu listá-los: %1</translation>
-    </message>
-    <message>
-        <source>%1 (%2)</source>
-        <translation>%1 (%2)</translation>
-    </message>
-    <message>
-        <source>Already in the list</source>
-        <translation>Já está na lista</translation>
     </message>
     <message>
         <source>The server has nothing to list.</source>
@@ -2728,6 +2712,33 @@ Os dados são de %2.</translation>
     </message>
 </context>
 <context>
+    <name>mirante::widgets::ChoiceListDialog</name>
+    <message>
+        <source>There is nothing to list.</source>
+        <translation>Não há nada para listar.</translation>
+    </message>
+    <message>
+        <source>Everything listed is already in the list.</source>
+        <translation>Tudo o que foi listado já está na lista.</translation>
+    </message>
+    <message>
+        <source>Filter</source>
+        <translation>Filtro</translation>
+    </message>
+    <message>
+        <source>Add</source>
+        <translation>Adicionar</translation>
+    </message>
+    <message>
+        <source>%1 (%2)</source>
+        <translation>%1 (%2)</translation>
+    </message>
+    <message>
+        <source>Already in the list</source>
+        <translation>Já está na lista</translation>
+    </message>
+</context>
+<context>
     <name>mirante::widgets::CommentDialog</name>
     <message>
         <source>Send</source>
@@ -2799,6 +2810,26 @@ Os dados são de %2.</translation>
     <message>
         <source>The file is not an image that can be read.</source>
         <translation>O arquivo não é uma imagem legível.</translation>
+    </message>
+    <message>
+        <source>Add from List…</source>
+        <translation>Adicionar da lista…</translation>
+    </message>
+    <message>
+        <source>Choose entries from a list to add.</source>
+        <translation>Escolha entradas de uma lista para adicionar.</translation>
+    </message>
+    <message>
+        <source>Add %1 from List</source>
+        <translation>Adicionar %1 da lista</translation>
+    </message>
+    <message>
+        <source>The list is empty.</source>
+        <translation>A lista está vazia.</translation>
+    </message>
+    <message>
+        <source>Everything in the list is already here.</source>
+        <translation>Tudo o que está na lista já está aqui.</translation>
     </message>
 </context>
 <context>

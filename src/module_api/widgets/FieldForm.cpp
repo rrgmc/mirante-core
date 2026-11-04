@@ -1,6 +1,7 @@
 #include <mirante/widgets/FieldForm.h>
 
 #include <mirante/FieldValidation.h>
+#include <mirante/widgets/ChoiceListDialog.h>
 #include <mirante/widgets/ImageMime.h>
 #include <mirante/widgets/ImagePasteDialog.h>
 
@@ -372,6 +373,42 @@ FieldForm::FieldForm(std::vector<Field> fields, EditorContext context, QWidget *
             row.text->setToolTip(tr("One entry per line."));
             connect(row.text, &QPlainTextEdit::textChanged, this, edited);
             row.editor = row.text;
+            if (!row.field.suggestions.isEmpty()) {
+                // "Add from List…" under the text, to check suggestions and
+                // add them at the end. See decision 0139.
+                auto *box = new QWidget(this);
+                row.text->setParent(box);
+                auto *add = new QPushButton(tr("Add from List…"), box);
+                add->setObjectName(QStringLiteral("addFromList_") + row.field.key);
+                add->setToolTip(tr("Choose entries from a list to add."));
+                connect(add, &QPushButton::clicked, this, [this, i] {
+                    Private::Row &target = d->rows[i];
+                    QStringList present;
+                    for (const QJsonValue &entry : Private::value(target).toArray())
+                        present << entry.toString();
+                    ChoiceListDialog dialog(tr("Add %1 from List").arg(target.field.label), present, this);
+                    dialog.setMessages(tr("The list is empty."), tr("Everything in the list is already here."));
+                    std::vector<ChoiceListDialog::Choice> choices;
+                    for (const QString &suggestion : target.field.suggestions)
+                        choices.push_back({suggestion, QString()});
+                    dialog.setChoices(choices);
+                    if (!d->exec(dialog))
+                        return;
+                    const QStringList chosen = dialog.chosen();
+                    if (chosen.isEmpty())
+                        return;
+                    // setPlainText() marks the row edited, through textChanged.
+                    target.text->setPlainText((present + chosen).join(QLatin1Char('\n')));
+                });
+                auto *buttons = new QHBoxLayout;
+                buttons->addWidget(add);
+                buttons->addStretch();
+                auto *layout = new QVBoxLayout(box);
+                layout->setContentsMargins(0, 0, 0, 0);
+                layout->addWidget(row.text, 1);
+                layout->addLayout(buttons);
+                field = box;
+            }
             break;
         case Field::Type::MultiLineText:
             row.text = new QPlainTextEdit(this);
