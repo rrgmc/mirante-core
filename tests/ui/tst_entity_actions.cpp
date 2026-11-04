@@ -6,6 +6,7 @@
 // removed with their profile.
 #include "api/SecretBackend.h"
 #include "api/SecretStore.h"
+#include "core/Accounts.h"
 #include "core/DeviceSettings.h"
 #include "core/GroupColours.h"
 #include "core/Model.h"
@@ -19,10 +20,12 @@
 #include "ui/ImagePaste.h"
 #include <mirante/widgets/ImagePasteDialog.h>
 #include "ui/ItemDialog.h"
+#include "ui/ModuleSettingsDialog.h"
 #include "ui/ProfilesDialog.h"
 #include "ui/ProjectDialog.h"
 #include "ui/TaskDialog.h"
 
+#include <mirante/ApiClient.h>
 #include <mirante/ItemEditor.h>
 #include <mirante/Module.h>
 
@@ -37,6 +40,8 @@
 #include <QTemporaryDir>
 #include <QRegularExpression>
 #include <QTest>
+#include <QTreeWidget>
+#include <QTreeWidgetItemIterator>
 
 #include <algorithm>
 #include <functional>
@@ -188,6 +193,23 @@ void registerTokenModule(ModuleRegistrar &registrar)
     registrar.addSettingsScreen(std::make_unique<TokenScreen>());
 }
 
+// The server of the module "accts", on the token screen, for its accounts.
+class AccountServerType : public ServerType
+{
+public:
+    QString screenId() const override { return QStringLiteral("general"); }
+    QString tokenKey() const override { return QStringLiteral("token"); }
+    QUrl baseUrl(const QJsonObject &) const override { return QUrl(QStringLiteral("https://srv.example")); }
+    void authorize(QNetworkRequest &, const QString &, const QJsonObject &) const override {}
+};
+
+void registerAccountModule(ModuleRegistrar &registrar)
+{
+    registrar.setModuleName(QStringLiteral("Accounts"));
+    registrar.addSettingsScreen(std::make_unique<TokenScreen>());
+    registrar.setServerType(std::make_unique<AccountServerType>());
+}
+
 const QString fixtureWorkspaceId = QStringLiteral("5a3e9c1d-7b2f-5e48-a6d0-3c8f1b2e4d97");
 const QString defaultProfile = QStringLiteral("default");
 const QString workProfile = QStringLiteral("3f6c2a8e-5d1b-4c7a-9e2f-8b0d4a6c1e93");
@@ -293,6 +315,7 @@ private slots:
     void newProject();
     void newTask();
     void newItem();
+    void duplicateItem();
     void newDashboard();
     void cancelledCreation();
     void editing();
@@ -313,6 +336,8 @@ private slots:
     void ownEditorHandlesTokens();
     void tokenStateAndRemove();
     void deletingProfileRemovesTokens();
+    void accountsAreAddedEditedAndRemoved();
+    void profilesWindowEditsModules();
 };
 
 void TestEntityActions::initTestCase()
@@ -320,6 +345,7 @@ void TestEntityActions::initTestCase()
     types.registerModule(QStringLiteral("testmod"), registerTestModule);
     types.registerModule(QStringLiteral("tokens"), registerTokenModule);
     types.registerModule(QStringLiteral("owntokens"), registerOwnTokenModule);
+    types.registerModule(QStringLiteral("accts"), registerAccountModule);
     store = std::make_unique<Store>(model);
 }
 
@@ -500,6 +526,49 @@ void TestEntityActions::newItem()
                         [](const auto &folder) { return folder.first == backendFolder; }));
     QVERIFY(std::any_of(lastFolders.begin(), lastFolders.end(),
                         [](const auto &folder) { return folder.first == deployFolder; }));
+}
+
+void TestEntityActions::duplicateItem()
+{
+    fill = [](QDialog &dialog) {
+        auto *item = qobject_cast<ItemDialog *>(&dialog);
+        item->setType(plainType);
+        item->setName(QStringLiteral("Memo"));
+    };
+    const QString source = actions->newItem(fixLoginTimeout);
+    QVERIFY(!source.isEmpty());
+    Item changed = *model.item(fixLoginTimeout, source);
+    changed.dashboardTitle = QStringLiteral("Memo title");
+    changed.config.insert(QStringLiteral("note"), QStringLiteral("copied"));
+    model.setItem(fixLoginTimeout, changed);
+    const size_t before = model.task(fixLoginTimeout)->items.size();
+
+    // The dialog opens on the item's page, filled with the item.
+    bool onItemPage = false;
+    QString shownName;
+    fill = [&](QDialog &dialog) {
+        auto *item = qobject_cast<ItemDialog *>(&dialog);
+        QVERIFY(item);
+        onItemPage = !item->choosingType();
+        shownName = item->value().name;
+    };
+    const QString copy = actions->duplicateItem(fixLoginTimeout, source);
+    QVERIFY(!copy.isEmpty());
+    QVERIFY(copy != source);
+    QVERIFY(onItemPage);
+    QCOMPARE(shownName, QStringLiteral("Memo"));
+    const Item *item = model.item(fixLoginTimeout, copy);
+    QVERIFY(item);
+    QCOMPARE(item->type, plainType);
+    QCOMPARE(item->dashboardTitle, QStringLiteral("Memo title"));
+    QCOMPARE(item->config.value(QStringLiteral("note")).toString(), QStringLiteral("copied"));
+    QCOMPARE(model.task(fixLoginTimeout)->items.size(), before + 1);
+    QVERIFY(model.item(fixLoginTimeout, source));
+
+    // Cancelled: nothing is added.
+    accept = false;
+    QVERIFY(actions->duplicateItem(fixLoginTimeout, source).isEmpty());
+    QCOMPARE(model.task(fixLoginTimeout)->items.size(), before + 1);
 }
 
 void TestEntityActions::newDashboard()
@@ -777,7 +846,8 @@ void TestEntityActions::menus()
 
     QMenu item;
     actions->fillMenu(&item, SidebarModel::Kind::Item, itemId(model, fixLoginTimeout, notesItem), fixLoginTimeout);
-    QCOMPARE(texts(item), (QStringList{QStringLiteral("Edit item…"), QStringLiteral("Delete item…")}));
+    QCOMPARE(texts(item), (QStringList{QStringLiteral("Edit item…"), QStringLiteral("Duplicate item…"),
+                                       QStringLiteral("Delete item…")}));
 
     // The default dashboard cannot be set as default again.
     const QString work = dashboardId(model, fixLoginTimeout, fixLoginWorkDashboard);
@@ -1111,6 +1181,172 @@ void TestEntityActions::deletingProfileRemovesTokens()
     QVERIFY(!model.profile(workProfile));
     QCOMPARE(secrets.state(tokenKey(workProfile)), SecretStore::State::NotSet);
     QCOMPARE(secrets.state(tokenKey(defaultProfile)), SecretStore::State::Set);
+}
+
+// Another account of a module's server is added with its own name and token,
+// edited, and removed with its token. Its token also goes with its profile.
+// See decision 0146.
+void TestEntityActions::accountsAreAddedEditedAndRemoved()
+{
+    const QString module = QStringLiteral("accts");
+    const QString screen = QStringLiteral("general");
+    SecretStore secrets(makeMemoryBackend());
+    actions->setSecretStore(&secrets);
+    const auto accountKey = [&](const QString &profileId, const QString &accountId) {
+        return secretKey(fixtureWorkspaceId, profileId, module, accountId, QStringLiteral("token"));
+    };
+    const auto named = [](const QString &name, const QString &token) {
+        return [name, token](QDialog &dialog) {
+            auto *settings = qobject_cast<ModuleSettingsDialog *>(&dialog);
+            QVERIFY(settings);
+            auto *nameLine = dialog.findChild<QLineEdit *>(QStringLiteral("accountName"));
+            QVERIFY(nameLine);
+            nameLine->setText(name);
+            if (!token.isEmpty())
+                tokenLine(dialog)->setText(token);
+        };
+    };
+
+    // Cancelled, nothing is added. A module without a server adds none.
+    accept = false;
+    QVERIFY(actions->addAccount(workProfile, module).isEmpty());
+    accept = true;
+    QVERIFY(accounts::others(model, workProfile, module).empty());
+    QVERIFY(actions->addAccount(workProfile, QStringLiteral("tokens")).isEmpty());
+
+    fill = named(QStringLiteral("Bot"), QStringLiteral(" bot-token "));
+    const QString id = actions->addAccount(workProfile, module);
+    QVERIFY(!id.isEmpty());
+    QCOMPARE(accounts::nameOf(model, workProfile, module, id), QStringLiteral("Bot"));
+    QCOMPARE(secrets.cached(accountKey(workProfile, id)), std::optional<QString>(QStringLiteral("bot-token")));
+    QVERIFY(secrets.state(secretKey(fixtureWorkspaceId, workProfile, module, QStringLiteral("token")))
+            != SecretStore::State::Set);
+
+    // An empty name is refused.
+    fill = named(QString(), QString());
+    actions->editModuleSettings(workProfile, module, screen, id);
+    QCOMPARE(accounts::nameOf(model, workProfile, module, id), QStringLiteral("Bot"));
+
+    fill = named(QStringLiteral("Robot"), QString());
+    actions->editModuleSettings(workProfile, module, screen, id);
+    QCOMPARE(accounts::nameOf(model, workProfile, module, id), QStringLiteral("Robot"));
+    QCOMPARE(secrets.cached(accountKey(workProfile, id)), std::optional<QString>(QStringLiteral("bot-token")));
+
+    // Removing asks first.
+    fill = [](QDialog &dialog) { qobject_cast<ModuleSettingsDialog *>(&dialog)->chooseRemove(); };
+    answer = false;
+    actions->editModuleSettings(workProfile, module, screen, id);
+    QCOMPARE(questions.size(), 1);
+    QVERIFY(accounts::find(model, workProfile, module, id));
+    answer = true;
+    actions->editModuleSettings(workProfile, module, screen, id);
+    QVERIFY(!accounts::find(model, workProfile, module, id));
+    QCOMPARE(secrets.state(accountKey(workProfile, id)), SecretStore::State::NotSet);
+
+    // Deleting the profile removes its accounts' tokens.
+    fill = named(QStringLiteral("Other"), QStringLiteral("other-token"));
+    const QString other = actions->addAccount(workProfile, module);
+    QCOMPARE(secrets.state(accountKey(workProfile, other)), SecretStore::State::Set);
+    actions->setEditProfiles([](ProfilesDialog &dialog) {
+        dialog.select(workProfile);
+        dialog.deleteSelected();
+    });
+    actions->editProfiles();
+    QCOMPARE(secrets.state(accountKey(workProfile, other)), SecretStore::State::NotSet);
+}
+
+// The Profiles window lists each profile's modules and accounts, opens at a
+// given node, edits a page with Apply, asks before leaving a changed page,
+// and adds and removes accounts. See decision 0147.
+void TestEntityActions::profilesWindowEditsModules()
+{
+    const QString module = QStringLiteral("accts");
+    const QString screen = QStringLiteral("general");
+    SecretStore secrets(makeMemoryBackend());
+    actions->setSecretStore(&secrets);
+    const auto accountKey = [&](const QString &accountId) {
+        return secretKey(fixtureWorkspaceId, workProfile, module, accountId, QStringLiteral("token"));
+    };
+    using Node = ProfilesDialog::Node;
+
+    bool ran = false;
+    actions->setEditProfiles([&](ProfilesDialog &dialog) {
+        ran = true;
+        // It opened at the default account of the module.
+        QCOMPARE(dialog.currentNode(), (Node{workProfile, module, screen, QString()}));
+        ModuleSettingsPage *page = dialog.currentSettingsPage();
+        QVERIFY(page);
+        QVERIFY(!page->isAccount());
+
+        // A module without a server and with one screen is that screen.
+        auto *tree = dialog.findChild<QTreeWidget *>(QStringLiteral("profileTree"));
+        bool tokensIsScreen = false;
+        for (QTreeWidgetItemIterator it(tree); *it; ++it) {
+            const QStringList ids = (*it)->data(0, Qt::UserRole).toStringList();
+            if (ids.value(0) == workProfile && ids.value(1) == QLatin1String("tokens"))
+                tokensIsScreen = ids.value(2) == screen && (*it)->childCount() == 0;
+        }
+        QVERIFY(tokensIsScreen);
+
+        // Typing makes the page changed; leaving asks, and can stay.
+        auto *server = qobject_cast<QLineEdit *>(
+            qobject_cast<FieldForm *>(page->editor())->editorFor(QStringLiteral("server")));
+        QVERIFY(server);
+        server->setText(QStringLiteral("https://default.example"));
+        QVERIFY(page->isModified());
+        QStringList asked;
+        ProfilesDialog::Unsaved choice = ProfilesDialog::Unsaved::Stay;
+        dialog.setAskUnsaved([&](const QString &title) {
+            asked << title;
+            return choice;
+        });
+        dialog.selectNode(Node{workProfile, module, QString(), QString()});
+        QCOMPARE(asked.size(), 1);
+        // The tree goes back to the changed page after the selection.
+        QTRY_COMPARE(tree->currentItem()->data(0, Qt::UserRole).toStringList(),
+                     (QStringList{workProfile, module, screen, QString()}));
+        QCOMPARE(dialog.currentNode(), (Node{workProfile, module, screen, QString()}));
+        QCOMPARE(dialog.currentSettingsPage(), page);
+        // Apply stores it.
+        choice = ProfilesDialog::Unsaved::Apply;
+        dialog.selectNode(Node{workProfile, module, QString(), QString()});
+        QCOMPARE(asked.size(), 2);
+        QCOMPARE(model.moduleSettings(workProfile, module, screen).value(QStringLiteral("server")).toString(),
+                 QStringLiteral("https://default.example"));
+        QCOMPARE(dialog.currentNode(), (Node{workProfile, module, QString(), QString()}));
+
+        // The module's page adds an account, which is then selected.
+        QVERIFY(dialog.currentPage()->findChild<QPushButton *>(QStringLiteral("addAccount")));
+        dialog.addAccountToSelected();
+        const std::vector<Account> added = accounts::others(model, workProfile, module);
+        QCOMPARE(added.size(), size_t(1));
+        const QString id = added.front().id;
+        QCOMPARE(dialog.currentNode(), (Node{workProfile, module, screen, id}));
+        page = dialog.currentSettingsPage();
+        QVERIFY(page && page->isAccount());
+        QVERIFY(dialog.findChild<QPushButton *>(QStringLiteral("removeAccount"))->isVisibleTo(&dialog));
+        page->findChild<QLineEdit *>(QStringLiteral("accountName"))->setText(QStringLiteral("Bot"));
+        qobject_cast<QLineEdit *>(qobject_cast<FieldForm *>(page->editor())->editorFor(QStringLiteral("token")))
+            ->setText(QStringLiteral(" bot-token "));
+        page->setModified(true);
+        QVERIFY(dialog.applyCurrent());
+        QCOMPARE(accounts::nameOf(model, workProfile, module, id), QStringLiteral("Bot"));
+        QCOMPARE(secrets.cached(accountKey(id)), std::optional<QString>(QStringLiteral("bot-token")));
+        // The tree names it.
+        bool named = false;
+        for (QTreeWidgetItemIterator it(tree); *it; ++it)
+            named = named || (*it)->text(0) == QLatin1String("Bot");
+        QVERIFY(named);
+
+        // Removing asks, then takes its token along.
+        answer = true;
+        dialog.removeSelectedAccount();
+        QVERIFY(!accounts::find(model, workProfile, module, id));
+        QCOMPARE(secrets.state(accountKey(id)), SecretStore::State::NotSet);
+        QCOMPARE(dialog.currentNode(), (Node{workProfile, module, QString(), QString()}));
+    });
+    actions->editProfiles(Node{workProfile, module, screen, QString()});
+    QVERIFY(ran);
 }
 
 QTEST_MAIN(TestEntityActions)

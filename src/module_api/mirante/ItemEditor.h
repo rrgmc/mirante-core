@@ -20,6 +20,11 @@ struct EditorContext
     // project would use. Empty where none applies, such as device settings.
     // ItemEditor::setProfile() reports a later change.
     QString profileId;
+    // The account of the module's server that the edited values belong to,
+    // or that the edited item would use. Empty for the default account, and
+    // where none applies. ItemEditor::setAccount() reports a later change.
+    // See decision 0146.
+    QString accountId;
     // The folders of the item's project: id and name.
     std::vector<std::pair<QString, QString>> folders;
     // Saves an image as PNG in the data folder's files/ and returns its file
@@ -62,6 +67,10 @@ public:
     // The profile changed while the editor is open, such as when the user
     // picks another profile in the item dialog. Does nothing by default.
     virtual void setProfile(const QString &profileId) { Q_UNUSED(profileId) }
+    // The account changed while the editor is open, such as when the user
+    // picks another account in the item dialog. Does nothing by default. See
+    // decision 0146.
+    virtual void setAccount(const QString &accountId) { Q_UNUSED(accountId) }
 
     // Tokens, on a settings screen only. An editor can write a token but never
     // read it. Each key must be a Secret field in the screen's fields(), so the

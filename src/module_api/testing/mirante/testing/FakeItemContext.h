@@ -41,6 +41,7 @@ public:
     QList<QUrl> webViews;       // the addresses of createWebView()
     QStringList messages;       // the texts of createMessageView()
     QList<QUrl> pages;          // the addresses of showPage()
+    QUrl webLink;               // the last address of setWebLink(), or of createWebView()
     QStringList mapped;         // the ids of mapFolder()
     QStringList shownFolders;   // the paths of showFolder()
     QList<AddedItem> addedItems;
@@ -53,6 +54,7 @@ public:
     QWidget *createWebView(const QUrl &url, QWidget *parent) override
     {
         webViews << url;
+        webLink = url;
         auto *view = new QWidget(parent);
         view->setProperty("url", url);
         return view;
@@ -66,6 +68,7 @@ public:
     }
     void updateConfig(const QJsonObject &config) override { itemConfig = config; }
     void showPage(const QUrl &url) override { pages << url; }
+    void setWebLink(const QUrl &url) override { webLink = url; }
     QString addItemToTask(const QString &typeId, const QString &name, const QJsonObject &config) override
     {
         addedItems.append(AddedItem{typeId, name, config});

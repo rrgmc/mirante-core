@@ -168,7 +168,8 @@ private slots:
         QVERIFY(back);
         QVERIFY(address);
         QVERIFY(toolbar->findChild<QToolButton *>(QStringLiteral("reloadButton")));
-        QVERIFY(toolbar->findChild<QToolButton *>(QStringLiteral("openInBrowserButton")));
+        // The cell header has the "Open in browser" button, not the toolbar.
+        QVERIFY(!toolbar->findChild<QToolButton *>(QStringLiteral("openInBrowserButton")));
 
         QVERIFY(!back->isEnabled());
         QVERIFY(loaded(loads));

@@ -34,6 +34,8 @@ public:
     // Called with the address of showPage(). The placement sets it. Without
     // it, as in a context of its own, showPage() does nothing.
     std::function<void(const QUrl &)> onShowPage;
+    // Called with the address of setWebLink(). The placement sets it.
+    std::function<void(const QUrl &)> onWebLink;
 
     // A web page in the item's profile, or a message where there is no
     // profile. createWebView() and the placement's pages use it. toolbar is
@@ -56,6 +58,7 @@ public:
     QWidget *createMessageView(const QString &text, QWidget *parent) override;
     void updateConfig(const QJsonObject &config) override;
     void showPage(const QUrl &url) override;
+    void setWebLink(const QUrl &url) override;
     QString addItemToTask(const QString &typeId, const QString &name, const QJsonObject &config) override;
     ApiClient *server() override;
     ItemStatusSource *status() override;

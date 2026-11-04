@@ -64,6 +64,13 @@ public:
     // It may be set after the modules registered.
     using SettingsReader = std::function<QJsonObject(const QString &profileId, const QString &moduleId, const QString &screenId)>;
     void setSettingsReader(SettingsReader reader);
+    // Reads the values of one screen for an account of the module's server,
+    // such as accounts::screenValues(). Without one,
+    // ModuleSettings::accountValues() reads the SettingsReader. See decision
+    // 0146.
+    using AccountReader = std::function<QJsonObject(const QString &profileId, const QString &moduleId,
+                                                    const QString &accountId, const QString &screenId)>;
+    void setAccountReader(AccountReader reader);
 
     // The ids of the registered modules, sorted.
     QStringList moduleIds() const override;

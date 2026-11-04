@@ -1,4 +1,4 @@
-# 0148. A Claude Code plugin reports to the Claude agents list through a folder
+# 0150. A Claude Code plugin reports to the Claude agents list through a folder
 
 - Status: Accepted
 - Date: 2026-11-04

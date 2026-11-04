@@ -52,6 +52,7 @@ The [glossary](../docs/README.md#glossary) terms always take the same Portuguese
 | Task state: active, done, archived | Ativa, concluída, arquivada |
 | Attention | Atenção |
 | Watch, watched item | Acompanhar, item acompanhado |
+| Account, default account | Conta, conta padrão |
 | Server | Servidor |
 | Token | Token |
 | Profile, default profile | Perfil, perfil padrão |

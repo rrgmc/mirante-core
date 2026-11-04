@@ -27,6 +27,7 @@
      Task state: active, done, archived: Ativa, concluída, arquivada
      Attention: Atenção
      Watch, watched item: Acompanhar, item acompanhado
+     Account, default account: Conta, conta padrão
      Server: Servidor
      Token: Token
      Profile, default profile: Perfil, perfil padrão
@@ -57,6 +58,13 @@
      Comment: Comentário
 -->
 <TS version="2.1" language="pt_BR" sourcelanguage="en">
+<context>
+    <name>Accounts</name>
+    <message>
+        <source>Default</source>
+        <translation>Padrão</translation>
+    </message>
+</context>
 <context>
     <name>DashboardCellFactory</name>
     <message>
@@ -495,6 +503,16 @@
         <translation>Maximizar (%1)</translation>
     </message>
     <message>
+        <source>Open in browser</source>
+        <translation>Abrir no navegador</translation>
+    </message>
+    <message>
+        <source>Open in the external browser:
+%1</source>
+        <translation>Abrir no navegador externo:
+%1</translation>
+    </message>
+    <message>
         <source>Refreshing…</source>
         <translation>Atualizando…</translation>
     </message>
@@ -844,6 +862,10 @@
         <translation>Editar item…</translation>
     </message>
     <message>
+        <source>Duplicate item…</source>
+        <translation>Duplicar item…</translation>
+    </message>
+    <message>
         <source>Delete item…</source>
         <translation>Excluir item…</translation>
     </message>
@@ -890,6 +912,14 @@
     <message>
         <source>%1 was copied into the workspace.</source>
         <translation>%1 foi copiado para o espaço de trabalho.</translation>
+    </message>
+    <message>
+        <source>New account</source>
+        <translation>Nova conta</translation>
+    </message>
+    <message>
+        <source>Remove the account &quot;%1&quot;? Items that use it will use the default account. Its token on this device is deleted.</source>
+        <translation>Remover a conta &quot;%1&quot;? Os itens que a usam passam a usar a conta padrão. O token dela neste dispositivo é apagado.</translation>
     </message>
 </context>
 <context>
@@ -1100,6 +1130,18 @@
         <source>The module of this item type is not available, so only the name and the dashboard title can be changed. The rest of the item is kept.</source>
         <translation>O módulo deste tipo de item não está disponível, então só o nome e o título no painel podem ser alterados. O resto do item é mantido.</translation>
     </message>
+    <message>
+        <source>Unknown account, uses the default</source>
+        <translation>Conta desconhecida, usa a padrão</translation>
+    </message>
+    <message>
+        <source>The account of the module&apos;s server that the item uses, with its own settings and token. Accounts are added in the profile&apos;s Modules menu.</source>
+        <translation>A conta do servidor do módulo que o item usa, com suas próprias configurações e token. As contas são adicionadas no menu Módulos do perfil.</translation>
+    </message>
+    <message>
+        <source>Account:</source>
+        <translation>Conta:</translation>
+    </message>
 </context>
 <context>
     <name>mirante::LayoutEditor</name>
@@ -1126,6 +1168,10 @@
     <message>
         <source>Edit Item…</source>
         <translation>Editar item…</translation>
+    </message>
+    <message>
+        <source>Duplicate Item…</source>
+        <translation>Duplicar item…</translation>
     </message>
     <message>
         <source>Use Current Address</source>
@@ -1396,20 +1442,8 @@
         <translation>&amp;Gerenciar perfis…</translation>
     </message>
     <message>
-        <source>Set as &amp;Default</source>
-        <translation>Definir como &amp;padrão</translation>
-    </message>
-    <message>
         <source>&amp;Settings…</source>
         <translation>&amp;Configurações…</translation>
-    </message>
-    <message>
-        <source>&amp;Modules</source>
-        <translation>&amp;Módulos</translation>
-    </message>
-    <message>
-        <source>No module settings</source>
-        <translation>Sem configurações de módulo</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -1653,6 +1687,10 @@
         <translation>Padrão</translation>
     </message>
     <message>
+        <source>%1, account %2, in the profile %3 refused the token.</source>
+        <translation>%1, conta %2, no perfil %3 recusou o token.</translation>
+    </message>
+    <message>
         <source>Edit dashboard</source>
         <translation>Editar painel</translation>
     </message>
@@ -1664,20 +1702,43 @@
         <translation>%1: %2 %3</translation>
     </message>
     <message>
-        <source>These settings belong to the profile &quot;%1&quot;. Items that use it read them. They are saved in the workspace and shared with it; tokens stay on this device.</source>
-        <translation>Estas configurações pertencem ao perfil &quot;%1&quot;. Os itens que o usam as leem. Elas são salvas no espaço de trabalho e compartilhadas com ele; os tokens ficam neste dispositivo.</translation>
+        <source>%1: %2 %3 (%4)</source>
+        <translation>%1: %2 %3 (%4)</translation>
     </message>
+    <message>
+        <source>Remove Account</source>
+        <translation>Remover Conta</translation>
+    </message>
+</context>
+<context>
+    <name>mirante::ModuleSettingsPage</name>
     <message>
         <source>One entry per line.</source>
         <translation>Uma entrada por linha.</translation>
     </message>
     <message>
         <source>Add from Server…</source>
-        <translation>Adicionar do servidor…</translation>
+        <translation>Adicionar do Servidor…</translation>
     </message>
     <message>
         <source>List what the server offers with this token, to check and add.</source>
         <translation>Lista o que o servidor oferece com este token, para marcar e adicionar.</translation>
+    </message>
+    <message>
+        <source>These settings belong to the profile &quot;%1&quot;. Items that use it read them. They are saved in the workspace and shared with it; tokens stay on this device.</source>
+        <translation>Estas configurações pertencem ao perfil &quot;%1&quot;. Os itens que o usam as leem. Elas são salvas no espaço de trabalho e compartilhadas com ele; os tokens ficam neste dispositivo.</translation>
+    </message>
+    <message>
+        <source>Account name:</source>
+        <translation>Nome da conta:</translation>
+    </message>
+    <message>
+        <source>These settings belong to the account &quot;%1&quot; of the profile &quot;%2&quot;. Items that choose it read them. They are saved in the workspace and shared with it; tokens stay on this device.</source>
+        <translation>Estas configurações pertencem à conta &quot;%1&quot; do perfil &quot;%2&quot;. Os itens que a escolhem as leem. Elas são salvas no espaço de trabalho e compartilhadas com ele; os tokens ficam neste dispositivo.</translation>
+    </message>
+    <message>
+        <source>The account needs a name.</source>
+        <translation>A conta precisa de um nome.</translation>
     </message>
     <message>
         <source>This module has no server to ask.</source>
@@ -1854,49 +1915,6 @@ Os dados são de %2.</translation>
     </message>
 </context>
 <context>
-    <name>mirante::ProfileSettingsDialog</name>
-    <message>
-        <source>Open</source>
-        <translation>Abrir</translation>
-    </message>
-    <message>
-        <source>Show the folder in the file manager</source>
-        <translation>Mostrar a pasta no gerenciador de arquivos</translation>
-    </message>
-    <message>
-        <source>Made when a page of this profile first loads</source>
-        <translation>Criada quando uma página deste perfil carrega pela primeira vez</translation>
-    </message>
-    <message>
-        <source>Profile Settings: %1</source>
-        <translation>Configurações do perfil: %1</translation>
-    </message>
-    <message>
-        <source>Storage</source>
-        <translation>Armazenamento</translation>
-    </message>
-    <message>
-        <source>Kept on this device only, for this workspace. Other devices keep their own.</source>
-        <translation>Mantido apenas neste dispositivo, para este espaço de trabalho. Outros dispositivos mantêm os seus.</translation>
-    </message>
-    <message>
-        <source>Web data</source>
-        <translation>Dados da web</translation>
-    </message>
-    <message>
-        <source>Cache</source>
-        <translation>Cache</translation>
-    </message>
-    <message>
-        <source>Tokens are in the system keychain, in entries whose names start with this.</source>
-        <translation>Os tokens ficam no chaveiro do sistema, em entradas cujos nomes começam com isto.</translation>
-    </message>
-    <message>
-        <source>Tokens</source>
-        <translation>Tokens</translation>
-    </message>
-</context>
-<context>
     <name>mirante::ProfilesDialog</name>
     <message>
         <source>Enter a name.</source>
@@ -1909,10 +1927,6 @@ Os dados são de %2.</translation>
     <message>
         <source>Name:</source>
         <translation>Nome:</translation>
-    </message>
-    <message>
-        <source>Delete profile</source>
-        <translation>Excluir perfil</translation>
     </message>
     <message>
         <source>Clear profile data</source>
@@ -1935,24 +1949,12 @@ Os dados são de %2.</translation>
         <translation>Perfis</translation>
     </message>
     <message>
-        <source>A profile holds web logins and module settings, such as the GitLab or Jira server and its token. Each group chooses a profile, and each item can choose its own. Those that choose none use the default profile. The list and the settings are shared with the workspace; logins and tokens stay on this device. A profile&apos;s module settings are in the Profiles menu.</source>
-        <translation>Um perfil guarda logins na web e configurações de módulo, como o servidor do GitLab ou do Jira e seu token. Cada grupo escolhe um perfil, e cada item pode escolher o seu. Os que não escolhem nenhum usam o perfil padrão. A lista e as configurações são compartilhadas com o espaço de trabalho; logins e tokens ficam neste dispositivo. As configurações de módulo de um perfil ficam no menu Perfis.</translation>
-    </message>
-    <message>
         <source>Items in the same profile share its logins, servers and tokens. Every item that uses a profile can read the logins and data of all sites in that profile, and call its servers with its tokens. Use separate profiles for things you do not trust together.</source>
         <translation>Itens no mesmo perfil compartilham seus logins, servidores e tokens. Todo item que usa um perfil pode ler os logins e os dados de todos os sites desse perfil e chamar seus servidores com seus tokens. Use perfis separados para coisas em que você não confia juntas.</translation>
     </message>
     <message>
-        <source>New profile…</source>
-        <translation>Novo perfil…</translation>
-    </message>
-    <message>
         <source>Rename…</source>
         <translation>Renomear…</translation>
-    </message>
-    <message>
-        <source>Delete…</source>
-        <translation>Excluir…</translation>
     </message>
     <message>
         <source>Set as Default</source>
@@ -2009,6 +2011,110 @@ Os dados são de %2.</translation>
     <message>
         <source>It is the default profile; &quot;%1&quot; becomes the default.</source>
         <translation>Ele é o perfil padrão; &quot;%1&quot; passa a ser o padrão.</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Abrir</translation>
+    </message>
+    <message>
+        <source>Show the folder in the file manager</source>
+        <translation>Mostrar a pasta no gerenciador de arquivos</translation>
+    </message>
+    <message>
+        <source>Made when a page of this profile first loads</source>
+        <translation>Criada quando uma página deste perfil carrega pela primeira vez</translation>
+    </message>
+    <message>
+        <source>The server refused this account&apos;s token.</source>
+        <translation>O servidor recusou o token desta conta.</translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>%1 %2</source>
+        <translation>%1 %2</translation>
+    </message>
+    <message>
+        <source>This is the default profile.</source>
+        <translation>Este é o perfil padrão.</translation>
+    </message>
+    <message>
+        <source>Default:</source>
+        <translation>Padrão:</translation>
+    </message>
+    <message>
+        <source>No group or item chooses it.</source>
+        <translation>Nenhum grupo ou item o escolhe.</translation>
+    </message>
+    <message>
+        <source>Chosen by %1.</source>
+        <translation>Escolhido por %1.</translation>
+    </message>
+    <message>
+        <source>Used by:</source>
+        <translation>Usado por:</translation>
+    </message>
+    <message>
+        <source>Storage</source>
+        <translation>Armazenamento</translation>
+    </message>
+    <message>
+        <source>Kept on this device only, for this workspace. Other devices keep their own.</source>
+        <translation>Guardado só neste dispositivo, para este espaço de trabalho. Outros dispositivos guardam os seus.</translation>
+    </message>
+    <message>
+        <source>Web data</source>
+        <translation>Dados da web</translation>
+    </message>
+    <message>
+        <source>Cache</source>
+        <translation>Cache</translation>
+    </message>
+    <message>
+        <source>Tokens are in the system keychain, in entries whose names start with this.</source>
+        <translation>Os tokens ficam no chaveiro do sistema, em entradas cujos nomes começam com isto.</translation>
+    </message>
+    <message>
+        <source>Tokens</source>
+        <translation>Tokens</translation>
+    </message>
+    <message>
+        <source>Delete Profile…</source>
+        <translation>Excluir Perfil…</translation>
+    </message>
+    <message>
+        <source>Each account has its own server settings and token. Items use the default account unless they choose another in their dialog.</source>
+        <translation>Cada conta tem suas próprias configurações de servidor e token. Os itens usam a conta padrão, a menos que escolham outra no seu diálogo.</translation>
+    </message>
+    <message>
+        <source>Add Account</source>
+        <translation>Adicionar Conta</translation>
+    </message>
+    <message>
+        <source>Remove Account…</source>
+        <translation>Remover Conta…</translation>
+    </message>
+    <message>
+        <source>Apply the changes to &quot;%1&quot;?</source>
+        <translation>Aplicar as alterações em &quot;%1&quot;?</translation>
+    </message>
+    <message>
+        <source>A profile holds web logins and module settings, such as the GitLab or Jira server and its token. Each group chooses a profile, and each item can choose its own. Those that choose none use the default profile. The list and the settings are shared with the workspace; logins and tokens stay on this device.</source>
+        <translation>Um perfil guarda logins na web e configurações de módulos, como o servidor do GitLab ou do Jira e seu token. Cada grupo escolhe um perfil, e cada item pode escolher o seu. Os que não escolhem nenhum usam o perfil padrão. A lista e as configurações são compartilhadas com o espaço de trabalho; logins e tokens ficam neste dispositivo.</translation>
+    </message>
+    <message>
+        <source>New Profile…</source>
+        <translation>Novo Perfil…</translation>
+    </message>
+    <message>
+        <source>Revert</source>
+        <translation>Reverter</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Aplicar</translation>
     </message>
 </context>
 <context>
@@ -2722,14 +2828,6 @@ Os dados são de %2.</translation>
     <message>
         <source>Reload</source>
         <translation>Recarregar</translation>
-    </message>
-    <message>
-        <source>Open in browser</source>
-        <translation>Abrir no navegador</translation>
-    </message>
-    <message>
-        <source>Open this page in the external browser</source>
-        <translation>Abrir esta página no navegador externo</translation>
     </message>
 </context>
 <context>

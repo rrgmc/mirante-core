@@ -71,7 +71,7 @@ Anything else, such as approving or commenting, uses the "Open page" button. It 
 
 ## GitLab
 
-Module `gitlab`. All GitLab types talk to the GitLab server of the item's profile, set in its GitLab General Configuration: a base URL, `https://gitlab.com` by default, and a token. In the item dialog, every `project` field offers the project paths of that screen in an editable list, so a path is chosen instead of typed. Another path can still be typed. See [settings screens](modules.md#settings-screens).
+Module `gitlab`. All GitLab types but [GitLab Status](#gitlab-status) talk to the GitLab server of the item's profile, set in its GitLab General Configuration: a base URL, `https://gitlab.com` by default, and a token. In the item dialog, every `project` field offers the project paths of that screen in an editable list, so a path is chosen instead of typed. Another path can still be typed. See [settings screens](modules.md#settings-screens).
 
 The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-native-layouts-with-sections.md). The title, the state and the actions always show, and scroll with the rest. Each other section has a field in the item's configuration, which is on when absent. These rules hold for all of them:
 
@@ -79,7 +79,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
 - After an action succeeds, the status is fetched again. A failed action shows its message in the action row. A `403` says that the token cannot do this, and names the `api` scope.
 - Only cancelling and triggering a pipeline ask first.
 - "Open page" shows the page in the same cell, as in [decision 0069](decisions/0069-open-page-in-the-placement.md), or in the external browser if the user holds `Shift`.
-- **The Web link** is a "Web" button at the end of the actions. It opens the same address in the external browser, and it hides without a web address. The address is `web_url` in the data. Without one, for a merge request or an issue, it is built from the base URL and the configuration, as for the page types. A link to a job's log also opens in the external browser.
+- **The Web link** is the **Open in browser** button of the cell header, which the view gives with `ItemContext::setWebLink()`. It opens the same address in the external browser, and it hides without a web address. See [decision 0148](decisions/0148-web-link-in-the-cell-header.md). The address is `web_url` in the data. Without one, for a merge request or an issue, it is built from the base URL and the configuration, as for the page types. A link to a job's log also opens in the external browser.
 - Dates are local and short. Text from the server is plain text, so it is never read as markup.
 
 ### GitLab MR (summary)
@@ -95,7 +95,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
   - Labels (`showLabels`).
 - **Actions:**
   - "Retry pipeline", when the head pipeline failed or was canceled;
-  - "Open page" and "Web".
+  - "Open page", and the Web link in the cell header.
 - **Status:** a summary such as "Open · 2 of 3 approvals · pipeline failed". The item is closed when the merge request is merged or closed.
 - **Attention,** only while the merge request is open. "You" is the owner of the profile's token.
   - "Pipeline failed" when the head pipeline failed, with a desktop notification;
@@ -108,7 +108,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
 `gitlab.mr.page`, web. The merge request's web page, in the item's [profile](web-views.md#profiles). Its configuration is the summary's: `project` and `iid`.
 
 - **Address:** `<baseUrl>/<project>/-/merge_requests/<iid>`, where `baseUrl` is the GitLab base URL of the item's profile. An empty `project` uses the project's `gitlab.project` setting.
-- **With a base URL that is not a web address,** the cell says "Set the GitLab base URL in this profile's Modules > GitLab > General Configuration, in the Profiles menu."
+- **With a base URL that is not a web address,** the cell says "Set the GitLab base URL in Profiles > Manage Profiles…, under this profile's GitLab."
 - **Without a project or a number,** the cell says "Set the project and number in the item's settings."
 - **Status and attention** are the summary's, so a page in a cell shows the same badge. See [decision 0061](decisions/0061-attention-from-status-of-any-rendering.md).
 
@@ -141,7 +141,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
   - "Open" shows the page in the same cell, or in the external browser if you hold `Shift`;
   - "Add" adds a GitLab MR (summary) to the item's task, with a name such as `group/project!42`.
 - **Row menu:** "Web", "Open page", "Add to task as item" and "Copy link".
-- **The Web link** is a "Web" button above the table. It opens the list's page on the site, in the external browser, and it hides when the scope is not complete: `<baseUrl>/<project>/-/merge_requests`, `<baseUrl>/groups/<group>/-/merge_requests` or `<baseUrl>/dashboard/merge_requests`.
+- **The Web link** is the **Open in browser** button of the cell header. It opens the list's page on the site, in the external browser, and it hides when the scope is not complete: `<baseUrl>/<project>/-/merge_requests`, `<baseUrl>/groups/<group>/-/merge_requests` or `<baseUrl>/dashboard/merge_requests`.
 - **Messages:** with no data it says "Loading…" or the status's message. With old data and an error it keeps the rows, because the cell header shows the problem. An empty list shows the table with no rows and the line "No merge requests".
 - **Status:** a summary with the count, such as "12 merge requests", or "100+ merge requests" when the list reaches its `limit`. It reports no attention, and is neither closed nor open, so it never counts towards a task being done. A scope without its project or group reports no status, with a message such as "Set the group in the item's settings." See [decision 0067](decisions/0067-lists-report-status.md).
 
@@ -182,7 +182,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
   - "Cancel pipeline", while it can still be cancelled, after a confirmation;
   - "Trigger pipeline", which starts a new pipeline on the branch, after a confirmation;
   - "Merge request", which opens it in the external browser: the merge request `iid` of the configuration when `branchSource` is `mergeRequest`, otherwise the open merge request of that source branch. It hides when there is none;
-  - "Open page" and "Web", on the page of the pipeline shown.
+  - "Open page", and the Web link in the cell header, on the page of the pipeline shown.
 - **Refresh:** while the pipeline shown is unfinished and the view is visible, the view asks for a new status every 15 seconds. A pipeline that waits on a manual job counts as finished here, since it waits for a person. Otherwise the usual interval holds.
 - **Messages:** a branch without pipelines shows "No pipeline on <branch>" as its title, with only "Trigger pipeline" and the merge request's link. A pipeline that follows the main folder shows its status's message, in place of everything else.
 - **Status:** a summary of the latest, such as "Failed · main · 1 failed job", or "No pipeline on main" for a branch without pipelines. The item is never closed. A pipeline that follows the main folder reads the folder's branch at each fetch, and reports no status, with a message, when the folder has no path on this device or is not on a branch.
@@ -242,12 +242,23 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
 - **The list presets are:** `assignedToMe` ("Assigned to me"), `createdByMe` ("Created by me") and `allOpen` ("All open"). Custom filters work the same way as for merge requests.
 - **The list shows** a sortable table with the columns Ref, such as `backend#7`, Title, Assignees, Labels, Updated and the links, sorted on Updated, newest first. A narrow cell hides columns in this order: Labels, Assignees, Updated, Ref. It makes no further requests. The pages, the links, the row menu, the Web link and the messages follow the merge request list, with a GitLab Issue (summary) added to the task with a name such as `group/project#7`, the address ending in `/issues`, and the line "No issues".
 - **The page's address** is `<baseUrl>/<project>/-/issues/<iid>`. Its messages are those of the merge request page.
-- **The summary's actions:** "Open page" and "Web".
+- **The summary's actions:** "Open page", and the Web link in the cell header.
 - **Status:** the summary and the page report a summary such as "Open · assigned to Ana", and are closed when the issue is closed. They report no attention. The list reports as the merge request list does, with a summary such as "12 issues" or "100+ issues". See [decision 0067](decisions/0067-lists-report-status.md).
+
+### GitLab Status
+
+`gitlab.status`, native. The health of gitlab.com, from its public status page, status.gitlab.com, which status.io serves. It does not use the profile's server and needs no token; see [decision 0149](decisions/0149-public-status-pages-without-a-server.md).
+
+- **Shows:** the page's overall state as a title and a pill, open incidents with their impact, state and latest update, planned maintenance, and the components that do not work.
+- **Configuration:** `showMaintenance`, on by default, and `showAllComponents`, off by default, which also lists the components that work.
+- **Actions:** "Refresh", and the Web link in the cell header, which opens the status page.
+- **Status:** a summary such as "All systems operational". Each open incident needs attention, and notifies when its impact is major or critical. A degraded page without an incident needs attention too. It is never closed.
+
+See the [module's README](https://github.com/rrgmc/mirante-modules-work/blob/master/gitlab/README.md#gitlab-status).
 
 ## GitHub
 
-Module `github`. All GitHub types talk to the GitHub server of the item's profile, set in its GitHub General Configuration: a web address, `https://github.com` by default, and a token. For any other host, such as GitHub Enterprise Server, the API is at `<web address>/api/v3`. In the item dialog, every `repository` field offers the repositories of that screen in an editable list. Another repository can still be typed. See [decision 0102](decisions/0102-github-module.md) and the [module's README](https://github.com/rrgmc/mirante-modules/blob/master/github/README.md).
+Module `github`. All GitHub types but [GitHub Status](#github-status) talk to the GitHub server of the item's profile, set in its GitHub General Configuration: a web address, `https://github.com` by default, and a token. For any other host, such as GitHub Enterprise Server, the API is at `<web address>/api/v3`. In the item dialog, every `repository` field offers the repositories of that screen in an editable list. Another repository can still be typed. See [decision 0102](decisions/0102-github-module.md) and the [module's README](https://github.com/rrgmc/mirante-modules/blob/master/github/README.md).
 
 The types follow the GitLab types. A pull request is GitLab's merge request, an Actions run is GitLab's pipeline, and the summaries, pages and lists have the same rules: fixed layouts with sections, "Loading…", plain text, local dates, "Open page" and the Web link. These rules differ:
 
@@ -267,7 +278,7 @@ The types follow the GitLab types. A pull request is GitLab's merge request, an 
   - Reviews (`showReviews`): each reviewer's latest review, with a pill (Approved, Changes requested, Commented), and the requested reviewers and teams who have not reviewed yet, as "Waiting".
   - People (`showPeople`): the author and the assignees.
   - Labels (`showLabels`).
-- **Actions:** "Open page" and "Web". There is no re-run, because a check run can be re-run only by the GitHub App that made it.
+- **Actions:** "Open page", and the Web link in the cell header. There is no re-run, because a check run can be re-run only by the GitHub App that made it.
 - **Status:** a summary such as "Open · 2 approvals · checks failed". The item is closed when the pull request is closed or merged.
 - **Attention,** only while the pull request is open. "You" is the owner of the profile's token.
   - "Checks failed" when a check of the head commit failed, with a desktop notification;
@@ -281,7 +292,7 @@ The types follow the GitLab types. A pull request is GitLab's merge request, an 
 `github.pr.page`, web. The pull request's web page, in the item's [profile](web-views.md#profiles). Its configuration is the summary's: `repository` and `number`.
 
 - **Address:** `<web address>/<repository>/pull/<number>`.
-- **With a base URL that is not a web address,** the cell says "Set the GitHub base URL in this profile's Modules > GitHub > General Configuration, in the Profiles menu."
+- **With a base URL that is not a web address,** the cell says "Set the GitHub base URL in Profiles > Manage Profiles…, under this profile's GitHub."
 - **Without a repository or a number,** the cell says "Set the repository and number in the item's settings."
 - **Status and attention** are the summary's.
 
@@ -336,7 +347,7 @@ The types follow the GitLab types. A pull request is GitLab's merge request, an 
   - "Re-run", when it is completed;
   - "Cancel run", while it is queued or running, after a confirmation;
   - "Pull request", which opens the linked pull request, or the run's own pull request for a fixed or main-folder branch, in the external browser. It hides when there is none;
-  - "Open page" and "Web", on the page of the run shown.
+  - "Open page", and the Web link in the cell header, on the page of the run shown.
 - **Pills:** queued and waiting runs are "Queued" or "Waiting", running ones "Running". A completed run shows its conclusion: "Passed", "Failed", "Timed out", "Cancelled", "Skipped", "Neutral", "Action required" or "Stale".
 - **Refresh:** every 15 seconds while the run shown is not completed and the view is visible.
 - **Status:** a summary such as "Failed · main · 1 of 3 runs failed", "Passed · main · 3 runs", or "Passed · main · CI" for one run. A branch without runs reports "No runs on <branch>". The item is never closed. The main folder works as for GitLab's pipeline.
@@ -372,8 +383,19 @@ The types follow the GitLab types. A pull request is GitLab's merge request, an 
 - **Configuration:** the summary and the page have `repository` and `number`. The list has `scope`, `repository`, `owner`, `preset`, `filter`, `limit` and `pageSize`, as for pull requests, with the presets `assignedToMe` (the default), `createdByMe` and `allOpen`, and `is:issue` in its search.
 - **The list shows** the columns Ref, Title, Assignees, Labels, Updated and the links, sorted on Updated, newest first, and makes no further requests. A narrow cell hides Labels, Assignees, Updated and Ref, in that order. "Add" adds a GitHub Issue (summary) named such as `owner/repo#7`. The empty line is "No issues".
 - **The page's address** is `<web address>/<repository>/issues/<number>`. Its messages are those of the pull request page.
-- **The summary's actions:** "Open page" and "Web".
+- **The summary's actions:** "Open page", and the Web link in the cell header.
 - **Status:** a summary such as "Open · assigned to ana", closed when the issue is closed, and no attention. The list reports "12 issues" or "100+ issues".
+
+### GitHub Status
+
+`github.status`, native. The health of github.com, from its public status page, githubstatus.com. It does not use the profile's server and needs no token; see [decision 0149](decisions/0149-public-status-pages-without-a-server.md).
+
+- **Shows:** the page's overall state as a title and a pill, open incidents with their impact, state and latest update, planned maintenance, and the components that do not work.
+- **Configuration:** `showMaintenance`, on by default, and `showAllComponents`, off by default, which also lists the components that work.
+- **Actions:** "Refresh", and the Web link in the cell header, which opens the status page.
+- **Status:** a summary such as "All Systems Operational". Each open incident needs attention, and notifies when its impact is major or critical. A degraded page without an incident needs attention too. It is never closed.
+
+See the [module's README](https://github.com/rrgmc/mirante-modules-work/blob/master/github/README.md#github-status).
 
 ## Jira
 
@@ -394,7 +416,7 @@ A project can set its Jira project key in the project dialog's Jira section, sto
   - Comments: the latest five, newest first;
   - Sub-tasks and links: each with its key, which opens the issue in the external browser, its relation, summary and status. Then the issues whose parent is this one, such as the issues of an epic, with their status pills: up to 50, with a line saying how many more there are. A sub-task is not listed twice.
 - **Rendered HTML.** It loads nothing, neither images nor style sheets, so a description cannot call out. A link opens only in the external browser, resolved against the base URL, and only for `http` and `https`. All other text from the server is plain text.
-- **Actions:** Open page, or the external browser with `Shift`; and the Web link, `<baseUrl>/browse/<key>`. The view only reads. See [decision 0070](decisions/0070-read-mostly-native-views.md).
+- **Actions:** Open page, or the external browser with `Shift`; and the Web link in the cell header, `<baseUrl>/browse/<key>`. The view only reads. See [decision 0070](decisions/0070-read-mostly-native-views.md).
 - **Without data,** the view shows "Loading…" or the status's message. With old data and an error, it keeps the data, and the cell header shows the error.
 - **Status:** from M5. One request for the issue with all its fields, and the names of the fields, which tell which one is the sprint. A further search asks for its children, and if only that fails, the status stands without them. The status line reads like "In Review · assigned to Ana". The item counts as closed when the status category is `done`.
 - **Attention:** "Status changed to <name>", with the key `status:<status id>`, when the status changed since the user last viewed the item. It clears once seen, and the status an issue had when it was added does not count. See [decision 0061](decisions/0061-attention-from-status-of-any-rendering.md).
@@ -404,7 +426,7 @@ A project can set its Jira project key in the project dialog's Jira section, sto
 `jira.issue.page`, web. The issue's web page. Its configuration is the summary's: `key`.
 
 - **Address:** `<baseUrl>/browse/<key>`, where `baseUrl` is the Jira base URL of the item's profile.
-- **Without a Jira base URL,** the cell says "Set the Jira base URL in this profile's Modules > Jira > General Configuration, in the Profiles menu."
+- **Without a Jira base URL,** the cell says "Set the Jira base URL in Profiles > Manage Profiles…, under this profile's Jira."
 - **Without an issue key,** the cell says "Set the issue key in the item's settings."
 - **Status and attention:** the same as the summary's, from a smaller request: the issue's summary, status, assignee, priority, type and last update.
 
@@ -424,7 +446,7 @@ A project can set its Jira project key in the project dialog's Jira section, sto
   - `recentlyUpdated`: `project = "<key>" AND updated >= -7d ORDER BY updated DESC`.
 
   The key is quoted, so a value cannot change the query.
-- **Shows:** a sortable table with the columns Key, Summary, Status, Assignee, Updated, the extra fields and links, sorted on Updated, newest first. The extra fields hide first in a narrow cell. The status is a pill: green for the category `done`, amber for `indeterminate`, grey otherwise. Updated reads like `10-30 14:32`, or `2025-10-30` for another year, and sorts by the real date. The Web link above the table opens `<baseUrl>/issues/?jql=<query>` in the external browser. Previous and Next page through the fetched rows, and a drop-down filters them by one or more statuses. See [decision 0071](decisions/0071-lists-link-out-without-a-preview.md).
+- **Shows:** a sortable table with the columns Key, Summary, Status, Assignee, Updated, the extra fields and links, sorted on Updated, newest first. The extra fields hide first in a narrow cell. The status is a pill: green for the category `done`, amber for `indeterminate`, grey otherwise. Updated reads like `10-30 14:32`, or `2025-10-30` for another year, and sorts by the real date. The Web link in the cell header opens `<baseUrl>/issues/?jql=<query>` in the external browser. Previous and Next page through the fetched rows, and a drop-down filters them by one or more statuses. See [decision 0071](decisions/0071-lists-link-out-without-a-preview.md).
 - **Row links:** "Web", the issue's page in the external browser; "Open", the page in the cell, or the external browser with `Shift`; and "Add", which adds a `jira.issue.summary` item for the issue to the task. The column never hides.
 - **Row menu:** the same, and "Copy link".
 - **Status:** the rows, up to `limit`, and their number, in one search. The status line reads like "12 issues", "1 issue", or "100+ issues" at the limit, which is the item's `limit`. A list raises no attention, and never counts as closed. See [decision 0067](decisions/0067-lists-report-status.md).
@@ -449,9 +471,9 @@ There is no public API for these sessions, so the app has no status or summary f
 
 - **Configuration:** `folder`, a project folder, optional: only sessions in it, through `--cwd`. `includeFinished`, bool, default false: also finished background sessions, through `--all`. `accounts`, a text list of Claude Code config folders on this device, one per account; empty uses the default account.
 - **Shows:** a sortable table of the Claude Code sessions on this device, with the columns Title, Status, Repository, Account and Started, sorted on Started, newest first. The status is a pill: amber for Working, red for Needs input and Failed, green for Done, grey for Idle and Stopped. A drop-down filters the rows by status. Repository is the folder name of the Git repository that holds the session's folder, the main one for a worktree, with the branch. Account shows only for more than one account. No session text is shown.
-- **With the bridge plugin:** when the `mirante-bridge` Claude Code plugin is installed, a session that waits for a permission reads "Needs permission". The columns Tool, Model (with the effort), Context and Cost show, each only when a row has a value. A tool shows only while the session works. Each account's 5-hour and weekly rate-limit use shows above the table, such as "Limits: 5 h 31 % · week 12 %", or with the account's name for more than one account. See [decision 0148](decisions/0148-claude-bridge-plugin.md).
+- **With the bridge plugin:** when the `mirante-bridge` Claude Code plugin is installed, a session that waits for a permission reads "Needs permission". The columns Tool, Model (with the effort), Context and Cost show, each only when a row has a value. A tool shows only while the session works. Each account's 5-hour and weekly rate-limit use shows above the table, such as "Limits: 5 h 31 % · week 12 %", or with the account's name for more than one account. See [decision 0150](decisions/0150-claude-bridge-plugin.md).
 - **Row menu:** "Show folder" and "Copy session ID".
-- **Status:** runs `claude agents --json` once per account, with `CLAUDE_CONFIG_DIR` set to its folder. It then reads the bridge plugin's files in `MIRANTE_CLAUDE_DIR`, or `~/.mirante/claude/sessions`, and adds them to the rows by session id: `tool`, `waitingFor`, `model`, `effort`, `contextPercent` and `costUsd`. `data.limits` holds one object per account with `account`, `fiveHourPercent`, `fiveHourResetsAt`, `weeklyPercent` and `weeklyResetsAt`. A change in the folder refreshes the list, at most once every five seconds. The summary reads like "3 agents · 1 waiting for input". An account that fails is named above the table; when all fail, the status is an error. A list raises no attention, and never counts as closed. See [decision 0143](decisions/0143-claude-agents-list.md).
+- **Status:** runs `claude agents --json` once per account, with `CLAUDE_CONFIG_DIR` set to its folder. It then reads the bridge plugin's files in `MIRANTE_CLAUDE_DIR`, or `~/.mirante/claude/sessions`, and adds them to the rows by session id: `tool`, `waitingFor`, `model`, `effort`, `contextPercent` and `costUsd`. `data.limits` holds one object per account with `account`, `fiveHourPercent`, `fiveHourResetsAt`, `weeklyPercent` and `weeklyResetsAt`. A change in the folder refreshes the list, at most once every five seconds. The status line reads like "3 agents · 1 waiting for input". An account that fails is named above the table; when all fail, the status is an error. A list raises no attention, and never counts as closed. See [decision 0143](decisions/0143-claude-agents-list.md).
 - **Not listed:** cloud sessions on claude.ai and Remote Control sessions of another computer, which have no documented API.
 
 ### Claude session (local), removed
@@ -574,6 +596,16 @@ The editor command is a device setting of the `folder` module, default `code`. I
   - **Copy path**, and **Copy relative path**, which is relative to the project folder, with `/`.
 - **The view only reads.** It does not rename, delete or create files.
 - **Problems:** a folder with no local path on this device shows "Folder not set on this device" with **Choose folder…**. A subfolder that is absolute or contains `..` is refused, and a missing one says so; it shows once it exists and the view shows again. A failed action shows its message under the tree.
+
+### System Resources
+
+`system.resources`, native, module `system`.
+
+- **Shows:** one row each for the CPU use, the free memory and the free space of each disk of this computer, with a bar that turns to a warning colour from 75 % use and to an alarm colour from 90 %.
+- **Configuration:** `showCpu`, `showMemory` and `showDisks`, all on by default; `disks`, the roots of the disks to show, empty for every local disk, with the mounted disks offered by "Add from List…"; `interval`, the seconds between readings, 2 by default, from 1 to 3600.
+- **Reads** again at the interval while the view is visible, and stops while it is hidden. It has no status and needs no attention.
+
+See the [module's README](https://github.com/rrgmc/mirante-modules/blob/master/system/README.md).
 
 ### Built-in panels
 
