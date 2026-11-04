@@ -248,7 +248,7 @@ There are two kinds:
 
 A root dashboard refers to a task's dashboard. It does not copy it. Changing the layout of a task inside a root dashboard changes that task dashboard everywhere it is shown. To show a task differently in one place, create another task dashboard and choose it in that cell. See [decision 0011](decisions/0011-root-cells-reference-task-dashboards.md).
 
-Root dashboards have an `order` field for their position in the tab bar.
+Root dashboards have an `order` field for their position in the tab bar, and an optional `colour` field, a `#rrggbb` string. Its tab shows a dot of that colour before the name.
 
 ## Layout tree
 

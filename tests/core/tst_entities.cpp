@@ -389,6 +389,18 @@ private slots:
         QVERIFY(dashboard->layout.ref);
         QVERIFY(dashboard->layout.ref->isTask());
         QCOMPARE(dashboard->layout.ref->dashboard, QStringLiteral("d-1"));
+        QVERIFY(dashboard->colour.isEmpty());
+    }
+
+    void rootDashboardColour()
+    {
+        // A QJsonObject, not a raw string: moc misreads a '#' in one.
+        const auto dashboard = RootDashboard::fromJson(
+            QJsonObject{{QStringLiteral("id"), QStringLiteral("r-1")}, {QStringLiteral("colour"), QStringLiteral("#3b82f6")}});
+        QVERIFY(dashboard);
+        QCOMPARE(dashboard->colour, QStringLiteral("#3b82f6"));
+        QVERIFY(dashboard->extra.isEmpty());
+        QCOMPARE(dashboard->toJson().value(QStringLiteral("colour")).toString(), QStringLiteral("#3b82f6"));
     }
 
     // Task
