@@ -204,9 +204,12 @@ private slots:
         entries.removeFirst();   // Settings…, which macOS shows in the application menu
 #endif
         QCOMPARE(entries.value(0), modules);
-        QCOMPARE(entries.value(1)->text(), QStringLiteral("Open &Sample Data"));
-        QVERIFY(entries.value(2)->isSeparator());
-        QCOMPARE(entries.value(3)->text(), QStringLiteral("&About Mirante"));
+#ifndef NDEBUG
+        // Only debug builds have Open Sample Data. See decision 0140.
+        QCOMPARE(entries.takeAt(1)->text(), QStringLiteral("Open &Sample Data"));
+#endif
+        QVERIFY(entries.value(1)->isSeparator());
+        QCOMPARE(entries.value(2)->text(), QStringLiteral("&About Mirante"));
 
         modules->trigger();
         QPointer<ModulesDialog> dialog = window.findChild<ModulesDialog *>();
