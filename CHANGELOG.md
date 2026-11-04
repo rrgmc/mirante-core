@@ -8,7 +8,8 @@ The changes to the module interface, and what a module must do about them, are i
 
 ### Added
 
-- Item cells have an **Open in browser** button in their header when the item has a page on the web. Item types give the address with `ItemContext::setWebLink()`. See [decision 0146](docs/decisions/0146-web-link-in-the-cell-header.md).
+- Item cells have an **Open in browser** button in their header when the item has a page on the web. Item types give the address with `ItemContext::setWebLink()`. See [decision 0147](docs/decisions/0147-web-link-in-the-cell-header.md).
+- A profile can hold several accounts of a module, such as a personal GitHub account and a bot, or github.com and a GitHub Enterprise server. Each has its own settings and token. **Add Account…** in a module's submenu of Profiles > <profile> > Modules adds one, and an item chooses its account in the item dialog. A pasted link is read in the account of its host. See [decision 0146](docs/decisions/0146-several-accounts-per-module.md).
 
 ### Changed
 

@@ -79,7 +79,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
 - After an action succeeds, the status is fetched again. A failed action shows its message in the action row. A `403` says that the token cannot do this, and names the `api` scope.
 - Only cancelling and triggering a pipeline ask first.
 - "Open page" shows the page in the same cell, as in [decision 0069](decisions/0069-open-page-in-the-placement.md), or in the external browser if the user holds `Shift`.
-- **The Web link** is the **Open in browser** button of the cell header, which the view gives with `ItemContext::setWebLink()`. It opens the same address in the external browser, and it hides without a web address. See [decision 0146](decisions/0146-web-link-in-the-cell-header.md). The address is `web_url` in the data. Without one, for a merge request or an issue, it is built from the base URL and the configuration, as for the page types. A link to a job's log also opens in the external browser.
+- **The Web link** is the **Open in browser** button of the cell header, which the view gives with `ItemContext::setWebLink()`. It opens the same address in the external browser, and it hides without a web address. See [decision 0147](decisions/0147-web-link-in-the-cell-header.md). The address is `web_url` in the data. Without one, for a merge request or an issue, it is built from the base URL and the configuration, as for the page types. A link to a job's log also opens in the external browser.
 - Dates are local and short. Text from the server is plain text, so it is never read as markup.
 
 ### GitLab MR (summary)

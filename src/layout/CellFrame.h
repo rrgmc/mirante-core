@@ -72,7 +72,7 @@ public:
 
     // The item's web link, which the "Open in browser" button after the
     // header widget opens in the external browser. Empty hides the button.
-    // See decision 0146.
+    // See decision 0147.
     void setWebLink(const QUrl &url);
     QUrl webLink() const;
 

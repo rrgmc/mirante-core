@@ -1070,7 +1070,7 @@ void TestLayoutView::factoryConnectsStatus()
     placements.status = &cache;
     placements.attention = &attention;
     placements.servers = &servers;
-    placements.openServerSettings = [&opened](const QString &profileId, const QString &moduleId) {
+    placements.openServerSettings = [&opened](const QString &profileId, const QString &moduleId, const QString &) {
         opened << profileId + QLatin1Char('/') + moduleId;
     };
     LayoutServices services;

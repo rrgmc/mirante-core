@@ -73,7 +73,7 @@ public:
     // and an empty url hides it. Call it again whenever the address changes,
     // such as when the view's data arrives. A web view of createWebView() sets
     // it to its page's address by itself. The default does nothing. See
-    // decision 0146.
+    // decision 0147.
     virtual void setWebLink(const QUrl &url) { Q_UNUSED(url) }
 
     // Adds an item to the task this item belongs to, and returns its id, or

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/Accounts.h"
 #include "core/Entities.h"
 #include "ui/SidebarModel.h"
 
@@ -8,6 +9,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 
 class QDialog;
 class QImage;
@@ -73,7 +75,19 @@ public:
     // Profiles > <profile> > Modules, and stores the values in the model.
     // Tokens typed into it go to setSecretStore(). Nothing happens for an
     // unknown screen or profile. See docs/ui.md#modules.
-    void editModuleSettings(const QString &profileId, const QString &moduleId, const QString &screenId);
+    //
+    // accountId names another account of the module's server, whose values
+    // the server's screen then edits, with its name and a Remove Account
+    // button. Empty is the default account. Nothing happens for an account
+    // the profile does not have, or for another screen. See decision 0146.
+    void editModuleSettings(const QString &profileId, const QString &moduleId, const QString &screenId,
+                            const QString &accountId = QString());
+
+    // Adds another account of the module's server to the profile, from
+    // Profiles > <profile> > Modules > <module> > Add Account…: opens the
+    // server's screen for it, and stores it on OK. Returns its id, or empty
+    // if cancelled or the module has no server. See decision 0146.
+    QString addAccount(const QString &profileId, const QString &moduleId);
 
     // Creating. Each opens the entity's dialog with a new value, and returns the
     // new id, or an empty string if the dialog was cancelled. A new task gets one
@@ -183,6 +197,11 @@ private:
     void addPasteImage(QMenu *menu, const QString &taskId);
     // Adds the checkable "Watch" for an item whose type reports status.
     void addWatch(QMenu *menu, const QString &taskId, const QString &itemId);
+    // Runs the dialog of a settings screen: of the default account without
+    // an account, else of that account, which creating stores only on OK.
+    // Returns whether anything was stored or removed.
+    bool editServerScreen(const QString &profileId, const QString &moduleId, const QString &screenId,
+                          const std::optional<Account> &account, bool creating = false);
 
     struct Private;
     std::unique_ptr<Private> d;

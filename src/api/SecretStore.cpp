@@ -2,8 +2,10 @@
 
 #include "api/ModuleDirectory.h"
 #include "api/SecretBackend.h"
+#include "core/Accounts.h"
 #include "core/Model.h"
 
+#include <mirante/ApiClient.h>
 #include <mirante/ModuleSettings.h>
 
 #include <QHash>
@@ -25,6 +27,47 @@ QString secretKey(const QString &workspaceId, const QString &profileId, const QS
     return parts.join(QLatin1Char('/'));
 }
 
+QString secretKey(const QString &workspaceId, const QString &profileId, const QString &moduleId,
+                  const QString &accountId, const QString &fieldKey)
+{
+    if (accountId.isEmpty())
+        return secretKey(workspaceId, profileId, moduleId, fieldKey);
+    return secretKey(workspaceId, profileId, moduleId + QLatin1Char('/') + accountId, fieldKey);
+}
+
+namespace {
+
+// The keys of the Secret fields of the module's server screen.
+QStringList serverSecretFields(const ModuleDirectory &modules, const QString &moduleId)
+{
+    QStringList fields;
+    const ServerType *type = modules.serverType(moduleId);
+    if (!type)
+        return fields;
+    for (const SettingsScreen *screen : modules.settingsScreens(moduleId)) {
+        if (screen->id() != type->screenId())
+            continue;
+        for (const Field &field : screen->fields()) {
+            if (field.type == Field::Type::Secret)
+                fields << field.key;
+        }
+    }
+    return fields;
+}
+
+} // namespace
+
+QStringList accountTokenKeys(const QString &workspaceId, const ModuleDirectory &modules, const QString &profileId,
+                             const QString &moduleId, const QString &accountId)
+{
+    QStringList keys;
+    if (accountId.isEmpty())
+        return keys;
+    for (const QString &field : serverSecretFields(modules, moduleId))
+        keys << secretKey(workspaceId, profileId, moduleId, accountId, field);
+    return keys;
+}
+
 QStringList tokenKeys(const Model &model, const ModuleDirectory &modules)
 {
     QStringList keys;
@@ -35,6 +78,12 @@ QStringList tokenKeys(const Model &model, const ModuleDirectory &modules)
                     if (field.type != Field::Type::Secret)
                         continue;
                     const QString key = secretKey({}, profile.id, moduleId, field.key);
+                    if (!keys.contains(key))
+                        keys << key;
+                }
+            }
+            for (const Account &account : accounts::others(model, profile.id, moduleId)) {
+                for (const QString &key : accountTokenKeys({}, modules, profile.id, moduleId, account.id)) {
                     if (!keys.contains(key))
                         keys << key;
                 }

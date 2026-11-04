@@ -11,6 +11,7 @@
 namespace mirante {
 
 class ItemTypeRegistry;
+class Model;
 
 // Creates or edits an item.
 //
@@ -67,6 +68,13 @@ public:
     // For tests.
     void setProfile(const QString &id);   // empty for the group's profile
     bool showsProfile() const;
+
+    // The workspace, whose profiles hold the modules' other accounts. Without
+    // it, every item uses the default account and the Account row stays
+    // hidden. See decision 0146.
+    void setModel(const Model *model);
+    void setAccount(const QString &id);   // empty for the default account
+    bool showsAccount() const;
     bool showsWatch() const;
     void setWatch(bool watch);
     bool showsPageKeys() const;

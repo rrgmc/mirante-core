@@ -42,8 +42,10 @@ struct PlacementServices
     // The data folder, for ItemContext::filePath(). Null: no files.
     const Store *store = nullptr;
     // Opens the settings screen of a module's server in a profile, for the
-    // fix button of "Token not set" and the like. Null leaves it out.
-    std::function<void(const QString &profileId, const QString &moduleId)> openServerSettings;
+    // account (empty for the default), for the fix button of "Token not set"
+    // and the like. Null leaves it out.
+    std::function<void(const QString &profileId, const QString &moduleId, const QString &accountId)>
+        openServerSettings;
     // Open an item alone, or a task's default dashboard, in the preview, for
     // the built-in panels. Null leaves the panels' links without effect.
     std::function<void(const QString &taskId, const QString &itemId)> openItem;
@@ -84,7 +86,7 @@ public:
     // The address the cell header's "Open in browser" button opens: the page
     // of showPage() while one is shown, else the view's ItemContext::setWebLink().
     // Empty when there is none, or it is not an http or https address. See
-    // decision 0146.
+    // decision 0147.
     QUrl webLink() const;
 
     // What the cell header shows about the item's status. Kind::None for a

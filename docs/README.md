@@ -85,7 +85,9 @@ The app speaks English and Brazilian Portuguese. Every text the user sees is wri
 
 **Watched item.** An item whose attention counts on the tray icon and may send desktop notifications. Items are not watched until the user chooses.
 
-**Server.** The GitLab or GitHub server, or the Jira site, that a profile talks to: a base URL in the module's settings, and a token kept in the keychain. Each profile has one per module. Earlier versions called these connections. See [servers and tokens](data-model.md#servers-and-tokens).
+**Account.** One set of a module's server settings in a profile, with its own token, such as a personal GitHub account and a bot. Each profile has a default account per module, and may have others; an item chooses one. See [accounts](data-model.md#accounts) and [decision 0146](decisions/0146-several-accounts-per-module.md).
+
+**Server.** The GitLab or GitHub server, or the Jira site, that a profile talks to: a base URL in the module's settings, and a token kept in the keychain. Each [account](data-model.md#accounts) of a profile has one per module. Earlier versions called these connections. See [servers and tokens](data-model.md#servers-and-tokens).
 
 **Profile.** A named set of what belongs to one account or context, such as "Work" or "Personal": web logins (cookies and site data) and module settings, such as the server of each module, with its token. The workspace holds a list of them, always at least one, and one of them is the default profile. Each group chooses a profile, and an item can choose its own; those that choose none use the default. Items in one profile share all of it. Logins and tokens stay on each device; the rest is synced. See decisions [0050](decisions/0050-profiles-hold-logins-connections-and-settings.md), [0054](decisions/0054-module-settings-replace-connections.md) and [0057](decisions/0057-any-profile-can-be-the-default.md).
 

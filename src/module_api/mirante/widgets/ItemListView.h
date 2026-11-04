@@ -91,7 +91,7 @@ public:
 
     // The "Web" link in a thin row above the table. An empty url hides it.
     // For the item's own page, prefer ItemContext::setWebLink(), which the
-    // cell header shows; see decision 0146.
+    // cell header shows; see decision 0147.
     void setWebLink(const QUrl &url);
     QUrl webLink() const;
 

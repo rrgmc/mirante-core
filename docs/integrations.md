@@ -169,7 +169,7 @@ Modules poll through the cache, never around it. A view asks the server directly
 ## Errors
 
 - A missing token shows "Token not set on this device" with a button to enter it. Nothing is sent.
-- A `401` on any request, or a `403` on a `GET`, marks the profile's server as failing. The main window's warning bar shows a line for it, and the server's requests return without being sent until its token or its settings screen changes.
+- A `401` on any request, or a `403` on a `GET`, marks the profile's server as failing, for that [account](data-model.md#accounts) only. The main window's warning bar shows a line for it, which names another account, such as "GitHub, account Bot, in the profile Work refused the token.", and the server's requests return without being sent until its token or its settings change, or the account is removed.
 - A `403` on a `POST` or a `PUT` is a missing permission for that one action, such as a `read_api` token retrying a pipeline. Only that action fails; the server keeps working.
 - A `429` waits for `Retry-After` seconds, or 30 without one, and sends again, at most three times. The server's other requests wait too.
 - A `403` or `429` with `x-ratelimit-remaining: 0` is a spent rate limit, as GitHub sends it. It waits until the Unix time in `x-ratelimit-reset`, at least 1 second and at most 1 hour. A `403` with `Retry-After` waits that many seconds. Both then send again like a `429`, and the server's other requests wait too. Neither marks the server as failing. After three tries, the request fails with "Rate limited (403)" or "Too many requests (429)".

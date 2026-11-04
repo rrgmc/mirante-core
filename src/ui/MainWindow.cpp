@@ -6,6 +6,7 @@
 #include "api/SecretStore.h"
 #include "api/ServerClient.h"
 #include "api/StatusCache.h"
+#include "core/Accounts.h"
 #include "core/AppVersion.h"
 #include "core/DeviceSettings.h"
 #include "core/GitStatusReader.h"
@@ -1036,27 +1037,29 @@ struct MainWindow::Private
     // server's settings screen. Returns whether there is any.
     bool updateServerLines()
     {
-        const QList<QPair<QString, QString>> failing =
-            api.servers ? api.servers->failingServers() : QList<QPair<QString, QString>>();
+        const QList<ServerId> failing = api.servers ? api.servers->failingServers() : QList<ServerId>();
         // The lines are made again each time; there are few. The old ones go
         // later, since this can run inside the click of their own button.
         for (QWidget *old : serverLines->findChildren<QWidget *>(QString(), Qt::FindDirectChildrenOnly)) {
             old->setParent(nullptr);
             old->deleteLater();
         }
-        for (const auto &[profileId, moduleId] : failing) {
+        for (const ServerId &server : failing) {
             auto *line = new QWidget(serverLines);
             line->setObjectName(QStringLiteral("failingServer"));
-            auto *text = new QLabel(MainWindow::tr("%1 in the profile %2 refused the token.")
-                                        .arg(types->moduleName(moduleId), profiles::nameOf(*model, profileId)),
-                                    line);
+            const QString message =
+                server.accountId.isEmpty()
+                    ? MainWindow::tr("%1 in the profile %2 refused the token.")
+                          .arg(types->moduleName(server.moduleId), profiles::nameOf(*model, server.profileId))
+                    : MainWindow::tr("%1, account %2, in the profile %3 refused the token.")
+                          .arg(types->moduleName(server.moduleId),
+                               accounts::nameOf(*model, server.profileId, server.moduleId, server.accountId),
+                               profiles::nameOf(*model, server.profileId));
+            auto *text = new QLabel(message, line);
             text->setWordWrap(true);
             auto *button = new QPushButton(MainWindow::tr("Set Token…"), line);
             button->setObjectName(QStringLiteral("setToken"));
-            QObject::connect(button, &QPushButton::clicked, q,
-                             [this, profileId = profileId, moduleId = moduleId] {
-                                 openServerSettings(profileId, moduleId);
-                             });
+            QObject::connect(button, &QPushButton::clicked, q, [this, server] { openServerSettings(server); });
             auto *layout = new QHBoxLayout(line);
             layout->setContentsMargins(0, 0, 0, 0);
             layout->addWidget(text, 1);
@@ -1068,11 +1071,12 @@ struct MainWindow::Private
     }
 
     // Opens the settings screen of a module's server in a profile, such as
-    // GitLab's General Configuration, where its token is typed.
-    void openServerSettings(const QString &profileId, const QString &moduleId)
+    // GitLab's General Configuration, for the account, where its token is
+    // typed.
+    void openServerSettings(const ServerId &id)
     {
-        if (const ServerType *server = types->serverType(moduleId))
-            actions->editModuleSettings(profileId, moduleId, server->screenId());
+        if (const ServerType *server = types->serverType(id.moduleId))
+            actions->editModuleSettings(id.profileId, id.moduleId, server->screenId(), id.accountId);
     }
 
     // Opens a folder, or the sample data, through the Store, keeping the open
@@ -1522,8 +1526,11 @@ struct MainWindow::Private
 
     // The profile's Modules submenu: a submenu for each module with settings
     // screens, named after the module, listing its screens by their names.
-    // Each opens the screen's dialog for this profile. Disabled, with "No
-    // module settings", when no module has screens.
+    // Each opens the screen's dialog for this profile. A module with a server
+    // lists its server's screen once more for each other account, such as
+    // "General Configuration: Bot…", and ends with Add Account… (decision
+    // 0146). Disabled, with "No module settings", when no module has
+    // screens.
     void addModulesMenu(QMenu *menu, const QString &profileId)
     {
         QMenu *modules = menu->addMenu(MainWindow::tr("&Modules"));
@@ -1534,6 +1541,7 @@ struct MainWindow::Private
                 continue;
             QMenu *module = modules->addMenu(types->moduleName(moduleId));
             module->setObjectName(QStringLiteral("modulesMenu.%1.%2").arg(profileId, moduleId));
+            const ServerType *server = types->serverType(moduleId);
             for (const SettingsScreen *screen : screens) {
                 const QString screenId = screen->id();
                 QAction *action = module->addAction(screen->name() + QStringLiteral("…"));
@@ -1541,6 +1549,26 @@ struct MainWindow::Private
                 QObject::connect(action, &QAction::triggered, q, [this, profileId, moduleId, screenId] {
                     actions->editModuleSettings(profileId, moduleId, screenId);
                 });
+                if (!server || server->screenId() != screenId)
+                    continue;
+                for (const Account &account : accounts::others(*model, profileId, moduleId)) {
+                    QAction *accountAction = module->addAction(
+                        MainWindow::tr("%1: %2…").arg(screen->name(), account.name));
+                    accountAction->setObjectName(
+                        QStringLiteral("moduleSettings.%1.%2.%3.%4").arg(profileId, moduleId, screenId, account.id));
+                    const QString accountId = account.id;
+                    QObject::connect(accountAction, &QAction::triggered, q,
+                                     [this, profileId, moduleId, screenId, accountId] {
+                                         actions->editModuleSettings(profileId, moduleId, screenId, accountId);
+                                     });
+                }
+            }
+            if (server) {
+                module->addSeparator();
+                QAction *add = module->addAction(MainWindow::tr("Add Account…"));
+                add->setObjectName(QStringLiteral("addAccount.%1.%2").arg(profileId, moduleId));
+                QObject::connect(add, &QAction::triggered, q,
+                                 [this, profileId, moduleId] { actions->addAccount(profileId, moduleId); });
             }
         }
         if (modules->isEmpty()) {
@@ -2862,8 +2890,9 @@ void MainWindow::setApiServices(const ApiServices &services)
     d->placements.servers = services.servers;
     d->placements.openItem = [this](const QString &taskId, const QString &itemId) { openItem(taskId, itemId); };
     d->placements.openTask = [this](const QString &taskId) { openTaskPreview(taskId); };
-    d->placements.openServerSettings = [this](const QString &profileId, const QString &moduleId) {
-        d->openServerSettings(profileId, moduleId);
+    d->placements.openServerSettings = [this](const QString &profileId, const QString &moduleId,
+                                              const QString &accountId) {
+        d->openServerSettings(ServerId{profileId, moduleId, accountId});
     };
     d->sidebar->model()->setAttention(services.attention);
     if (d->focus)

@@ -1,4 +1,4 @@
-# 0146. The cell header opens an item's web link
+# 0147. The cell header opens an item's web link
 
 - Status: Accepted
 - Date: 2026-11-04

@@ -339,7 +339,7 @@ Each item's code gets an `ItemContext`. It gives access to the configuration the
 | `onConfigChanged(receiver, changed)` | Reports a change to the type's `viewKeys()`, which does not make the view again. See [decision 0081](decisions/0081-views-that-keep-their-own-keys.md). | M7 |
 | `updateConfig(config)` | Changes the item's configuration through `Model` | M4 |
 | `showPage(url)` | Shows a web page in place of the view, with a way back. See [decision 0069](decisions/0069-open-page-in-the-placement.md). | M6 |
-| `setWebLink(url)` | The item's address on the web, such as a pull request's page. The cell header shows an **Open in browser** button for an `http` or `https` address; an empty one hides it. Call it again when the address changes. A web view of `createWebView()` sets it by itself. See [decision 0146](decisions/0146-web-link-in-the-cell-header.md). | after M13 |
+| `setWebLink(url)` | The item's address on the web, such as a pull request's page. The cell header shows an **Open in browser** button for an `http` or `https` address; an empty one hides it. Call it again when the address changes. A web view of `createWebView()` sets it by itself. See [decision 0147](decisions/0147-web-link-in-the-cell-header.md). | after M13 |
 | `addItemToTask(typeId, name, config)` | Adds an item to the item's task, for "Add to task as item" | M6 |
 
 ### Servers and tokens
@@ -366,7 +366,14 @@ The core then gives the module an `ApiClient` for the server of each profile, th
 
 - **`get()`, `post()` and `put()`:** the way to call an API. The path is relative to the base URL. The client adds the token, sends the last ETag, follows `Link` pages when asked, waits on `429` and on a rate-limited `403`, and runs at most four requests at once for each profile's server. Item code never sees the token, and the token goes only to the origin of the base URL; see [decision 0123](decisions/0123-tokens-stay-on-their-origin.md).
 
-Tokens are loaded from the keychain, under `<workspace id>/<profile id>/<module id>/<field key>`, before the first request. If no token is stored, a request fails with `NoToken` without being sent, and the cell shows "Token not set", as described in [errors](integrations.md#errors).
+**Accounts.** A profile can hold several accounts of a module's server, each with its own values of the server's screen and its own token ([decision 0146](decisions/0146-several-accounts-per-module.md)). The core chooses the item's account. `ItemContext::server()`, `StatusJob::server()` and the quick-add requests give that account's client, and their `moduleSettings()` give that account's values for the server's screen, so most module code needs no change. Where a module is given ids instead of a context, it reads an account with these, whose defaults fall back to the default account:
+
+- `ModuleSettings::accountValues(profileId, accountId, screenId)`;
+- `ItemType::fieldsForAccount(profileId, accountId)`, for the item dialog's form, such as repository suggestions of the account;
+- `ItemType::fromUrlForAccount(url, profileId, accountId)`, for a pasted link. The core picks the account by the link's host first;
+- `EditorContext::accountId` and `ItemEditor::setAccount()`, for a type's own editor.
+
+Tokens are loaded from the keychain, under `<workspace id>/<profile id>/<module id>/<field key>`, or `<workspace id>/<profile id>/<module id>/<account id>/<field key>` for another account, before the first request. If no token is stored, a request fails with `NoToken` without being sent, and the cell shows "Token not set", as described in [errors](integrations.md#errors).
 
 ### Status
 
