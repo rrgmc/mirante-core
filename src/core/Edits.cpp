@@ -110,18 +110,20 @@ QString newId() { return QUuid::createUuid().toString(QUuid::WithoutBraces); }
 
 Task newTask(const QString &projectId, const QString &title)
 {
-    Dashboard dashboard;
-    dashboard.id = newId();
-    dashboard.name = QCoreApplication::translate("Edits", "Main");
-    dashboard.layout = layout::emptyLayout();
-
     Task task;
     task.id = newId();
     task.projectId = projectId;
     task.title = title;
-    task.defaultDashboardId = dashboard.id;
-    task.dashboards.push_back(std::move(dashboard));
     return task;
+}
+
+Dashboard newMainDashboard()
+{
+    Dashboard dashboard;
+    dashboard.id = newId();
+    dashboard.name = QCoreApplication::translate("Edits", "Main");
+    dashboard.layout = layout::emptyLayout();
+    return dashboard;
 }
 
 // An item with an id the task already holds replaces that item.
@@ -160,13 +162,13 @@ Task addDashboard(Task task, const Dashboard &dashboard)
 
 Task removeDashboard(Task task, const QString &dashboardId)
 {
-    if (task.dashboards.size() < 2 || !containsId(task.dashboards, dashboardId))
+    if (!containsId(task.dashboards, dashboardId))
         return task;
     task.dashboards.erase(std::remove_if(task.dashboards.begin(), task.dashboards.end(),
                                          [&dashboardId](const Dashboard &d) { return d.id == dashboardId; }),
                           task.dashboards.end());
     if (!containsId(task.dashboards, task.defaultDashboardId))
-        task.defaultDashboardId = task.dashboards.front().id;
+        task.defaultDashboardId = task.dashboards.empty() ? QString() : task.dashboards.front().id;
     return task;
 }
 
