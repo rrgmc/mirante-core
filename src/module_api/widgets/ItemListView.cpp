@@ -937,6 +937,10 @@ void ItemListView::addFilter(int column, const QString &label)
             d->page = 0;
         });
         d->table->scrollToTop();
+        const QSet<QString> chosen = choice->chosen();
+        QStringList values(chosen.cbegin(), chosen.cend());
+        values.sort();
+        emit filterChanged(column, values);
     };
 }
 
