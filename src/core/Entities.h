@@ -103,11 +103,15 @@ struct Item
     QString id;
     QString type;               // item type id, such as "gitlab.mr.summary"
     QString name;
+    QString dashboardTitle;     // shown in dashboards instead of name; empty if not set
     QJsonObject config;         // fields of the item type; opaque to the core
     QString profile;            // id of a profile overriding the group's; empty if not set
     bool watch = false;         // counts on the tray and notifies; decision 0087
     QStringList pageKeys;       // keys its web page keeps, in PortableText; decision 0088
     QJsonObject extra;
+
+    // The title of the item in dashboards: dashboardTitle, else name.
+    QString dashboardName() const { return dashboardTitle.isEmpty() ? name : dashboardTitle; }
 
     static std::optional<Item> fromJson(const QJsonObject &json, QString *error = nullptr);
     QJsonObject toJson() const;

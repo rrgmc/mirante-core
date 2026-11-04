@@ -117,6 +117,7 @@ struct CellFrame::Private
     QToolButton *openAloneButton = nullptr;
     bool canMaximise = false;           // a live item cell, not an empty or removed one
     QPointer<QWidget> customBody;       // set by setBody()
+    HeaderPill *name = nullptr;
     HeaderPill *context = nullptr;
     QStackedWidget *body = nullptr;
     QWidget *elsewhere = nullptr;       // the "Shown in another cell" page
@@ -216,6 +217,7 @@ CellFrame::CellFrame(const std::optional<CellRef> &ref, bool removed, const Item
     name->setObjectName(QStringLiteral("cellName"));
     name->setText(itemName);
     name->setToolTip(itemName);
+    d->name = name;
 
     d->context = new HeaderPill;
     d->context->setObjectName(QStringLiteral("cellContext"));
@@ -360,6 +362,15 @@ CellFrame::~CellFrame()
 }
 
 std::optional<CellRef> CellFrame::ref() const { return d->ref; }
+
+void CellFrame::setItemName(const QString &text)
+{
+    if (d->name->text() == text)
+        return;
+    d->name->setText(text);
+    d->name->setToolTip(text);
+    d->row->refresh();
+}
 
 void CellFrame::setContext(const QString &text)
 {

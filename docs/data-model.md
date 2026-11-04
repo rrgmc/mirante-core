@@ -112,7 +112,8 @@ The sidebar's Trash list and its commands are in [ui](ui.md#trash).
 |---|---|
 | `id` | UUID, unique within the task |
 | `type` | Item type id, such as `gitlab.mr.summary`. See [item types](item-types.md). |
-| `name` | Display name, shown in cell headers and tabs |
+| `name` | Display name, shown in the sidebar, in tabs and in cell headers |
+| `dashboardTitle` | Optional, written only when not empty. Shown in dashboards instead of `name`: in cell headers, in the titles of new layout tabs and in the task summary panel. See [decision 0142](decisions/0142-item-dashboard-title.md). |
 | `config` | Object with the fields of the item type |
 | `profile` | Optional. The id of a [profile](#profile) that replaces the group's for this item. Offered only for types that use a profile: types whose views are web views, or whose module has settings screens. Items from before decision 0050 name it `webProfile`, which is still read. |
 | `watch` | Optional, written only when true. The item is [watched](ui.md#watched-items): it counts on the tray icon and may send desktop notifications. See [decision 0087](decisions/0087-watched-items.md). |
