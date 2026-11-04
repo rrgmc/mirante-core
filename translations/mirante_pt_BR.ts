@@ -2070,6 +2070,14 @@ Os dados são de %2.</translation>
         <source>%1: %2</source>
         <translation>%1: %2</translation>
     </message>
+    <message>
+        <source>Remove</source>
+        <translation>Remover</translation>
+    </message>
+    <message>
+        <source>Remove the %1 settings from this project</source>
+        <translation>Remover as configurações de %1 deste projeto</translation>
+    </message>
 </context>
 <context>
     <name>mirante::QuickAddDialog</name>

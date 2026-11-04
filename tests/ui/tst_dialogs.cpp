@@ -973,6 +973,12 @@ void TestDialogs::projectSettingsAdd()
     const auto addSettings = [](const ProjectDialog &dialog) {
         return dialog.findChild<QPushButton *>(QStringLiteral("addSettings"));
     };
+    // The menu's entries the user sees: those of the sections not shown.
+    const auto offered = [&addSettings](const ProjectDialog &dialog) {
+        QList<QAction *> entries = addSettings(dialog)->menu()->actions();
+        entries.removeIf([](QAction *entry) { return !entry->isVisible(); });
+        return entries;
+    };
 
     // One module has values, one does not, and one is not in the build.
     Project project = *model.project(backendProject);
@@ -986,8 +992,8 @@ void TestDialogs::projectSettingsAdd()
     QPushButton *add = addSettings(dialog);
     QVERIFY(add);
     QVERIFY(!add->isHidden());
-    QCOMPARE(add->menu()->actions().size(), 1);
-    QCOMPARE(add->menu()->actions().at(0)->text(), QStringLiteral("Q Mod"));
+    QCOMPARE(offered(dialog).size(), 1);
+    QCOMPARE(offered(dialog).at(0)->text(), QStringLiteral("Q Mod"));
 
     // A hidden section adds nothing, and its required field does not refuse OK.
     QCOMPARE(dialog.value(), project);
@@ -996,10 +1002,10 @@ void TestDialogs::projectSettingsAdd()
     dialog.setResult(QDialog::Rejected);
 
     // Adding shows the section, and the button goes with nothing left to add.
-    add->menu()->actions().at(0)->trigger();
+    offered(dialog).at(0)->trigger();
     QVERIFY(!box(dialog, QStringLiteral("qmod"))->isHidden());
     QVERIFY(add->isHidden());
-    QVERIFY(add->menu()->isEmpty());
+    QVERIFY(offered(dialog).isEmpty());
     QCOMPARE(dialog.value(), project);
     dialog.accept();
     QCOMPARE(dialog.result(), int(QDialog::Rejected));
@@ -1019,15 +1025,43 @@ void TestDialogs::projectSettingsAdd()
     ProjectDialog bare(project, model, device, projectTypes);
     QVERIFY(box(bare, QStringLiteral("pmod"))->isHidden());
     QVERIFY(box(bare, QStringLiteral("qmod"))->isHidden());
-    QCOMPARE(addSettings(bare)->menu()->actions().size(), 2);
-    QCOMPARE(addSettings(bare)->menu()->actions().at(0)->text(), QStringLiteral("Proj Mod"));
-    addSettings(bare)->menu()->actions().at(0)->trigger();
+    QCOMPARE(offered(bare).size(), 2);
+    QCOMPARE(offered(bare).at(0)->text(), QStringLiteral("Proj Mod"));
+    offered(bare).at(0)->trigger();
     QVERIFY(!box(bare, QStringLiteral("pmod"))->isHidden());
     QVERIFY(box(bare, QStringLiteral("qmod"))->isHidden());
     QVERIFY(!addSettings(bare)->isHidden());
-    QCOMPARE(addSettings(bare)->menu()->actions().at(0)->text(), QStringLiteral("Q Mod"));
+    QCOMPARE(offered(bare).size(), 1);
+    QCOMPARE(offered(bare).at(0)->text(), QStringLiteral("Q Mod"));
     // A section added and left empty stores nothing.
     QVERIFY(bare.value().moduleSettings.isEmpty());
+
+    // Remove hides a section, drops its stored values, and offers it again,
+    // in the registry's order. Adding it again starts empty.
+    project.moduleSettings = QJsonObject{{QStringLiteral("pmod"), QJsonObject{{QStringLiteral("path"), QStringLiteral("acme/api")}}},
+                                         {QStringLiteral("qmod"), QJsonObject{{QStringLiteral("key"), QStringLiteral("K")}}}};
+    ProjectDialog removing(project, model, device, projectTypes);
+    QVERIFY(addSettings(removing)->isHidden());
+    removing.findChild<QPushButton *>(QStringLiteral("removeSection.qmod"))->click();
+    QVERIFY(box(removing, QStringLiteral("qmod"))->isHidden());
+    QVERIFY(!addSettings(removing)->isHidden());
+    QCOMPARE(offered(removing).size(), 1);
+    QCOMPARE(offered(removing).at(0)->text(), QStringLiteral("Q Mod"));
+    // Its required field no longer refuses OK.
+    removing.accept();
+    QCOMPARE(removing.result(), int(QDialog::Accepted));
+    Project withoutQ = project;
+    withoutQ.moduleSettings.remove(QStringLiteral("qmod"));
+    QCOMPARE(removing.value(), withoutQ);
+    removing.findChild<QPushButton *>(QStringLiteral("removeSection.pmod"))->click();
+    QCOMPARE(offered(removing).size(), 2);
+    QCOMPARE(offered(removing).at(0)->text(), QStringLiteral("Proj Mod"));
+    QVERIFY(removing.value().moduleSettings.isEmpty());
+    offered(removing).at(0)->trigger();
+    QVERIFY(!box(removing, QStringLiteral("pmod"))->isHidden());
+    auto *pmodForm = removing.findChild<FieldForm *>(QStringLiteral("moduleSettings.pmod"));
+    QVERIFY(qobject_cast<QLineEdit *>(pmodForm->editorFor(QStringLiteral("path")))->text().isEmpty());
+    QVERIFY(removing.value().moduleSettings.isEmpty());
 
     // Keys no field shows count as values, and an empty object stays hidden
     // and stored as it is.
