@@ -127,6 +127,7 @@ struct ProfilesDialog::Private
     QPointer<QLineEdit> nameEdit;               // on a General page
     QJsonObject pageValues;                     // the stored values the page was made from
     QString pageAccountName;
+    QString pageProfileName;                    // the name a General page was made with
     Node pageNode;
     QPushButton *removeAccountButton = nullptr;
     QPushButton *revertButton = nullptr;
@@ -134,6 +135,8 @@ struct ProfilesDialog::Private
     QLabel *message = nullptr;
     QSet<QString> expanded;                     // keys of expanded nodes, kept across rebuilds
     bool filling = false;                       // the tree is being built
+    bool inTreeSignal = false;                  // in the tree's currentItemChanged
+    bool refreshQueued = false;
 
     // The profile of the selected node.
     QString selectedId() const { return nodeOf(tree->currentItem()).profileId; }
@@ -243,14 +246,32 @@ struct ProfilesDialog::Private
         showNode(nodeOf(current));
     }
 
+    // Builds the tree again, at once, or after the tree's signal if it is
+    // in one: building it deletes the items the signal is about.
+    void requestRefresh()
+    {
+        if (!inTreeSignal) {
+            refresh();
+            return;
+        }
+        if (refreshQueued)
+            return;
+        refreshQueued = true;
+        QMetaObject::invokeMethod(
+            q,
+            [this] {
+                refreshQueued = false;
+                refresh();
+            },
+            Qt::QueuedConnection);
+    }
+
     bool isModified() const
     {
         if (settingsPage)
             return settingsPage->isModified();
-        if (nameEdit) {
-            const Profile *profile = model->profile(pageNode.profileId);
-            return profile && nameEdit->text().trimmed() != profile->name;
-        }
+        if (nameEdit)
+            return nameEdit->text().trimmed() != pageProfileName;
         return false;
     }
 
@@ -337,6 +358,7 @@ struct ProfilesDialog::Private
         widget->setObjectName(QStringLiteral("generalPage"));
         auto *layout = new QVBoxLayout(widget);
         auto *form = new QFormLayout;
+        pageProfileName = profile->name;
         nameEdit = new QLineEdit(profile->name, widget);
         nameEdit->setObjectName(QStringLiteral("profileName"));
         QObject::connect(nameEdit, &QLineEdit::textEdited, q, [this] { updateButtons(); });
@@ -448,8 +470,7 @@ struct ProfilesDialog::Private
             if (settingsPage)
                 settingsPage->setModified(false);
             if (nameEdit)
-                nameEdit->setText(model->profile(pageNode.profileId) ? model->profile(pageNode.profileId)->name
-                                                                       : QString());
+                nameEdit->setText(pageProfileName);
             return true;
         case Unsaved::Stay:
             break;
@@ -704,7 +725,11 @@ ProfilesDialog::ProfilesDialog(Model &model, QWidget *parent)
             [this](QTreeWidgetItem *current, QTreeWidgetItem *previous) {
                 if (d->filling)
                     return;
-                if (previous && !(nodeOf(current) == d->pageNode) && !d->mayLeave()) {
+                const Node target = nodeOf(current);
+                d->inTreeSignal = true;
+                const bool leave = !previous || target == d->pageNode || d->mayLeave();
+                d->inTreeSignal = false;
+                if (!leave) {
                     // Back to the page with the changes, after this signal.
                     const Node stay = d->pageNode;
                     QMetaObject::invokeMethod(
@@ -717,7 +742,7 @@ ProfilesDialog::ProfilesDialog(Model &model, QWidget *parent)
                         Qt::QueuedConnection);
                     return;
                 }
-                d->showNode(nodeOf(current));
+                d->showNode(target);
             });
     // Queued: the rename fills the tree again, which deletes the entry the
     // tree is still handling the double-click on.
@@ -730,8 +755,8 @@ ProfilesDialog::ProfilesDialog(Model &model, QWidget *parent)
         Qt::QueuedConnection);
     // A reload or another device may change the profiles while the window is
     // open.
-    connect(&model, &Model::profilesChanged, this, [this] { d->refresh(); });
-    connect(&model, &Model::modelReset, this, [this] { d->refresh(); });
+    connect(&model, &Model::profilesChanged, this, [this] { d->requestRefresh(); });
+    connect(&model, &Model::modelReset, this, [this] { d->requestRefresh(); });
 
     d->refresh();
     // The profiles start open, so their modules show.
@@ -803,7 +828,7 @@ bool ProfilesDialog::applyCurrent()
         if (!d->services.applyPage || !d->services.applyPage(*d->settingsPage))
             return false;
         // The tree's names follow, and the page is made again from what was stored.
-        d->refresh();
+        d->requestRefresh();
         return true;
     }
     if (d->nameEdit)

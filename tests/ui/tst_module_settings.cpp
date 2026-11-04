@@ -33,6 +33,7 @@
 #include <QSettings>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QTreeWidget>
 
 #include <memory>
 
@@ -218,21 +219,15 @@ struct Fixture
 
     QMenu *profilesMenu() const { return window->menuBar()->findChild<QMenu *>(QStringLiteral("profilesMenu")); }
 
-    // The submenus of the Profiles menu, by their titles.
+    // The profiles' entries of the Profiles menu, by their texts.
     QStringList profileTitles() const
     {
         QStringList titles;
         for (QAction *action : profilesMenu()->actions()) {
-            if (action->menu())
-                titles << action->menu()->title();
+            if (action->objectName().startsWith(QLatin1String("profile.")))
+                titles << action->text();
         }
         return titles;
-    }
-
-    QAction *entry(const QString &profileId, const QString &screenId) const
-    {
-        return profilesMenu()->findChild<QAction *>(
-            QStringLiteral("moduleSettings.%1.tools.%2").arg(profileId, screenId));
     }
 };
 
@@ -251,9 +246,9 @@ class TestModuleSettings : public QObject
     Q_OBJECT
 
 private slots:
-    // Manage Profiles… first, then a submenu per profile, Default first. Each
-    // has Modules, with a submenu for each module with screens, named after
-    // the module, with the screens in their order, by their names.
+    // Manage Profiles… first, then an entry per profile, the default first,
+    // each opening the Profiles window at that profile. No submenus. See
+    // decision 0145.
     void menu()
     {
         Fixture f(true);
@@ -264,29 +259,12 @@ private slots:
         QCOMPARE(top.size(), 3);
         QCOMPARE(top[0]->text(), QStringLiteral("&Manage Profiles…"));
         QVERIFY(top[1]->isSeparator());
-        QMenu *standard = top[2]->menu();
-        QVERIFY(standard);
-        QCOMPARE(standard->title(), QStringLiteral("Default (default)"));
-        QCOMPARE(standard->actions().size(), 4);
-        // Set as Default follows Modules, disabled for the default itself.
-        QCOMPARE(standard->actions().at(1)->text(), QStringLiteral("Set as &Default"));
-        QVERIFY(!standard->actions().at(1)->isEnabled());
-        // Settings… comes last, after a separator.
-        QVERIFY(standard->actions().at(2)->isSeparator());
-        QCOMPARE(standard->actions().at(3)->text(), QStringLiteral("&Settings…"));
-        QMenu *modules = standard->actions().front()->menu();
-        QVERIFY(modules);
-        QCOMPARE(modules->title(), QStringLiteral("&Modules"));
-        QVERIFY(modules->isEnabled());
-        QCOMPARE(modules->actions().size(), 1);
-        QMenu *tools = modules->actions().front()->menu();
-        QVERIFY(tools);
-        QCOMPARE(tools->title(), QStringLiteral("Tools"));
-        const QList<QAction *> entries = tools->actions();
-        QCOMPARE(entries.size(), 2);
-        QCOMPARE(entries[0]->text(), QStringLiteral("General Configuration…"));
-        QCOMPARE(entries[0]->objectName(), QStringLiteral("moduleSettings.default.tools.general"));
-        QCOMPARE(entries[1]->text(), QStringLiteral("Look…"));
+        QCOMPARE(top[2]->text(), QStringLiteral("Default (default)…"));
+        QVERIFY(!top[2]->menu());
+        ProfilesDialog::Node opened;
+        f.window->entityActions()->setEditProfiles([&opened](ProfilesDialog &dialog) { opened = dialog.currentNode(); });
+        top[2]->trigger();
+        QCOMPARE(opened, (ProfilesDialog::Node{kDefaultProfile, {}, {}, {}}));
 
         // The menu sits after View, and before Help and the Tools menu that
         // Windows and Linux have. There is no Modules menu, and File has no
@@ -314,16 +292,30 @@ private slots:
         QVERIFY(opened);
     }
 
-    // Without screens, each profile's Modules submenu is disabled and says so.
+    // Without screens, the Profiles window lists the profiles only. With
+    // them, a module without a server and with several screens lists them
+    // under it, by their names.
     void noModuleSettings()
     {
-        Fixture f(false);
-        QMenu *modules = f.profilesMenu()->findChild<QMenu *>(QStringLiteral("modulesMenu.default"));
-        QVERIFY(modules);
-        QVERIFY(!modules->isEnabled());
-        QCOMPARE(modules->actions().size(), 1);
-        QCOMPARE(modules->actions().front()->text(), QStringLiteral("No module settings"));
-        QVERIFY(!modules->actions().front()->isEnabled());
+        for (const bool screens : {false, true}) {
+            Fixture f(screens);
+            QStringList children;
+            f.window->entityActions()->setEditProfiles([&children](ProfilesDialog &dialog) {
+                auto *tree = dialog.findChild<QTreeWidget *>(QStringLiteral("profileTree"));
+                QTreeWidgetItem *profile = tree->topLevelItem(0);
+                for (int i = 0; i < profile->childCount(); ++i) {
+                    children << profile->child(i)->text(0);
+                    for (int j = 0; j < profile->child(i)->childCount(); ++j)
+                        children << QStringLiteral("  ") + profile->child(i)->child(j)->text(0);
+                }
+            });
+            f.window->entityActions()->editProfiles();
+            if (screens)
+                QCOMPARE(children, (QStringList{QStringLiteral("Tools"), QStringLiteral("  General Configuration"),
+                                                QStringLiteral("  Look")}));
+            else
+                QVERIFY(children.isEmpty());
+        }
     }
 
     // The menu is built again when profiles are added, renamed or removed,
@@ -332,32 +324,24 @@ private slots:
     void followsTheProfiles()
     {
         Fixture f(true);
-        QCOMPARE(f.profileTitles(), QStringList{QStringLiteral("Default (default)")});
+        QCOMPARE(f.profileTitles(), QStringList{QStringLiteral("Default (default)…")});
         f.model.setProfile(makeProfile(QStringLiteral("w"), QStringLiteral("Work")));
         f.model.setProfile(makeProfile(QStringLiteral("b"), QStringLiteral("bank")));
-        QTRY_COMPARE(f.profileTitles(), (QStringList{QStringLiteral("Default (default)"), QStringLiteral("bank"),
-                                                     QStringLiteral("Work")}));
-        QVERIFY(f.entry(QStringLiteral("w"), QStringLiteral("general")));
+        QTRY_COMPARE(f.profileTitles(), (QStringList{QStringLiteral("Default (default)…"), QStringLiteral("bank…"),
+                                                     QStringLiteral("Work…")}));
 
         f.model.setProfile(makeProfile(QStringLiteral("b"), QStringLiteral("Personal")));
-        QTRY_COMPARE(f.profileTitles(), (QStringList{QStringLiteral("Default (default)"), QStringLiteral("Personal"),
-                                                     QStringLiteral("Work")}));
+        QTRY_COMPARE(f.profileTitles(), (QStringList{QStringLiteral("Default (default)…"),
+                                                     QStringLiteral("Personal…"), QStringLiteral("Work…")}));
 
-        // Set as Default in a profile's submenu.
-        auto *makeDefault = f.profilesMenu()->findChild<QAction *>(QStringLiteral("setDefaultProfile.w"));
-        QVERIFY(makeDefault);
-        QVERIFY(makeDefault->isEnabled());
-        makeDefault->trigger();
-        QCOMPARE(f.model.defaultProfile(), QStringLiteral("w"));
-        QTRY_COMPARE(f.profileTitles(), (QStringList{QStringLiteral("Work (default)"), QStringLiteral("Default"),
-                                                     QStringLiteral("Personal")}));
-        QVERIFY(!f.profilesMenu()->findChild<QAction *>(QStringLiteral("setDefaultProfile.w"))->isEnabled());
+        f.model.setDefaultProfile(QStringLiteral("w"));
+        QTRY_COMPARE(f.profileTitles(), (QStringList{QStringLiteral("Work (default)…"), QStringLiteral("Default…"),
+                                                     QStringLiteral("Personal…")}));
 
         // Removing the default makes the first of the others by name the default.
         profiles::remove(f.model, QStringLiteral("w"));
         QTRY_COMPARE(f.profileTitles(),
-                     (QStringList{QStringLiteral("Default (default)"), QStringLiteral("Personal")}));
-        QVERIFY(!f.entry(QStringLiteral("w"), QStringLiteral("general")));
+                     (QStringList{QStringLiteral("Default (default)…"), QStringLiteral("Personal…")}));
     }
 
     // The entry opens a form built from the fields for its profile only,
@@ -373,7 +357,6 @@ private slots:
                                    {QStringLiteral("future"), 3}});
         f.model.setModuleSettings(kDefaultProfile, QStringLiteral("tools"), QStringLiteral("general"),
                                   {{QStringLiteral("name"), QStringLiteral("Mine")}});
-        QTRY_VERIFY(f.entry(QStringLiteral("w"), QStringLiteral("general")));
 
         QString title;
         bool selector = true;
@@ -389,7 +372,8 @@ private slots:
             paths->setPlainText(QStringLiteral("a/b\nc/d"));
             return true;
         });
-        f.entry(QStringLiteral("w"), QStringLiteral("general"))->trigger();
+        f.window->entityActions()->editModuleSettings(QStringLiteral("w"), QStringLiteral("tools"),
+                                                      QStringLiteral("general"));
 
         QCOMPARE(title, QStringLiteral("Work: Tools General Configuration"));
         QVERIFY(!selector);
@@ -407,7 +391,7 @@ private slots:
             title = dialog.windowTitle();
             return false;
         });
-        f.entry(kDefaultProfile, QStringLiteral("look"))->trigger();
+        f.window->entityActions()->editModuleSettings(kDefaultProfile, QStringLiteral("tools"), QStringLiteral("look"));
         QCOMPARE(title, QStringLiteral("Default: Tools Look"));
 
         // Cancel changes nothing.
