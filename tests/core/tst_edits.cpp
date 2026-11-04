@@ -121,7 +121,7 @@ private slots:
     void addFirstDashboardBecomesDefault();
     void removeDashboard();
     void removeDefaultDashboard();
-    void removeLastDashboardRefused();
+    void removeLastDashboard();
     void setDefaultDashboard();
     void moveItem();
     void moveDashboard();
@@ -150,13 +150,14 @@ void TestEdits::newTask()
     QCOMPARE(task.title, QStringLiteral("Fix login"));
     QCOMPARE(task.state, TaskState::Active);
     QVERIFY(task.items.empty());
-    QCOMPARE(task.dashboards.size(), std::size_t(1));
-    QCOMPARE(task.dashboards[0].name, QStringLiteral("Main"));
-    QCOMPARE(task.defaultDashboardId, task.dashboards[0].id);
-    QVERIFY(task.dashboards[0].id != task.id);
-    const LayoutNode &layout = task.dashboards[0].layout;
-    QCOMPARE(layout.kind, LayoutNode::Kind::Cell);
-    QVERIFY(!layout.ref);
+    QVERIFY(task.dashboards.empty());
+    QVERIFY(task.defaultDashboardId.isEmpty());
+
+    const Dashboard main = edits::newMainDashboard();
+    QCOMPARE(main.name, QStringLiteral("Main"));
+    QVERIFY(!QUuid::fromString(main.id).isNull());
+    QCOMPARE(main.layout.kind, LayoutNode::Kind::Cell);
+    QVERIFY(!main.layout.ref);
 }
 
 void TestEdits::addItem()
@@ -225,10 +226,12 @@ void TestEdits::removeDefaultDashboard()
     QCOMPARE(task.defaultDashboardId, QStringLiteral("d2"));
 }
 
-void TestEdits::removeLastDashboardRefused()
+void TestEdits::removeLastDashboard()
 {
     const Task one = edits::removeDashboard(sampleTask(), QStringLiteral("d2"));
-    QCOMPARE(edits::removeDashboard(one, QStringLiteral("d1")), one);
+    const Task none = edits::removeDashboard(one, QStringLiteral("d1"));
+    QVERIFY(none.dashboards.empty());
+    QVERIFY(none.defaultDashboardId.isEmpty());
     QCOMPARE(edits::removeDashboard(sampleTask(), QStringLiteral("nope")), sampleTask());
 }
 

@@ -16,18 +16,18 @@ namespace mirante::edits {
 // A new UUID, without braces.
 QString newId();
 
-// A new active task with one dashboard, "Main", holding one empty cell, which
-// is its default dashboard.
+// A new active task with no items and no dashboards.
 Task newTask(const QString &projectId, const QString &title);
+// A new dashboard named "Main" holding one empty cell, for a task.
+Dashboard newMainDashboard();
 
 Task addItem(Task task, const Item &item);
 // Removes the item, and turns every cell of the task's dashboards that shows
 // it into an empty cell.
 Task removeItem(Task task, const QString &itemId);
 Task addDashboard(Task task, const Dashboard &dashboard);
-// Removes the dashboard. A task keeps at least one dashboard, so removing the
-// last one returns the task unchanged. If the default goes, the first
-// remaining dashboard becomes the default.
+// Removes the dashboard, the last one too. If the default goes, the first
+// remaining dashboard becomes the default, or none if no dashboard is left.
 Task removeDashboard(Task task, const QString &dashboardId);
 Task setDefaultDashboard(Task task, const QString &dashboardId);
 // Moves an item or a task dashboard to index within the task's list, which

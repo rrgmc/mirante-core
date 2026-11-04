@@ -260,7 +260,8 @@ void TestStoreReload::dashboardArrivesBeforeItsTask()
     Store store(model);
     QVERIFY(store.open(m_dir->path()).empty());
 
-    Task task = edits::newTask(QStringLiteral("p1"), QStringLiteral("Late task"));
+    Task task = edits::addDashboard(edits::newTask(QStringLiteral("p1"), QStringLiteral("Late task")),
+                                    edits::newMainDashboard());
     const QString cell = QStringLiteral(R"({"type":"cell","ref":{"task":"%1","dashboard":"%2"}})")
                              .arg(task.id, task.dashboards.front().id);
     writeFile(path(QStringLiteral("dashboards/d1.json")),

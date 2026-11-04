@@ -37,6 +37,7 @@
 #include "platform/Notifier.h"
 #include "platform/Tray.h"
 #include "ui/ConflictBar.h"
+#include "ui/ColourChooser.h"
 #include "ui/DashboardDialog.h"
 #include "ui/DashboardPage.h"
 #include "ui/DetachedWindow.h"
@@ -368,11 +369,15 @@ struct MainWindow::Private
     }
 
     // Task dashboard previews carry the dashboard icon and item previews the item's
-    // type icon, so they read apart from root dashboard tabs, which have none.
+    // type icon, so they read apart from root dashboard tabs, which have none
+    // but a dot of the dashboard's colour, if it has one.
     QIcon pageIcon(const DashboardPage *page) const
     {
-        if (page->ref.isRoot())
-            return QIcon();
+        if (page->ref.isRoot()) {
+            const RootDashboard *dashboard = model->rootDashboard(page->ref.dashboardId);
+            return dashboard && groupcolours::isValid(dashboard->colour) ? colourDot(QColor(dashboard->colour))
+                                                                         : QIcon();
+        }
         if (page->itemId.isEmpty())
             return QIcon(QStringLiteral(":/icons/dashboard.svg"));
         const Item *item = model->item(page->ref.taskId, page->itemId);
@@ -671,10 +676,17 @@ struct MainWindow::Private
         if (!dashboard)
             return;
         DashboardDialog dialog(*dashboard, false, q);
+        dialog.setWindowTitle(MainWindow::tr("Edit dashboard"));
+        dialog.offerColour(dashboard->colour);
         if (dialog.exec() != QDialog::Accepted)
+            return;
+        // The dashboard may have changed while the dialog was open.
+        dashboard = model->rootDashboard(pages[std::size_t(index)]->ref.dashboardId);
+        if (!dashboard)
             return;
         RootDashboard changed = *dashboard;
         changed.name = dialog.value().name;
+        changed.colour = dialog.colour();
         model->setRootDashboard(changed);
     }
 
@@ -850,6 +862,7 @@ struct MainWindow::Private
             if (const LayoutNode *tree = model->layout(page->ref))
                 page->view->setTree(*tree);
             tabBar->setTabText(int(i), title(page->ref));
+            tabBar->setTabIcon(int(i), pageIcon(page));
         }
         if (DetachedWindow *window = detachedWindow(id)) {
             if (const LayoutNode *tree = model->layout(window->page()->ref))

@@ -403,7 +403,7 @@ Native views of different modules need the same small widgets, and modules rarel
 - `FieldForm`: the form the core builds from a list of fields, one row per field, as an `ItemEditor`. A custom editor can place one inside its own widgets, and `setFieldEditor()` replaces the editor of one field with a `FieldEditor`. See [custom screens](#custom-screens).
 - `ImagePasteDialog` and `ImageCropView`: the dialog every image paste opens first, with a preview and a crop. See [pasting images](ui.md#pasting-images).
 - `imageFromMime()`: the image a drag from another app carries.
-- `compactDate()`: a date for a table, in local time: `10-30 14:32` in this year, `2025-10-30` otherwise.
+- `compactDate()`: a date for a table. Up to 6 days away it reads as a distance in one unit, such as "10 minutes ago", "1 hour ago", "3 days ago" or "in 2 hours". Further away it is in local time: `10-30 14:32` in this year, `2025-10-30` otherwise. `relativeDate(when, now)` gives the distance alone.
 - `MarkdownView`: a read-only `QTextBrowser` that shows Markdown with GitHub's extensions. Before Qt reads the text, void HTML elements such as `<img ...>` and `<br>` are written as self-closing, outside code, because Qt's importer would otherwise drop all the text after them. Code blocks and code spans get a light background, and the text has a 10-pixel margin. Web and mail links open in the external programs. Loading images is off by default, as the Notes preview needs. `setResourceFetcher()` turns it on: the view asks the fetcher for each image, resolved against the base given to `setMarkdownText()`, and lays the document out again when it arrives. The Notes preview and the document items use it. See [decision 0104](decisions/0104-document-items.md).
 
 ### Testing

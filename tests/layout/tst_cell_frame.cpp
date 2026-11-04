@@ -3,6 +3,7 @@
 // button shows when asked and emits refreshRequested. Also tests the
 // drops of images from other apps that setImageDrop() turns on.
 #include "layout/CellFrame.h"
+#include "layout/BusyIndicators.h"
 
 #include <QApplication>
 #include <QDragEnterEvent>
@@ -210,6 +211,30 @@ private slots:
         QCOMPARE(refresh.count(), 1);
         frame->setRefreshVisible(false);
         QVERIFY(!button->isVisibleTo(frame.get()));
+    }
+
+    // While fetching, the refresh icon turns and the busy bar runs.
+    void refreshing()
+    {
+        auto frame = itemFrame();
+        frame->setRefreshVisible(true);
+        auto *button = frame->findChild<QToolButton *>(QStringLiteral("refreshButton"));
+        auto *bar = frame->findChild<BusyBar *>(QStringLiteral("busyBar"));
+        QVERIFY(bar);
+        QVERIFY(!frame->isRefreshing());
+        QVERIFY(!bar->isBusy());
+        QCOMPARE(bar->height(), 2);
+
+        frame->setRefreshing(true);
+        QVERIFY(frame->isRefreshing());
+        QVERIFY(bar->isBusy());
+        QCOMPARE(button->toolTip(), QStringLiteral("Refreshing…"));
+
+        frame->setRefreshing(false);
+        QVERIFY(!frame->isRefreshing());
+        QVERIFY(!bar->isBusy());
+        QCOMPARE(button->toolTip(), QStringLiteral("Refresh"));
+        QVERIFY(!button->icon().isNull());
     }
 
     // The status area comes after a header widget and before the menu

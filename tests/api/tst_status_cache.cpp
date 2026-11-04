@@ -267,6 +267,30 @@ private slots:
         QCOMPARE(f->controller.fetched.count(QStringLiteral("i4")), 2);
     }
 
+    // A held job is fetching until it ends; statusChanged comes before the end.
+    void fetchingIsTold()
+    {
+        f->controller.mode = Fetch::Hold;
+        QSignalSpy fetching(f->cache.get(), &StatusCache::fetchingChanged);
+        QVERIFY(!f->cache->isFetching(QStringLiteral("i4")));
+        f->cache->refresh(QStringLiteral("i4"));
+        QVERIFY(f->cache->isFetching(QStringLiteral("i4")));
+        QCOMPARE(fetching.count(), 1);
+        QCOMPARE(fetching.at(0).at(0).toString(), QStringLiteral("i4"));
+        QCOMPARE(fetching.at(0).at(1).toBool(), true);
+
+        QStringList order;
+        connect(f->cache.get(), &StatusCache::statusChanged, this, [&order] { order << QStringLiteral("status"); });
+        connect(f->cache.get(), &StatusCache::fetchingChanged, this,
+                [&order](const QString &, bool on) { order << (on ? QStringLiteral("on") : QStringLiteral("off")); });
+        for (const auto &[itemId, job] : f->controller.held)
+            job->finish(okStatus(itemId));
+        f->controller.held.clear();
+        QVERIFY(!f->cache->isFetching(QStringLiteral("i4")));
+        QCOMPARE(order, QStringList({QStringLiteral("status"), QStringLiteral("off")}));
+        disconnect(f->cache.get(), nullptr, this, nullptr);
+    }
+
     void okStatusIsKept()
     {
         QSignalSpy changed(f->cache.get(), &StatusCache::statusChanged);
