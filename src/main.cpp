@@ -41,9 +41,8 @@
 
 int main(int argc, char *argv[])
 {
-    // The log messages for Help > Show Log, kept from the start. Debug builds
-    // always keep them; release builds only with --log. The console output
-    // stays as it is.
+    // The log messages for Help > Show Log, kept from the start in every
+    // build. The console output stays as it is.
     auto logBuffer = std::make_unique<mirante::LogBuffer>();
     logBuffer->install();
 
@@ -87,9 +86,6 @@ int main(int argc, char *argv[])
         QStringLiteral("Keep the web logins in <folder> instead, for test runs beside another instance."),
         QStringLiteral("folder"));
     parser.addOption(webDataOption);
-    const QCommandLineOption logOption(QStringLiteral("log"),
-                                       QStringLiteral("Keep the log messages for Help > Show Log. Always on in debug builds."));
-    parser.addOption(logOption);
     const QCommandLineOption noKeychainOption(
         QStringLiteral("no-keychain"),
         QStringLiteral("Keep tokens in memory only, lost at exit, instead of the keychain, for test runs."));
@@ -99,11 +95,6 @@ int main(int argc, char *argv[])
         QStringLiteral("Start hidden in the tray, as at sign-in. Starting Mirante again shows the window."));
     parser.addOption(hiddenOption);
     parser.process(app);
-#ifdef NDEBUG
-    // Without the buffer, Help has no Show Log and Qt's own handler is back.
-    if (!parser.isSet(logOption))
-        logBuffer.reset();
-#endif
 
     // The device settings come after the application and organisation names,
     // which choose where QSettings keeps them, and before the language, which
