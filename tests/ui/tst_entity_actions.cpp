@@ -796,10 +796,10 @@ void TestEntityActions::menus()
     actionNamed(other, QStringLiteral("Set as default"))->trigger();
     QCOMPARE(model.task(fixLoginTimeout)->defaultDashboardId, review);
 
-    // The last dashboard cannot be deleted.
+    // The last dashboard can be deleted too.
     QMenu last;
     actions->fillMenu(&last, SidebarModel::Kind::Dashboard, model.task(upgradeGo)->dashboards.front().id, upgradeGo);
-    QVERIFY(!actionNamed(last, QStringLiteral("Delete dashboard…"))->isEnabled());
+    QVERIFY(actionNamed(last, QStringLiteral("Delete dashboard…"))->isEnabled());
 
     // An unknown id adds nothing.
     QMenu unknown;
