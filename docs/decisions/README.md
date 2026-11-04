@@ -53,7 +53,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0046](0046-group-colours.md) | Each group has a colour | Accepted; item cell headers by 0047 |
 | [0047](0047-item-headers-in-group-colours.md) | Item cell headers take their group's colour | Accepted |
 | [0048](0048-focus-and-preview-slots.md) | Focus and the preview have fixed slots right of the tabs | Accepted; pinning by 0052; the sidebar's Focus entry by 0053 |
-| [0049](0049-items-from-a-pasted-link.md) | Item types read a pasted link, and the item dialog offers the types that take it | Accepted; connections superseded by 0054 |
+| [0049](0049-items-from-a-pasted-link.md) | Item types read a pasted link, and the item dialog offers the types that take it | Accepted; connections superseded by 0054, "Paste URL…" by 0141 |
 | [0050](0050-profiles-hold-logins-connections-and-settings.md) | Profiles hold logins, connections and module settings | Accepted; connections superseded by 0054, Default by 0057 |
 | [0051](0051-paste-images-from-the-items-menu.md) | Pasted images become items of a task, not cells of a dashboard | Accepted |
 | [0052](0052-no-pinning.md) | The preview is never pinned | Accepted |
@@ -145,6 +145,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0138](0138-add-list-values-from-the-server.md) | Settings lists can be filled from the module's server | Accepted |
 | [0139](0139-text-lists-offer-their-suggestions.md) | Text lists offer their suggestions in a checklist | Accepted |
 | [0140](0140-log-window-in-all-builds.md) | The log window in every build, the sample data menu in debug builds only | Accepted |
+| [0141](0141-one-menu-entry-for-links.md) | One menu entry adds items from a link | Accepted |
 
 ## Template
 

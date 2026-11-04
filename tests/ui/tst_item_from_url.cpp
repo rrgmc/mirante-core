@@ -1,8 +1,8 @@
 // Tests making an item from a pasted link: the link field of the item
 // dialog's type page, which shows only the types that take the link, best
-// first, and fills the chosen type's configuration and name; and "Paste
-// URL…" in a task's menus, which opens the dialog with the clipboard's link
-// and gives the item the connection of the link's server.
+// first, and fills the chosen type's configuration and name; and
+// EntityActions::newItem() with a link, which opens the dialog with it and
+// gives the item the server of its profile.
 #include "core/DeviceSettings.h"
 #include "core/Model.h"
 #include "core/Profiles.h"
@@ -15,14 +15,9 @@
 #include <mirante/ItemEditor.h>
 #include <mirante/Module.h>
 
-#include <QAction>
-#include <QClipboard>
-#include <QGuiApplication>
 #include <QLabel>
 #include <QLineEdit>
 #include <QTreeWidget>
-#include <QMenu>
-#include <QMimeData>
 #include <QPushButton>
 #include <QSettings>
 #include <QTemporaryDir>
@@ -156,15 +151,6 @@ QString hint(ItemDialog &dialog) { return dialog.findChild<QLabel *>(QStringLite
 
 QString nameOf(ItemDialog &dialog) { return dialog.findChild<QLineEdit *>(QStringLiteral("name"))->text(); }
 
-QAction *actionNamed(const QMenu &menu, const QString &text)
-{
-    for (QAction *action : menu.actions()) {
-        if (action->text() == text)
-            return action;
-    }
-    return nullptr;
-}
-
 } // namespace
 
 class TestItemFromUrl : public QObject
@@ -192,8 +178,7 @@ private slots:
     void prefill();
     void typedNameKept();
     void serverOfTheProfile();
-    void pasteUrl();
-    void menuEntry();
+    void newItemWithUrl();
 };
 
 void TestItemFromUrl::initTestCase()
@@ -223,7 +208,6 @@ void TestItemFromUrl::init()
         item->accept();
         return item->result() == QDialog::Accepted;
     });
-    QGuiApplication::clipboard()->clear();
 }
 
 void TestItemFromUrl::filtering()
@@ -336,18 +320,12 @@ void TestItemFromUrl::serverOfTheProfile()
     servers.clear();
 }
 
-void TestItemFromUrl::pasteUrl()
+void TestItemFromUrl::newItemWithUrl()
 {
-    // Without a link on the clipboard, nothing opens.
-    QGuiApplication::clipboard()->setText(QStringLiteral("just words"));
-    QVERIFY(EntityActions::clipboardUrl().isEmpty());
-    QVERIFY(actions->pasteUrl(fixLoginTimeout).isEmpty());
-    QCOMPARE(execCount, 0);
-
     // A link on the server of the group's profile.
     servers.insert(workProfile, QUrl(QStringLiteral("https://gitlab.acme.internal")));
-    QGuiApplication::clipboard()->setText(QStringLiteral("https://gitlab.acme.internal/ops/infra/-/merge_requests/2"));
-    const QString acme = actions->pasteUrl(fixLoginTimeout);
+    const QString acme
+        = actions->newItem(fixLoginTimeout, QStringLiteral("https://gitlab.acme.internal/ops/infra/-/merge_requests/2"));
     QVERIFY(!acme.isEmpty());
     QCOMPARE(dialogUrl, QStringLiteral("https://gitlab.acme.internal/ops/infra/-/merge_requests/2"));
     const Item *item = model.item(fixLoginTimeout, acme);
@@ -357,34 +335,6 @@ void TestItemFromUrl::pasteUrl()
     // The item names no connection: its profile has one server per module.
     QVERIFY(!item->toJson().contains(QStringLiteral("connectionId")));
     servers.clear();
-
-    // A copied link, as a browser puts it on the clipboard, works too.
-    auto *data = new QMimeData;
-    data->setUrls({QUrl(QStringLiteral("https://example.org/doc"))});
-    QGuiApplication::clipboard()->setMimeData(data);
-    QCOMPARE(EntityActions::clipboardUrl(), QUrl(QStringLiteral("https://example.org/doc")));
-}
-
-void TestItemFromUrl::menuEntry()
-{
-    QGuiApplication::clipboard()->setText(QStringLiteral("no link here"));
-    QMenu task;
-    actions->fillMenu(&task, SidebarModel::Kind::Task, fixLoginTimeout, fixLoginTimeout);
-    QAction *disabled = actionNamed(task, QStringLiteral("Paste URL…"));
-    QVERIFY(disabled);
-    QVERIFY(!disabled->isEnabled());
-
-    QGuiApplication::clipboard()->setText(QStringLiteral("https://gitlab.example/acme/backend/-/merge_requests/8"));
-    QMenu items;
-    actions->fillMenu(&items, SidebarModel::Kind::ItemList, QString(), fixLoginTimeout);
-    QAction *paste = actionNamed(items, QStringLiteral("Paste URL…"));
-    QVERIFY(paste);
-    QVERIFY(paste->isEnabled());
-    const size_t before = model.task(fixLoginTimeout)->items.size();
-    paste->trigger();
-    QCOMPARE(execCount, 1);
-    QCOMPARE(dialogUrl, QStringLiteral("https://gitlab.example/acme/backend/-/merge_requests/8"));
-    QCOMPARE(model.task(fixLoginTimeout)->items.size(), before + 1);
 }
 
 QTEST_MAIN(TestItemFromUrl)

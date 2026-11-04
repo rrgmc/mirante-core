@@ -85,12 +85,6 @@ public:
     // the link with their module settings in the group's profile. See
     // decisions 0049 and 0054.
     QString newItem(const QString &taskId, const QString &url = QString());
-    // "Paste URL…": newItem() with the web address on the clipboard. Nothing
-    // happens, and an empty string is returned, if the clipboard holds none.
-    QString pasteUrl(const QString &taskId);
-    // The web address on the clipboard: its first http or https URL, else its
-    // text if that is one. Empty if it holds none.
-    static QUrl clipboardUrl();
     QString newDashboard(const QString &taskId);
     // "Paste Image…": opens the paste dialog on the clipboard's image, then
     // adds the cropped image to the task as a new Image item, on no
