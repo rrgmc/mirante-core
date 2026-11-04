@@ -6,6 +6,8 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-04
+
 ### Added
 
 - **Duplicate item…** in the context menu of an item in the sidebar, and **Duplicate Item…** in the menu of an item cell, open the new item dialog filled with a copy of the item.
@@ -112,7 +114,8 @@ The first release of the core on its own, after it was split from `mirante` for 
 
 - `qrc:` addresses in item web views, which shared one origin among all pages.
 
-[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.6...HEAD
+[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/rrgmc/mirante-core/compare/v0.8.6...v0.12.0
 [0.8.6]: https://github.com/rrgmc/mirante-core/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/rrgmc/mirante-core/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/rrgmc/mirante-core/compare/v0.8.3...v0.8.4
