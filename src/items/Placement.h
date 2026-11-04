@@ -4,6 +4,7 @@
 
 #include <QDateTime>
 #include <QString>
+#include <QUrl>
 #include <QWidget>
 
 #include <functional>
@@ -80,6 +81,12 @@ public:
     // toolbar, or null.
     QWidget *headerWidget() const;
 
+    // The address the cell header's "Open in browser" button opens: the page
+    // of showPage() while one is shown, else the view's ItemContext::setWebLink().
+    // Empty when there is none, or it is not an http or https address. See
+    // decision 0143.
+    QUrl webLink() const;
+
     // What the cell header shows about the item's status. Kind::None for a
     // type without status, or without a status cache.
     CellStatus cellStatus() const;
@@ -94,6 +101,7 @@ public slots:
 
 signals:
     void headerWidgetChanged(QWidget *widget);
+    void webLinkChanged(const QUrl &url);
     void cellStatusChanged(const mirante::CellStatus &status);
 
 private:

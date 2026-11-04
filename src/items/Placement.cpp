@@ -9,6 +9,7 @@
 #include "items/ItemTypeRegistry.h"
 #include "items/ViewPool.h"
 #include "web/ProfileManager.h"
+#include "web/WebPanel.h"
 
 #include <mirante/ItemType.h>
 #include <mirante/Status.h>
@@ -112,6 +113,11 @@ struct Placement::Private
     QPointer<QWidget> pageHeader;       // the back button and the page's toolbar
     QPointer<QWidget> viewHeader;       // the view's header widget, while a page is shown
     QString pageProfile;                // the profile the page was made in
+    // The web links of decision 0143: the view's, from its context, and the
+    // page's while one is shown. The header opens shownLink.
+    QUrl viewLink;
+    QUrl pageLink;
+    QUrl shownLink;
     // Widgets deleted later, so that a view can change the model from its own
     // slot. The destructor deletes those still waiting, while the context
     // they may use still exists.
@@ -253,6 +259,30 @@ struct Placement::Private
         emit q->headerWidgetChanged(widget);
     }
 
+    // Only http and https addresses open in the external browser. A module's
+    // page, or one of the core's own, has no address there.
+    static QUrl browsable(const QUrl &url)
+    {
+        const QString scheme = url.scheme();
+        return url.isValid() && (scheme == QLatin1String("http") || scheme == QLatin1String("https")) ? url : QUrl();
+    }
+
+    // Tells the header the link it shows now, if it changed.
+    void updateWebLink()
+    {
+        const QUrl link = browsable(page ? pageLink : viewLink);
+        if (link == shownLink)
+            return;
+        shownLink = link;
+        emit q->webLinkChanged(link);
+    }
+
+    void setViewLink(const QUrl &url)
+    {
+        viewLink = url;
+        updateWebLink();
+    }
+
     // Web views and pages are heavy, so the pool may unload them while hidden.
     // A placement has one entry: the page while one is shown, else a web view.
     void updatePool()
@@ -287,6 +317,7 @@ struct Placement::Private
         retire(pageHeader);
         page = nullptr;
         pageHeader = nullptr;
+        pageLink = QUrl();
     }
 
     // The header widget of showPage(): the way back, then the page's toolbar.
@@ -325,10 +356,22 @@ struct Placement::Private
         page->setObjectName(QStringLiteral("itemPage"));
         pageProfile = mirante::profiles::effective(*services.model, taskId, itemId);
         pageHeader = createPageHeader(toolbar);
+        // The page's address follows the page. A page being deleted may
+        // still report one, which no longer counts.
+        pageLink = url;
+        if (auto *panel = qobject_cast<WebPanel *>(page.data())) {
+            QObject::connect(panel, &WebPanel::addressChanged, q, [this, panel](const QUrl &address) {
+                if (page == panel) {
+                    pageLink = address;
+                    updateWebLink();
+                }
+            });
+        }
         view->hide();
         layout->addWidget(page);
         page->show();
         setHeader(pageHeader);
+        updateWebLink();
         updatePool();
     }
 
@@ -340,6 +383,7 @@ struct Placement::Private
         setHeader(viewHeader);
         viewHeader = nullptr;
         discardPage();
+        updateWebLink();
         if (view)
             view->show();
         updatePool();
@@ -367,6 +411,8 @@ struct Placement::Private
         setHeader(nullptr);
         viewHeader = nullptr;
         discardPage();
+        viewLink = QUrl();
+        updateWebLink();
         if (view) {
             if (content == view)
                 content = nullptr;
@@ -670,6 +716,7 @@ Placement::Placement(const PlacementServices &services, const QString &taskId, c
 
     d->context.onHeaderWidget = [this](QWidget *widget) { d->setViewHeader(widget); };
     d->context.onShowPage = [this](const QUrl &url) { d->openPage(url); };
+    d->context.onWebLink = [this](const QUrl &url) { d->setViewLink(url); };
     d->watcher = new VisibilityWatcher(this, [this](bool shown) { d->onVisibilityChanged(shown); });
 
     if (Model *model = services.model) {
@@ -758,6 +805,8 @@ QString Placement::itemId() const { return d->itemId; }
 QWidget *Placement::view() const { return d->view; }
 
 QWidget *Placement::headerWidget() const { return d->header; }
+
+QUrl Placement::webLink() const { return d->shownLink; }
 
 CellStatus Placement::cellStatus() const { return d->cellStatus; }
 

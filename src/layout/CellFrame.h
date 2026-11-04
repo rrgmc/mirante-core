@@ -6,6 +6,7 @@
 #include <QColor>
 #include <QFrame>
 #include <QImage>
+#include <QUrl>
 
 #include <functional>
 #include <memory>
@@ -19,7 +20,7 @@ class ItemType;
 
 // A cell of an item: a header with a pill for the type, the item name, a pill
 // for where the item comes from, a widget of the view such as a web toolbar,
-// the menu button and the maximise button, and a body. The body is a
+// an "Open in browser" button, the menu button and the maximise button, and a body. The body is a
 // placeholder until setBody() gives it a Placement. See the M2 plan, part 4,
 // and the M4 plan, parts 5 and 6. Implemented in CellFrame.cpp.
 class CellFrame : public QFrame
@@ -68,6 +69,12 @@ public:
     // button, such as a web view's toolbar. Null removes it. The frame does
     // not take ownership.
     void setHeaderWidget(QWidget *widget);
+
+    // The item's web link, which the "Open in browser" button after the
+    // header widget opens in the external browser. Empty hides the button.
+    // See decision 0143.
+    void setWebLink(const QUrl &url);
+    QUrl webLink() const;
 
     // Shows the maximise button, which emits maximiseRequested. Off for empty
     // and removed cells.

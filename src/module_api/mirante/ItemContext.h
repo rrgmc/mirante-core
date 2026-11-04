@@ -67,6 +67,15 @@ public:
     // nothing. See decision 0069.
     virtual void showPage(const QUrl &url) { Q_UNUSED(url) }
 
+    // The address of the item on the web, such as a pull request's page. The
+    // cell header shows an "Open in browser" button for it, which opens it in
+    // the external browser. Only an http or https address shows the button,
+    // and an empty url hides it. Call it again whenever the address changes,
+    // such as when the view's data arrives. A web view of createWebView() sets
+    // it to its page's address by itself. The default does nothing. See
+    // decision 0143.
+    virtual void setWebLink(const QUrl &url) { Q_UNUSED(url) }
+
     // Adds an item to the task this item belongs to, and returns its id, or
     // an empty string if it could not. No dashboard changes.
     virtual QString addItemToTask(const QString &typeId, const QString &name, const QJsonObject &config)

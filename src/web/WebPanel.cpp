@@ -2,10 +2,8 @@
 
 #include "web/AddressField.h"
 #include "web/PageArea.h"
-#include "web/ModuleSchemeHandler.h"
 #include "web/WebPage.h"
 
-#include <QDesktopServices>
 #include <QFile>
 #include <QHBoxLayout>
 #include <QPointer>
@@ -52,7 +50,6 @@ struct WebPanel::Private
     QPointer<QWidget> toolbar;
     QToolButton *back = nullptr;
     AddressField *address = nullptr;
-    QToolButton *open = nullptr;
 
     void buildToolbar()
     {
@@ -69,26 +66,16 @@ struct WebPanel::Private
         address = new AddressField(toolbar);
         address->setObjectName(QStringLiteral("address"));
 
-        open = toolButton(toolbar, QStringLiteral("openInBrowserButton"), tr("Open in browser"),
-                          tr("Open this page in the external browser"));
-        open->setIcon(appIcon(QStringLiteral("open-in-browser"), QStyle::SP_DirLinkIcon, toolbar));
-
         auto *layout = new QHBoxLayout(toolbar);
         layout->setContentsMargins(0, 0, 0, 0);
         layout->setSpacing(2);
         layout->addWidget(back);
         layout->addWidget(reload);
         layout->addWidget(address, 1);
-        layout->addWidget(open);
 
         QWebEngineView *view = area->view();
         QObject::connect(back, &QToolButton::clicked, view, &QWebEngineView::back);
         QObject::connect(reload, &QToolButton::clicked, area, &PageArea::reload);
-        QObject::connect(open, &QToolButton::clicked, view, [view] {
-            const QUrl url = view->url();
-            if (!url.isEmpty())
-                QDesktopServices::openUrl(url);
-        });
     }
 
     void updateToolbar()
@@ -96,8 +83,6 @@ struct WebPanel::Private
         QWebEngineView *view = area->view();
         back->setEnabled(view->history()->canGoBack());
         address->setAddress(view->url().toDisplayString());
-        // The external browser cannot open a module's page.
-        open->setVisible(!modulepages::isModulePage(view->url()));
     }
 };
 
@@ -115,7 +100,10 @@ WebPanel::WebPanel(QWebEngineProfile *profile, const QUrl &url, QWidget *parent)
     // The history changes when a load starts and when it ends, and the
     // address can change without a load, as in a single-page app.
     QWebEngineView *view = d->area->view();
-    connect(view, &QWebEngineView::urlChanged, this, [this] { d->updateToolbar(); });
+    connect(view, &QWebEngineView::urlChanged, this, [this](const QUrl &url) {
+        d->updateToolbar();
+        emit addressChanged(url);
+    });
     connect(view->page(), &QWebEnginePage::loadingChanged, this, [this] { d->updateToolbar(); });
 
     view->setUrl(url);

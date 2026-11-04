@@ -494,6 +494,16 @@
         <source>Maximise (%1)</source>
         <translation>Maximizar (%1)</translation>
     </message>
+    <message>
+        <source>Open in browser</source>
+        <translation>Abrir no navegador</translation>
+    </message>
+    <message>
+        <source>Open in the external browser:
+%1</source>
+        <translation>Abrir no navegador externo:
+%1</translation>
+    </message>
 </context>
 <context>
     <name>mirante::ConflictBar</name>
@@ -2695,14 +2705,6 @@ Os dados são de %2.</translation>
     <message>
         <source>Reload</source>
         <translation>Recarregar</translation>
-    </message>
-    <message>
-        <source>Open in browser</source>
-        <translation>Abrir no navegador</translation>
-    </message>
-    <message>
-        <source>Open this page in the external browser</source>
-        <translation>Abrir esta página no navegador externo</translation>
     </message>
 </context>
 <context>

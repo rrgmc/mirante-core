@@ -258,7 +258,7 @@ Each cell has a small header containing:
 - the item's [dashboard title](#item-dialog) if it has one, else its name, in normal weight;
 - in a root dashboard, where an item can come from any task, a grey **place pill** with its project and task after the name, such as "backend › Overview";
 - the item's [status](#attention): an attention badge, a problem pill, or the data's age;
-- buttons: refresh, open in browser, a menu, and maximise. Refresh shows only for items of types that report status.
+- buttons: open in browser, refresh, a menu, and maximise. Refresh shows only for items of types that report status. **Open in browser** shows only when the item has a web link: the page a web view shows, the page of "Open page" while it is shown, or the address a native view gives, such as a pull request's page. It opens that address in the external browser, and its tooltip shows it. See [decision 0143](decisions/0143-web-link-in-the-cell-header.md).
 
 ### A bigger view of an item
 

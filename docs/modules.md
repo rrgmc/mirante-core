@@ -339,6 +339,7 @@ Each item's code gets an `ItemContext`. It gives access to the configuration the
 | `onConfigChanged(receiver, changed)` | Reports a change to the type's `viewKeys()`, which does not make the view again. See [decision 0081](decisions/0081-views-that-keep-their-own-keys.md). | M7 |
 | `updateConfig(config)` | Changes the item's configuration through `Model` | M4 |
 | `showPage(url)` | Shows a web page in place of the view, with a way back. See [decision 0069](decisions/0069-open-page-in-the-placement.md). | M6 |
+| `setWebLink(url)` | The item's address on the web, such as a pull request's page. The cell header shows an **Open in browser** button for an `http` or `https` address; an empty one hides it. Call it again when the address changes. A web view of `createWebView()` sets it by itself. See [decision 0143](decisions/0143-web-link-in-the-cell-header.md). | after M13 |
 | `addItemToTask(typeId, name, config)` | Adds an item to the item's task, for "Add to task as item" | M6 |
 
 ### Servers and tokens
@@ -382,7 +383,7 @@ Native views of different modules need the same small widgets, and modules rarel
 - `StatusPill` and `statusColours()`: a pill for a `StatusRole`. A module names a role, never a colour.
 - `FlowRow`: a layout that wraps.
 - `SummaryView`: the fixed layout of a summary, with sections that can be hidden. See [decision 0066](decisions/0066-fixed-native-layouts-with-sections.md).
-- `ActionRow`: the buttons of a view, the "Web" link, and the error of the last action. `addLinkAction()` adds an entry that goes somewhere and changes nothing, such as "Open page". It looks like a link, so it stands apart from the commands.
+- `ActionRow`: the buttons of a view, the "Web" link, and the error of the last action. For the item's own page, `ItemContext::setWebLink()` is preferred, since the cell header shows it. `addLinkAction()` adds an entry that goes somewhere and changes nothing, such as "Open page". It looks like a link, so it stands apart from the commands.
 - `styleAsLink()`: makes a button look like a link, as the links in a list's rows do.
 - `askComment()`: asks for the text of a comment.
 - `ItemListView`: a sortable table. See [decision 0071](decisions/0071-lists-link-out-without-a-preview.md).

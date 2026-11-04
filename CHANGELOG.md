@@ -6,7 +6,13 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+### Added
+
+- Item cells have an **Open in browser** button in their header when the item has a page on the web. Item types give the address with `ItemContext::setWebLink()`. See [decision 0143](docs/decisions/0143-web-link-in-the-cell-header.md).
+
 ### Changed
+
+- The **Open in browser** button of a web page moved from its toolbar to the cell header, beside the address. While "Open page" shows a page, it opens that page.
 
 - Every build has **Help > Show Log** and keeps the log messages from the start. The `--log` option is removed. See [decision 0140](docs/decisions/0140-log-window-in-all-builds.md).
 - **Add Items from Link…** and **New Task from Link…** take any web address. When no module recognises it, they offer one item of the type that shows it best, such as a Web page. See [decision 0141](docs/decisions/0141-one-menu-entry-for-links.md).
