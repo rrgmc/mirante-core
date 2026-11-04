@@ -6,6 +6,14 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+### Changed
+
+- **Add Items from Link…** and **New Task from Link…** take any web address. When no module recognises it, they offer one item of the type that shows it best, such as a Web page. See [decision 0140](docs/decisions/0140-one-menu-entry-for-links.md).
+
+### Removed
+
+- **Paste URL…** in the context menu of a task and of its Items row. Use **Add Items from Link…**, or the link field of **New item…** to choose another type.
+
 ## [0.8.6] - 2026-11-04
 
 ### Added

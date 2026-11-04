@@ -42,7 +42,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0034](0034-manual-order-in-the-sidebar.md) | The sidebar keeps the manual order; priority is a marker | Accepted |
 | [0036](0036-trash-for-tasks-and-projects.md) | Deleted tasks and projects go to a trash | Accepted |
 | [0037](0037-core-makes-web-views.md) | The core makes web views; modules may take the profile instead | Accepted; the item's profile by 0042 |
-| [0038](0038-read-connections-in-m4.md) | Connections are read in M4, without tokens | Accepted; connections superseded by 0054 |
+| [0038](0038-read-connections-in-m4.md) | Connections are read in M4, without tokens | Accepted; connections superseded by 0054, "Paste URL…" by 0140 |
 | [0039](0039-profiles-deleted-only-by-local-delete.md) | A group's web profile is deleted only when the group is deleted on this device | Accepted; for web profiles by 0042 |
 | [0040](0040-profiles-per-group-and-module.md) | One web login profile per group and module | Superseded by 0042 |
 | [0041](0041-own-look-for-tabs-and-tool-buttons.md) | Mirante draws its own tabs and tool buttons | Accepted; the current tab's colour by 0065 |
@@ -144,6 +144,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0137](0137-the-setup-does-not-start-mirante-at-sign-in-by-default.md) | The Windows setup does not start Mirante at sign-in by default | Accepted |
 | [0138](0138-add-list-values-from-the-server.md) | Settings lists can be filled from the module's server | Accepted |
 | [0139](0139-text-lists-offer-their-suggestions.md) | Text lists offer their suggestions in a checklist | Accepted |
+| [0140](0140-one-menu-entry-for-links.md) | One menu entry adds items from a link | Accepted |
 
 ## Template
 

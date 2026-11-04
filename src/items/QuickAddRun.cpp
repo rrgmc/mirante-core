@@ -5,7 +5,12 @@
 #include "core/LayoutTree.h"
 #include "core/Model.h"
 #include "core/Sorting.h"
+#include "items/ItemContextImpl.h"
 #include "items/ItemTypeRegistry.h"
+#include "items/UrlMatches.h"
+
+#include <mirante/FieldValidation.h>
+#include <mirante/ItemType.h>
 
 #include <QJsonValue>
 #include <QPointer>
@@ -222,6 +227,9 @@ struct QuickAddRun::Private
     int proposeRun = 0;
     int findRun = 0;
     int proposing = 0;      // handlers still running
+    int proposals = 0;      // handlers of the current run that took the text
+    QString text;           // the current run's text and profile
+    QString profileId;
     int finding = 0;        // finders still running
     std::vector<QPointer<RequestBase>> requests;
 
@@ -287,11 +295,51 @@ struct QuickAddRun::Private
             items.erase(std::remove_if(items.begin(), items.end(),
                                        [&had](const QuickAddItem &item) { return isOffered(had, item); }),
                         items.end());
+            ++proposals;
             emit q->proposed(Proposal{moduleId, std::move(*proposal)});
         }
         // A slot may have started another run.
         if (run == proposeRun && proposing == 0)
-            emit q->proposalsDone();
+            proposalsEnded(run);
+    }
+
+    // Every handler has answered. Without a proposal, a web address becomes
+    // one item of the type that shows it best, as the item dialog would
+    // choose it: a module's type, else Web page. See decision 0140.
+    void proposalsEnded(int run)
+    {
+        if (proposals == 0) {
+            if (std::optional<Proposal> fallback = linkProposal()) {
+                emit q->proposed(*fallback);
+                if (run != proposeRun)
+                    return;
+            }
+        }
+        emit q->proposalsDone();
+    }
+
+    std::optional<Proposal> linkProposal() const
+    {
+        const QUrl url = urlmatches::webAddress(text);
+        const std::vector<urlmatches::TypeMatch> matches = urlmatches::match(types, url, profileId);
+        if (matches.empty())
+            return std::nullopt;
+        const urlmatches::TypeMatch &best = matches.front();
+
+        // The type's defaults, with what it made of the link over them.
+        QuickAddItem item;
+        item.typeId = best.type->id();
+        item.name = best.match.name.isEmpty() ? best.type->name() : best.match.name;
+        item.config = defaultConfig(best.type->fields());
+        for (auto it = best.match.config.begin(); it != best.match.config.end(); ++it)
+            item.config.insert(it.key(), it.value());
+
+        Proposal proposal;
+        proposal.moduleId = moduleOfType(item.typeId);
+        proposal.proposal.title = best.match.name.isEmpty() ? url.toString() : best.match.name;
+        if (!isOffered(taskItems(), item))
+            proposal.proposal.items.push_back(std::move(item));
+        return proposal;
     }
 
     void finderDone(int run, std::vector<QuickAddItem> items)
@@ -340,6 +388,9 @@ void QuickAddRun::propose(const QString &text, const QString &profileId)
     d->dropRequests();
 
     const int run = d->proposeRun;
+    d->proposals = 0;
+    d->text = text.trimmed();
+    d->profileId = profileId;
     const std::vector<ItemTypeRegistry::ModuleHandler> handlers = d->types.quickAddHandlers();
     const QString trimmed = text.trimmed();
     // One more than the handlers until all have started, so that handlers
@@ -362,7 +413,7 @@ void QuickAddRun::propose(const QString &text, const QString &profileId)
     d->forgetEnded();
     --d->proposing;
     if (d->proposing == 0)
-        emit proposalsDone();
+        d->proposalsEnded(run);
 }
 
 QStringList QuickAddRun::matchProjects(const Model &model, const QString &moduleId,

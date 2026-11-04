@@ -120,8 +120,6 @@ The Profiles menu, between View and Help, lists what can be done with profiles. 
 
 **From a link.** Above the tree, a field says "Paste a link to create an item from it". While it holds an `http` or `https` address, the tree shows only the types that can show it, best first: the types of modules, then Web page. The module of the best match comes first, and the best match is selected, so Enter goes on with it. Choosing a type fills its configuration from the link, and the name too, unless one was typed. Each type reads the link with the server in its module settings, in the profile of the item's group, such as a self-hosted GitLab. The item names no server of its own: it uses that of its profile. A note under the tree says when no type can show the link, or when the text is not a web address; every type is shown then. Clearing the field shows every type again. Which types take which links is listed in [item types](item-types.md#items-from-a-link). See [decision 0049](decisions/0049-items-from-a-pasted-link.md).
 
-**Paste URL….** The context menu of a task and of its Items row has "Paste URL…" after "New item…". It opens the item dialog with the link from the clipboard in the field. It is disabled while the clipboard holds no web address.
-
 "Edit item…" opens the second page only. The type of an existing item cannot change. An item whose module is missing shows its name only, and keeps the rest unchanged.
 
 ## Modules
@@ -422,7 +420,7 @@ Attention can also reach the user outside the app, through the tray icon and des
 Quick add creates a task from a link, or adds items to a task from a link. It has two entries, named after what they do (see [decision 0083](decisions/0083-quick-add-into-a-task.md)):
 
 - **New Task from Link…**, in the File menu, as a link icon button in the sidebar header, and with `Ctrl+Shift+N`, creates a task. The dialog's title is "New Task from Link".
-- **Add Items from Link…**, in the context menu of a task and of its Items row in the sidebar, adds items to that task. The dialog's title is "Add Items from Link: <task title>".
+- **Add Items from Link…**, in the context menu of a task and of its Items row in the sidebar, adds items to that task. The dialog's title is "Add Items from Link: <task title>". It is the menu's one entry for a link ([decision 0140](decisions/0140-one-menu-entry-for-links.md)).
 
 Open either, then paste a link. What it recognises depends on the [modules](modules.md#quick-add) in the build. With the `gitlab` and `jira` modules:
 
@@ -434,6 +432,7 @@ Open either, then paste a link. What it recognises depends on the [modules](modu
   - The task is named after the merge request title.
   - An MR summary item and a CI Pipeline item for its branch are added.
   - A Jira key found in the title or branch adds the issue too.
+- **Any other web address:** one item of the type that shows the link best, as the [item dialog](#item-dialog) would select it: a module's type, else Web page. The task and the item are named as the type names the link, such as a Web page after its host. See [decision 0140](decisions/0140-one-menu-entry-for-links.md).
 
 The project is chosen by matching the merge request's GitLab project or the issue's Jira project key against the projects' module settings. If no project matches, or several do, the app asks.
 
@@ -441,7 +440,7 @@ The dialog for a new task, from top to bottom (see [decision 0078](decisions/007
 
 - **Text.** When the dialog opens with one line of text on the clipboard, that text is filled in and read at once. Otherwise the app reads the text when it is pasted or when the user presses Return. Typing alone does not start a reading.
 - **Profile.** The modules read the text with the servers of this profile. It starts as the profile of the group of the entry selected in the sidebar, else the workspace's default. Choosing another profile reads the text again. The new items still use their group's profile.
-- **Status.** "Reading…" while the modules read the text, "Mirante does not recognise this text." when no module takes it, and "Looking for related items…" while related items are searched.
+- **Status.** "Reading…" while the modules read the text, "Mirante does not recognise this text." when no module takes it and it is not a web address, and "Looking for related items…" while related items are searched.
 - **Read as.** Shown only when several modules take the text. It lists them by module name, and choosing one shows its reading.
 - **Title.** The proposed task title, which the user can change.
 - **Project.** Chosen when exactly one project matches. Otherwise it is empty, and the user must choose one. A line below says "No project matches acme/backend" or "Several projects match". Projects in the trash are not offered.
