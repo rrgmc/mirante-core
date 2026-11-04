@@ -6,6 +6,8 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-11-04
+
 ### Added
 
 - A list in a module's settings, such as GitHub's repositories, can have an **Add from Server…** button. It lists what the server offers with the token in the dialog, saved or not, to check and add. See [modules](docs/ui.md#modules).
@@ -87,7 +89,8 @@ The first release of the core on its own, after it was split from `mirante` for 
 
 - `qrc:` addresses in item web views, which shared one origin among all pages.
 
-[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.5...HEAD
+[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.8.6...HEAD
+[0.8.6]: https://github.com/rrgmc/mirante-core/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/rrgmc/mirante-core/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/rrgmc/mirante-core/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/rrgmc/mirante-core/compare/v0.8.2...v0.8.3
