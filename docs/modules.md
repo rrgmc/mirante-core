@@ -6,14 +6,15 @@ A module is one folder of item types and the code they share. Modules are compil
 
 | Module | Item types | Settings screens | Project settings |
 |---|---|---|---|
-| `gitlab` | `gitlab.mr.summary`, `gitlab.mr.page`, `gitlab.mr.list`, `gitlab.mr.multilist`, `gitlab.pipeline`, `gitlab.pipeline.list`, `gitlab.pipeline.multilist`, `gitlab.issue.summary`, `gitlab.issue.page`, `gitlab.issue.list` | General Configuration: base URL, token, project paths | `project` |
-| `github` | `github.pr.summary`, `github.pr.page`, `github.pr.list`, `github.pr.multilist`, `github.run`, `github.run.list`, `github.run.multilist`, `github.issue.summary`, `github.issue.page`, `github.issue.list` | General Configuration: base URL, token, repositories | `repository` |
+| `gitlab` | `gitlab.mr.summary`, `gitlab.mr.page`, `gitlab.mr.list`, `gitlab.mr.multilist`, `gitlab.pipeline`, `gitlab.pipeline.list`, `gitlab.pipeline.multilist`, `gitlab.issue.summary`, `gitlab.issue.page`, `gitlab.issue.list`, `gitlab.status` | General Configuration: base URL, token, project paths | `project` |
+| `github` | `github.pr.summary`, `github.pr.page`, `github.pr.list`, `github.pr.multilist`, `github.run`, `github.run.list`, `github.run.multilist`, `github.issue.summary`, `github.issue.page`, `github.issue.list`, `github.status` | General Configuration: base URL, token, repositories | `repository` |
 | `jira` | `jira.issue.summary`, `jira.issue.page`, `jira.list` | General Configuration: base URL, token | `projectKey` |
 | `claude` | `claude.session.web` | none | none |
 | `web` | `web.page` | none | none |
 | `notes` | `notes`, `notes.links` | none | none |
 | `folder` | `folder`, `folder.tree` | none | none |
 | `image` | `image` | none | none |
+| `system` | `system.resources` | none | none |
 | `document` | `document.url`, `document.file`, `document.project` | none | none |
 
 All modules are enabled by default. The item types are described in [item types](item-types.md). The gitlab, github and jira modules keep the server they talk to in their [settings screens](#settings-screens), one per profile; see [decision 0054](decisions/0054-module-settings-replace-connections.md).
