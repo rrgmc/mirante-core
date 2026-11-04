@@ -1,6 +1,7 @@
 #include "items/QuickAddRun.h"
 
 #include "api/ServerClient.h"
+#include "core/Accounts.h"
 #include "core/Edits.h"
 #include "core/LayoutTree.h"
 #include "core/Model.h"
@@ -9,6 +10,7 @@
 #include "items/ItemTypeRegistry.h"
 #include "items/UrlMatches.h"
 
+#include <mirante/ApiClient.h>
 #include <mirante/FieldValidation.h>
 #include <mirante/ItemType.h>
 
@@ -18,6 +20,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <map>
 #include <utility>
 
 namespace mirante {
@@ -62,22 +65,27 @@ bool isOffered(const std::vector<QuickAddItem> &items, const QuickAddItem &item)
 class RequestBase : public QObject
 {
 public:
+    // accountId is the account of the module's server the request uses, and
+    // serverScreenId the screen that holds its values. See decision 0146.
     RequestBase(Model &model, ServerClients *servers, const QString &profileId, const QString &moduleId,
-                QObject *parent)
+                const QString &accountId, const QString &serverScreenId, QObject *parent)
         : QObject(parent)
         , m_model(model)
         , m_servers(servers)
         , m_profileId(profileId)
         , m_moduleId(moduleId)
+        , m_accountId(accountId)
+        , m_serverScreenId(serverScreenId)
     {
     }
 
     QJsonObject settings(const QString &screenId) const
     {
-        return m_model.moduleSettings(m_profileId, m_moduleId, screenId);
+        return accounts::screenValues(m_model, m_profileId, m_moduleId, m_accountId, m_serverScreenId, screenId);
     }
 
-    ApiClient *client() { return m_servers ? m_servers->client(m_profileId, m_moduleId) : nullptr; }
+    ApiClient *client() { return m_servers ? m_servers->client(m_profileId, m_moduleId, m_accountId) : nullptr; }
+
 
     // Starts the timeout. When it runs out, the request ends as if it had
     // found nothing.
@@ -123,6 +131,8 @@ private:
     ServerClients *m_servers = nullptr;
     QString m_profileId;
     QString m_moduleId;
+    QString m_accountId;
+    QString m_serverScreenId;
     QTimer m_timer;
     bool m_ended = false;
 };
@@ -133,8 +143,9 @@ public:
     using Done = std::function<void(std::optional<QuickAddProposal>)>;
 
     HandlerRequest(Model &model, ServerClients *servers, const QString &profileId, const QString &moduleId,
-                   const QString &text, Done done, QObject *parent)
-        : RequestBase(model, servers, profileId, moduleId, parent)
+                   const QString &accountId, const QString &serverScreenId, const QString &text, Done done,
+                   QObject *parent)
+        : RequestBase(model, servers, profileId, moduleId, accountId, serverScreenId, parent)
         , m_text(text)
         , m_done(std::move(done))
     {
@@ -168,9 +179,9 @@ public:
     using Offered = std::function<std::vector<QuickAddItem>()>;
 
     FinderRequest(Model &model, ServerClients *servers, const QString &profileId, const QString &moduleId,
-                  const QStringList &texts, const QString &projectId, Offered offered, Done done,
-                  QObject *parent)
-        : RequestBase(model, servers, profileId, moduleId, parent)
+                  const QString &accountId, const QString &serverScreenId, const QStringList &texts,
+                  const QString &projectId, Offered offered, Done done, QObject *parent)
+        : RequestBase(model, servers, profileId, moduleId, accountId, serverScreenId, parent)
         , m_texts(texts)
         , m_projectId(projectId)
         , m_offered(std::move(offered))
@@ -232,6 +243,10 @@ struct QuickAddRun::Private
     QString profileId;
     int finding = 0;        // finders still running
     std::vector<QPointer<RequestBase>> requests;
+    // The account each module's requests use in the current run, by module
+    // id: the one the link's host belongs to, else the default. The items
+    // made get it. See decision 0146.
+    mutable std::map<QString, QString> accountOf;
 
     // Everything offered in the current finder run: the proposal's items,
     // then what each finder added.
@@ -321,7 +336,7 @@ struct QuickAddRun::Private
     std::optional<Proposal> linkProposal() const
     {
         const QUrl url = urlmatches::webAddress(text);
-        const std::vector<urlmatches::TypeMatch> matches = urlmatches::match(types, url, profileId);
+        const std::vector<urlmatches::TypeMatch> matches = urlmatches::match(types, &model, url, profileId);
         if (matches.empty())
             return std::nullopt;
         const urlmatches::TypeMatch &best = matches.front();
@@ -333,6 +348,7 @@ struct QuickAddRun::Private
         item.config = defaultConfig(best.type->fields());
         for (auto it = best.match.config.begin(); it != best.match.config.end(); ++it)
             item.config.insert(it.key(), it.value());
+        accountOf[moduleOfType(item.typeId)] = best.accountId;
 
         Proposal proposal;
         proposal.moduleId = moduleOfType(item.typeId);
@@ -340,6 +356,12 @@ struct QuickAddRun::Private
         if (!isOffered(taskItems(), item))
             proposal.proposal.items.push_back(std::move(item));
         return proposal;
+    }
+
+    QString accountOfType(const QString &typeId) const
+    {
+        const auto it = accountOf.find(moduleOfType(typeId));
+        return it != accountOf.end() ? it->second : QString();
     }
 
     void finderDone(int run, std::vector<QuickAddItem> items)
@@ -391,15 +413,21 @@ void QuickAddRun::propose(const QString &text, const QString &profileId)
     d->proposals = 0;
     d->text = text.trimmed();
     d->profileId = profileId;
+    d->accountOf.clear();
     const std::vector<ItemTypeRegistry::ModuleHandler> handlers = d->types.quickAddHandlers();
     const QString trimmed = text.trimmed();
+    // A link is read in the account its host belongs to.
+    const QUrl url = urlmatches::webAddress(trimmed);
     // One more than the handlers until all have started, so that handlers
     // that finish at once do not end the run early.
     d->proposing = int(handlers.size()) + 1;
     for (const ItemTypeRegistry::ModuleHandler &handler : handlers) {
         const QString moduleId = handler.moduleId;
+        const ServerType *server = d->types.serverType(moduleId);
+        const QString accountId = urlmatches::accountFor(d->types, d->model, profileId, moduleId, url);
+        d->accountOf[moduleId] = accountId;
         auto *request = new HandlerRequest(
-            d->model, d->servers, profileId, moduleId, trimmed,
+            d->model, d->servers, profileId, moduleId, accountId, server ? server->screenId() : QString(), trimmed,
             [this, run, moduleId](std::optional<QuickAddProposal> proposal) {
                 d->handlerDone(run, moduleId, std::move(proposal));
             },
@@ -460,8 +488,14 @@ void QuickAddRun::findRelated(const Proposal &proposal, const QString &title, co
     const std::vector<ItemTypeRegistry::ModuleFinder> finders = d->types.relatedItemFinders();
     d->finding = int(finders.size()) + 1;
     for (const ItemTypeRegistry::ModuleFinder &finder : finders) {
+        // A finder looks in the account its module's handler used, such as
+        // that of the proposal's link, else the default.
+        const auto known = d->accountOf.find(finder.moduleId);
+        const QString accountId = known != d->accountOf.end() ? known->second : QString();
+        const ServerType *server = d->types.serverType(finder.moduleId);
         auto *request = new FinderRequest(
-            d->model, d->servers, profileId, finder.moduleId, texts, projectId, [this] { return d->offered; },
+            d->model, d->servers, profileId, finder.moduleId, accountId, server ? server->screenId() : QString(),
+            texts, projectId, [this] { return d->offered; },
             [this, run](std::vector<QuickAddItem> items) { d->finderDone(run, std::move(items)); }, this);
         d->requests.emplace_back(request);
         request->startTimer(d->timeout);
@@ -508,6 +542,7 @@ QString QuickAddRun::create(const QString &projectId, const QString &title, cons
         item.type = offeredItem.typeId;
         item.name = offeredItem.name;
         item.config = offeredItem.config;
+        item.account = d->accountOfType(item.type);
         task = edits::addItem(task, item);
 
         LayoutNode cell;
@@ -540,6 +575,7 @@ QStringList QuickAddRun::addToTask(const QString &taskId, const std::vector<Quic
         item.type = offeredItem.typeId;
         item.name = offeredItem.name;
         item.config = offeredItem.config;
+        item.account = d->accountOfType(item.type);
         task = edits::addItem(task, item);
         ids << item.id;
     }

@@ -20,9 +20,11 @@ namespace {
 class Settings : public ModuleSettings
 {
 public:
-    Settings(const QString &moduleId, const ItemTypeRegistry::SettingsReader *reader)
+    Settings(const QString &moduleId, const ItemTypeRegistry::SettingsReader *reader,
+             const ItemTypeRegistry::AccountReader *accountReader)
         : m_moduleId(moduleId)
         , m_reader(reader)
+        , m_accountReader(accountReader)
     {
     }
 
@@ -31,9 +33,18 @@ public:
         return *m_reader ? (*m_reader)(profileId, m_moduleId, screenId) : QJsonObject();
     }
 
+    QJsonObject accountValues(const QString &profileId, const QString &accountId,
+                              const QString &screenId) const override
+    {
+        if (*m_accountReader)
+            return (*m_accountReader)(profileId, m_moduleId, accountId, screenId);
+        return values(profileId, screenId);
+    }
+
 private:
     QString m_moduleId;
     const ItemTypeRegistry::SettingsReader *m_reader;
+    const ItemTypeRegistry::AccountReader *m_accountReader;
 };
 
 } // namespace
@@ -62,6 +73,7 @@ struct ItemTypeRegistry::Private
     };
 
     SettingsReader reader;
+    AccountReader accountReader;
     std::map<QString, Module> modules;
     std::vector<std::unique_ptr<ItemType>> types;
     std::map<QString, const ItemType *> byId;
@@ -295,7 +307,7 @@ void ItemTypeRegistry::registerModule(const QString &moduleId, RegisterFunction 
 
     Private::Module &module = d->modules[moduleId];
     if (!module.settings)
-        module.settings = std::make_unique<Settings>(moduleId, &d->reader);
+        module.settings = std::make_unique<Settings>(moduleId, &d->reader, &d->accountReader);
     Registrar registrar(*d, moduleId);
     fn(registrar);
 }
@@ -358,6 +370,11 @@ bool ItemTypeRegistry::usesProfile(const QString &typeId) const
 void ItemTypeRegistry::setSettingsReader(SettingsReader reader)
 {
     d->reader = std::move(reader);
+}
+
+void ItemTypeRegistry::setAccountReader(AccountReader reader)
+{
+    d->accountReader = std::move(reader);
 }
 
 QStringList ItemTypeRegistry::moduleIds() const

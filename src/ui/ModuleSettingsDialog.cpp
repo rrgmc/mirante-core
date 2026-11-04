@@ -7,9 +7,11 @@
 #include <mirante/widgets/FieldForm.h>
 
 #include <QDialogButtonBox>
+#include <QFormLayout>
 #include <QHBoxLayout>
 #include <QJsonArray>
 #include <QLabel>
+#include <QLineEdit>
 #include <QPlainTextEdit>
 #include <QPointer>
 #include <QPushButton>
@@ -102,6 +104,13 @@ struct ModuleSettingsDialog::Private
     const SettingsScreen *screen = nullptr;
     ItemEditor *editor = nullptr;
     QLabel *message = nullptr;   // why OK was refused
+    QString profileName;
+    QString moduleName;
+    QLabel *note = nullptr;
+    QDialogButtonBox *buttons = nullptr;
+    QWidget *accountRow = nullptr;      // another account's name, hidden for the default
+    QLineEdit *accountName = nullptr;
+    bool removeChosen = false;
     // The fields with an "Add from Server…" button, by key, with their labels.
     std::map<QString, std::pair<ServerListEditor *, QString>> serverLists;
     ServerFactory serverFactory;
@@ -117,6 +126,8 @@ ModuleSettingsDialog::ModuleSettingsDialog(const QString &profileName, const QSt
     , d(std::make_unique<Private>())
 {
     d->screen = &screen;
+    d->profileName = profileName;
+    d->moduleName = moduleName;
     setWindowTitle(tr("%1: %2 %3").arg(profileName, moduleName, screen.name()));
     resize(480, 400);
 
@@ -127,6 +138,15 @@ ModuleSettingsDialog::ModuleSettingsDialog(const QString &profileName, const QSt
                             this);
     note->setObjectName(QStringLiteral("note"));
     note->setWordWrap(true);
+    d->note = note;
+
+    d->accountRow = new QWidget(this);
+    d->accountName = new QLineEdit(d->accountRow);
+    d->accountName->setObjectName(QStringLiteral("accountName"));
+    auto *accountForm = new QFormLayout(d->accountRow);
+    accountForm->setContentsMargins(0, 0, 0, 0);
+    accountForm->addRow(tr("Account name:"), d->accountName);
+    d->accountRow->hide();
 
     d->editor = screen.createEditor(context, this);
     if (!d->editor) {
@@ -161,11 +181,13 @@ ModuleSettingsDialog::ModuleSettingsDialog(const QString &profileName, const QSt
     d->message->hide();
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    d->buttons = buttons;
     connect(buttons, &QDialogButtonBox::accepted, this, &ModuleSettingsDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     auto *layout = new QVBoxLayout(this);
     layout->addWidget(note);
+    layout->addWidget(d->accountRow);
     layout->addWidget(d->editor, 1);
     layout->addWidget(d->message);
     layout->addWidget(buttons);
@@ -178,6 +200,34 @@ QJsonObject ModuleSettingsDialog::values() const { return d->editor->config(); }
 QJsonObject ModuleSettingsDialog::secrets() const { return d->editor->secrets(); }
 
 ItemEditor *ModuleSettingsDialog::editor() const { return d->editor; }
+
+void ModuleSettingsDialog::setAccount(const QString &name)
+{
+    setWindowTitle(tr("%1: %2 %3 (%4)").arg(d->profileName, d->moduleName, d->screen->name(), name));
+    d->note->setText(tr("These settings belong to the account \"%1\" of the profile \"%2\". Items that choose "
+                        "it read them. They are saved in the workspace and shared with it; tokens stay on this "
+                        "device.")
+                         .arg(name, d->profileName));
+    d->accountName->setText(name);
+    d->accountRow->show();
+    if (!d->buttons->findChild<QPushButton *>(QStringLiteral("removeAccount"))) {
+        QPushButton *remove = d->buttons->addButton(tr("Remove Account"), QDialogButtonBox::DestructiveRole);
+        remove->setObjectName(QStringLiteral("removeAccount"));
+        connect(remove, &QPushButton::clicked, this, &ModuleSettingsDialog::chooseRemove);
+    }
+}
+
+QString ModuleSettingsDialog::accountName() const { return d->accountName->text().trimmed(); }
+
+bool ModuleSettingsDialog::removeChosen() const { return d->removeChosen; }
+
+void ModuleSettingsDialog::chooseRemove()
+{
+    if (d->accountRow->isHidden())
+        return;
+    d->removeChosen = true;
+    QDialog::accept();
+}
 
 void ModuleSettingsDialog::setServerFactory(ServerFactory factory)
 {
@@ -221,7 +271,9 @@ void ModuleSettingsDialog::addFromServer(const QString &key)
 
 void ModuleSettingsDialog::accept()
 {
-    const QStringList problems = d->editor->problems();
+    QStringList problems = d->editor->problems();
+    if (!d->accountRow->isHidden() && accountName().isEmpty())
+        problems.prepend(tr("The account needs a name."));
     if (!problems.isEmpty()) {
         d->message->setText(problems.join(QLatin1Char('\n')));
         d->message->show();
