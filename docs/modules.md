@@ -262,7 +262,26 @@ void registerModule(ModuleRegistrar &registrar)
   - anywhere else, `registrar.settings()` returns a `ModuleSettings`, which lives as long as the module's item types. Its `values(profileId, screenId)` reads one screen's values in a profile.
 
   Each call reads the current values, so code reads them where it needs them. An empty object means nothing is stored.
-- **Menu.** The core adds a submenu named after the module to each profile's Modules submenu in the [Profiles menu](ui.md#profiles-menu), with one entry per screen. Its dialog edits that profile's values. A module without screens does not appear there.
+- **Values from the server.** A screen whose form the core builds can let the server fill a `TextList` field, such as the repositories a token can reach. `serverChoiceFields()` names those fields, and each gets an **Add from Server…** button; see [the dialog](ui.md#modules). `listServerChoices()` answers for one field with `ServerChoice` values, each with an optional detail, such as "Private". It gets an `ApiClient` with the base URL and token in the open dialog, so it works before they are saved. It calls `done` once, with the values or with a message for the user. The module needs a `ServerType`; see [servers and tokens](#servers-and-tokens) and [decision 0138](decisions/0138-add-list-values-from-the-server.md).
+
+  ```cpp
+  QStringList serverChoiceFields() const override { return {QStringLiteral("repositories")}; }
+  void listServerChoices(const QString &key, ApiClient &server, QObject *receiver,
+                         std::function<void(const std::vector<ServerChoice> &, const QString &)> done) const override
+  {
+      GetOptions options;
+      options.followLinks = true;
+      options.maxRows = 1000;
+      server.get(QStringLiteral("user/repos"), {}, options, receiver, [done](const ApiReply &reply) {
+          if (!reply.ok())
+              return done({}, reply.message);
+          std::vector<ServerChoice> choices;
+          for (const QJsonValue &repo : reply.json.array())
+              choices.push_back({repo[QStringLiteral("full_name")].toString(), QString()});
+          done(choices, QString());
+      });
+  }
+  ```- **Menu.** The core adds a submenu named after the module to each profile's Modules submenu in the [Profiles menu](ui.md#profiles-menu), with one entry per screen. Its dialog edits that profile's values. A module without screens does not appear there.
 
 ## Items from a link
 

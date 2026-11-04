@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <deque>
 #include <map>
+#include <optional>
 #include <set>
 
 namespace mirante {
@@ -113,8 +114,18 @@ ApiReply errorReply(ApiReply::Error error, const QString &message, int httpStatu
 class ServerClient : public QObject, public ApiClient
 {
 public:
+    // The values and token of a client made by ServerClients::clientFor(),
+    // which uses them instead of the stored ones.
+    struct Fixed
+    {
+        QJsonObject values;
+        bool tokenGiven = false;        // token holds the token, or none
+        std::optional<QString> token;
+    };
+
     ServerClient(ServerClients &owner, const Model &model, const ServerType &type, const ModuleSettings *settings,
-                 SecretStore &secrets, QNetworkAccessManager &network, QString profileId, QString moduleId);
+                 SecretStore &secrets, QNetworkAccessManager &network, QString profileId, QString moduleId,
+                 std::optional<Fixed> fixed = std::nullopt);
     ~ServerClient() override;
 
     bool isFailing() const { return m_failing; }
@@ -179,6 +190,7 @@ private:
     QNetworkAccessManager *m_network;
     QString m_profileId;
     QString m_moduleId;
+    std::optional<Fixed> m_fixed;
 
     // The token, once read. Never logged.
     bool m_tokenKnown = false;
@@ -198,7 +210,7 @@ private:
 
 ServerClient::ServerClient(ServerClients &owner, const Model &model, const ServerType &type,
                            const ModuleSettings *settings, SecretStore &secrets, QNetworkAccessManager &network,
-                           QString profileId, QString moduleId)
+                           QString profileId, QString moduleId, std::optional<Fixed> fixed)
     : m_owner(&owner)
     , m_model(&model)
     , m_type(&type)
@@ -207,9 +219,20 @@ ServerClient::ServerClient(ServerClients &owner, const Model &model, const Serve
     , m_network(&network)
     , m_profileId(std::move(profileId))
     , m_moduleId(std::move(moduleId))
+    , m_fixed(std::move(fixed))
 {
     m_retryTimer.setSingleShot(true);
     connect(&m_retryTimer, &QTimer::timeout, this, &ServerClient::pump);
+
+    if (m_fixed) {
+        // A client of an open settings dialog lives only while it lists
+        // values, so it follows neither the keychain nor the profiles.
+        if (m_fixed->tokenGiven) {
+            m_tokenKnown = true;
+            m_token = m_fixed->token;
+        }
+        return;
+    }
 
     connect(m_secrets, &SecretStore::changed, this, [this](const QString &key) {
         if (key != tokenKey())
@@ -237,6 +260,8 @@ ServerClient::~ServerClient()
 
 QJsonObject ServerClient::values() const
 {
+    if (m_fixed)
+        return m_fixed->values;
     return m_settings ? m_settings->values(m_profileId, m_type->screenId()) : QJsonObject();
 }
 
@@ -579,7 +604,10 @@ void ServerClient::setFailing(bool failing)
     if (m_failing == failing)
         return;
     m_failing = failing;
-    emit m_owner->failingChanged(m_profileId, m_moduleId);
+    // The profile's own client is not failing because a token typed into a
+    // dialog was refused.
+    if (!m_fixed)
+        emit m_owner->failingChanged(m_profileId, m_moduleId);
 }
 
 struct ServerClients::Private
@@ -618,6 +646,28 @@ ApiClient *ServerClients::client(const QString &profileId, const QString &module
                                               *d->secrets, *d->network, profileId, moduleId);
     }
     return slot.get();
+}
+
+std::unique_ptr<ApiClient> ServerClients::clientFor(const QString &profileId, const QString &moduleId,
+                                                    const QJsonObject &values, const QJsonObject &typedSecrets,
+                                                    const QStringList &removedSecrets)
+{
+    const ServerType *type = d->modules->serverType(moduleId);
+    if (!type)
+        return nullptr;
+    ServerClient::Fixed fixed;
+    fixed.values = values;
+    const QString tokenField = type->tokenKey();
+    // Trimmed, as when it is stored: a pasted token often brings a line break.
+    const QString typed = typedSecrets.value(tokenField).toString().trimmed();
+    if (!typed.isEmpty()) {
+        fixed.tokenGiven = true;
+        fixed.token = typed;
+    } else if (removedSecrets.contains(tokenField)) {
+        fixed.tokenGiven = true;
+    }
+    return std::make_unique<ServerClient>(*this, *d->model, *type, d->modules->moduleSettings(moduleId), *d->secrets,
+                                          *d->network, profileId, moduleId, std::move(fixed));
 }
 
 bool ServerClients::failing(const QString &profileId, const QString &moduleId) const

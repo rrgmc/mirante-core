@@ -21,6 +21,7 @@ class ItemTypeRegistry;
 class Model;
 class ProfileManager;
 class SecretStore;
+class ServerClients;
 class Store;
 class ProfilesDialog;
 
@@ -56,6 +57,10 @@ public:
     // tokens. It must outlive this object. See the M5 plan, part 8, and
     // decision 0054.
     void setSecretStore(SecretStore *store);
+    // The modules' servers. A settings screen's "Add from Server…" buttons
+    // ask the server of the values in its open dialog. Null, the default,
+    // disables them. It must outlive this object. See decision 0138.
+    void setServerClients(ServerClients *servers);
     // Runs the profiles dialog. The default calls exec(); tests work the
     // dialog and return instead. The confirmation set with setConfirm() is
     // used.

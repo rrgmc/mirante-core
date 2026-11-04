@@ -1,9 +1,11 @@
 #pragma once
 
+#include <QJsonObject>
 #include <QList>
 #include <QObject>
 #include <QPair>
 #include <QString>
+#include <QStringList>
 
 #include <memory>
 
@@ -37,6 +39,18 @@ public:
     // The module's server in the profile, or null if the module registered
     // no ServerType. The client lives until clear() or this object goes.
     ApiClient *client(const QString &profileId, const QString &moduleId);
+
+    // A client of its own for the module's server in the profile, with the
+    // values of an open settings dialog instead of the stored ones. Its token
+    // is the one typed for the ServerType's token field in typedSecrets, or
+    // none if removedSecrets names that field, or else the stored one. It
+    // shares nothing with client(): no ETags, and a refused token does not
+    // mark the profile's server as failing. Null if the module registered no
+    // ServerType. The caller owns it, and it must not outlive this object.
+    // See decision 0138.
+    std::unique_ptr<ApiClient> clientFor(const QString &profileId, const QString &moduleId,
+                                         const QJsonObject &values, const QJsonObject &typedSecrets,
+                                         const QStringList &removedSecrets);
 
     // True while the client's token is refused. See failingChanged.
     bool failing(const QString &profileId, const QString &moduleId) const;

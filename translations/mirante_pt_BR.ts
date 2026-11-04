@@ -1632,6 +1632,22 @@
         <source>These settings belong to the profile &quot;%1&quot;. Items that use it read them. They are saved in the workspace and shared with it; tokens stay on this device.</source>
         <translation>Estas configurações pertencem ao perfil &quot;%1&quot;. Os itens que o usam as leem. Elas são salvas no espaço de trabalho e compartilhadas com ele; os tokens ficam neste dispositivo.</translation>
     </message>
+    <message>
+        <source>One entry per line.</source>
+        <translation>Uma entrada por linha.</translation>
+    </message>
+    <message>
+        <source>Add from Server…</source>
+        <translation>Adicionar do servidor…</translation>
+    </message>
+    <message>
+        <source>List what the server offers with this token, to check and add.</source>
+        <translation>Lista o que o servidor oferece com este token, para marcar e adicionar.</translation>
+    </message>
+    <message>
+        <source>This module has no server to ask.</source>
+        <translation>Este módulo não tem servidor para consultar.</translation>
+    </message>
 </context>
 <context>
     <name>mirante::ModulesDialog</name>
@@ -2213,6 +2229,45 @@ Os dados são de %2.</translation>
     <message>
         <source>All dashboards…</source>
         <translation>Todos os painéis…</translation>
+    </message>
+</context>
+<context>
+    <name>mirante::ServerChoiceDialog</name>
+    <message>
+        <source>Add %1 from Server</source>
+        <translation>Adicionar %1 do servidor</translation>
+    </message>
+    <message>
+        <source>Loading…</source>
+        <translation>Carregando…</translation>
+    </message>
+    <message>
+        <source>Filter</source>
+        <translation>Filtro</translation>
+    </message>
+    <message>
+        <source>Add</source>
+        <translation>Adicionar</translation>
+    </message>
+    <message>
+        <source>The server could not list them: %1</source>
+        <translation>O servidor não conseguiu listá-los: %1</translation>
+    </message>
+    <message>
+        <source>%1 (%2)</source>
+        <translation>%1 (%2)</translation>
+    </message>
+    <message>
+        <source>Already in the list</source>
+        <translation>Já está na lista</translation>
+    </message>
+    <message>
+        <source>The server has nothing to list.</source>
+        <translation>O servidor não tem nada para listar.</translation>
+    </message>
+    <message>
+        <source>Everything the server lists is already in the list.</source>
+        <translation>Tudo o que o servidor lista já está na lista.</translation>
     </message>
 </context>
 <context>

@@ -15,7 +15,9 @@
 #include "ui/MainWindow.h"
 #include "ui/ModuleSettingsDialog.h"
 #include "ui/ProfilesDialog.h"
+#include "ui/ServerChoiceDialog.h"
 
+#include <mirante/ApiClient.h>
 #include <mirante/ItemEditor.h>
 
 #include <QAction>
@@ -23,6 +25,8 @@
 #include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
+#include <QPushButton>
 #include <QMenu>
 #include <QMenuBar>
 #include <QPlainTextEdit>
@@ -137,6 +141,48 @@ public:
     QString id() const override { return QStringLiteral("look"); }
     QString name() const override { return QStringLiteral("Look"); }
     ItemEditor *createEditor(const EditorContext &, QWidget *parent) const override { return new OwnEditor(parent); }
+};
+
+// A screen whose "paths" list the server can fill. Its server answers with
+// three paths, one of them twice, and names the base URL it was given.
+class ChoiceScreen : public FieldScreen
+{
+public:
+    QStringList serverChoiceFields() const override { return {QStringLiteral("paths")}; }
+    void listServerChoices(const QString &key, ApiClient &server, QObject *,
+                           std::function<void(const std::vector<ServerChoice> &, const QString &)> done) const override
+    {
+        listedKey = key;
+        listedBase = server.baseUrl();
+        done({{QStringLiteral("a/one"), QString()},
+              {QStringLiteral("b/two"), QStringLiteral("Private")},
+              {QStringLiteral("B/TWO"), QString()},
+              {QStringLiteral("c/three"), QString()}},
+             QString());
+    }
+
+    mutable QString listedKey;
+    mutable QUrl listedBase;
+};
+
+// A client that is never asked anything; ChoiceScreen reads its base URL.
+class FakeClient : public ApiClient
+{
+public:
+    explicit FakeClient(QUrl base)
+        : m_base(std::move(base))
+    {
+    }
+    QUrl baseUrl() const override { return m_base; }
+    void get(const QString &, const QUrlQuery &, const GetOptions &, QObject *,
+             std::function<void(const ApiReply &)>) override
+    {
+    }
+    void post(const QString &, const QJsonDocument &, QObject *, std::function<void(const ApiReply &)>) override {}
+    void put(const QString &, const QJsonDocument &, QObject *, std::function<void(const ApiReply &)>) override {}
+
+private:
+    QUrl m_base;
 };
 
 void registerWithScreens(ModuleRegistrar &registrar)
@@ -461,6 +507,93 @@ private slots:
 
     // A field without a stored value shows its default as its text, not
     // only as a hint, and OK stores it. A stored value is shown as it is.
+    void addFromServer()
+    {
+        ChoiceScreen screen;
+        ModuleSettingsDialog dialog(QStringLiteral("Work"), QStringLiteral("Tools"), screen,
+                                    QJsonObject{{QStringLiteral("paths"), QJsonArray{QStringLiteral("a/one")}}});
+        auto *button = dialog.findChild<QPushButton *>(QStringLiteral("addFromServer_paths"));
+        QVERIFY(button);
+        // Without a server there is nothing to ask.
+        QVERIFY(!button->isEnabled());
+
+        QJsonObject givenValues;
+        QJsonObject givenSecrets;
+        dialog.setServerFactory(
+            [&](const QJsonObject &values, const QJsonObject &typedSecrets, const QStringList &) {
+                givenValues = values;
+                givenSecrets = typedSecrets;
+                return std::make_unique<FakeClient>(QUrl(QStringLiteral("https://example.com/")));
+            });
+        QVERIFY(button->isEnabled());
+
+        // The server is asked with the values in the form, saved or not.
+        auto *form = qobject_cast<FieldForm *>(dialog.editor());
+        QVERIFY(form);
+        qobject_cast<QLineEdit *>(form->editorFor(QStringLiteral("token")))->setText(QStringLiteral("typed"));
+        qobject_cast<QLineEdit *>(form->editorFor(QStringLiteral("name")))->setText(QStringLiteral("Mine"));
+
+        QStringList shown;
+        QStringList fixed;
+        dialog.setChoiceExec([&](ServerChoiceDialog &choices) {
+            auto *list = choices.findChild<QListWidget *>(QStringLiteral("choices"));
+            for (int i = 0; i < list->count(); ++i) {
+                QListWidgetItem *item = list->item(i);
+                shown << item->text();
+                if (!(item->flags() & Qt::ItemIsEnabled))
+                    fixed << item->text();
+                if (item->text().startsWith(QStringLiteral("b/two")))
+                    item->setCheckState(Qt::Checked);
+            }
+            return true;
+        });
+        QTest::mouseClick(button, Qt::LeftButton);
+
+        QCOMPARE(screen.listedKey, QStringLiteral("paths"));
+        QCOMPARE(screen.listedBase, QUrl(QStringLiteral("https://example.com/")));
+        QCOMPARE(givenSecrets.value(QStringLiteral("token")).toString(), QStringLiteral("typed"));
+        QCOMPARE(givenValues.value(QStringLiteral("name")).toString(), QStringLiteral("Mine"));
+        // A value repeated with another case is listed once; one already in
+        // the field is checked and cannot be changed.
+        QCOMPARE(shown, (QStringList{QStringLiteral("a/one"), QStringLiteral("b/two (Private)"),
+                                     QStringLiteral("c/three")}));
+        QCOMPARE(fixed, QStringList{QStringLiteral("a/one")});
+        QCOMPARE(dialog.values().value(QStringLiteral("paths")).toArray(),
+                 (QJsonArray{QStringLiteral("a/one"), QStringLiteral("b/two")}));
+
+        // Cancelled, nothing is added.
+        dialog.setChoiceExec([](ServerChoiceDialog &) { return false; });
+        QTest::mouseClick(button, Qt::LeftButton);
+        QCOMPARE(dialog.values().value(QStringLiteral("paths")).toArray().size(), 2);
+    }
+
+    void addFromServerWithoutServer()
+    {
+        ChoiceScreen screen;
+        ModuleSettingsDialog dialog(QStringLiteral("Work"), QStringLiteral("Tools"), screen, QJsonObject());
+        dialog.setServerFactory(
+            [](const QJsonObject &, const QJsonObject &, const QStringList &) { return std::unique_ptr<ApiClient>(); });
+        QString status;
+        bool listEnabled = true;
+        dialog.setChoiceExec([&](ServerChoiceDialog &choices) {
+            status = choices.findChild<QLabel *>(QStringLiteral("status"))->text();
+            listEnabled = choices.findChild<QListWidget *>(QStringLiteral("choices"))->isEnabled();
+            return true;
+        });
+        dialog.addFromServer(QStringLiteral("paths"));
+        QVERIFY(status.contains(QStringLiteral("no server")));
+        QVERIFY(!listEnabled);
+        QVERIFY(screen.listedKey.isEmpty());
+        QVERIFY(!dialog.values().contains(QStringLiteral("paths")));
+    }
+
+    void ownEditorHasNoServerButton()
+    {
+        EditorScreen screen;
+        ModuleSettingsDialog dialog(QStringLiteral("Work"), QStringLiteral("Tools"), screen, QJsonObject());
+        QVERIFY(dialog.findChildren<QPushButton *>(QStringLiteral("addFromServer_paths")).isEmpty());
+    }
+
     void defaultsFillMissingValues()
     {
         const DefaultScreen screen;

@@ -8,12 +8,22 @@
 #include <functional>
 #include <vector>
 
+class QObject;
 class QWidget;
 
 namespace mirante {
 
+class ApiClient;
 class ItemEditor;
 struct EditorContext;
+
+// One value that a server offers for a settings field, such as a repository
+// the token can reach. See SettingsScreen::listServerChoices().
+struct ServerChoice
+{
+    QString value;    // what goes in the field, such as "owner/repo"
+    QString detail;   // shown after the value in smaller text, such as "Private"; may be empty
+};
 
 // Makes a module's own editor of its project or device settings. Include
 // <mirante/ItemEditor.h> to implement it.
@@ -53,6 +63,29 @@ public:
         Q_UNUSED(context)
         Q_UNUSED(parent)
         return nullptr;
+    }
+
+    // The keys of the TextList fields whose values the module's server can
+    // list, such as GitHub's repositories. In the form the core builds, each
+    // gets an "Add from Server…" button under its list. It opens a list of
+    // the values from listServerChoices(), to check and add. Ignored for a
+    // screen with its own editor, for a field that is not a TextList, and for
+    // a module without a ServerType. See decision 0138.
+    virtual QStringList serverChoiceFields() const { return {}; }
+
+    // Asks the server for the values of one of serverChoiceFields(). server
+    // uses the base URL and the token in the open dialog, saved or not, so
+    // the list works before the first OK. Calls done once: with the values,
+    // or with an empty list and a message for the user, such as
+    // ApiReply::message. Include <mirante/ApiClient.h> to implement it.
+    virtual void listServerChoices(const QString &key, ApiClient &server, QObject *receiver,
+                                   std::function<void(const std::vector<ServerChoice> &choices,
+                                                      const QString &error)> done) const
+    {
+        Q_UNUSED(key)
+        Q_UNUSED(server)
+        Q_UNUSED(receiver)
+        done({}, QString());
     }
 };
 
