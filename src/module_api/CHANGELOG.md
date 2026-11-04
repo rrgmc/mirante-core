@@ -8,6 +8,7 @@ While the version is 0.x, any minor version may break modules, so a module must 
 
 Changes that do not affect modules are listed here too.
 
+- `mirante::widgets::compactDate()` gives a date up to 6 days away as a distance in one unit, such as "10 minutes ago", "3 days ago" or "in 2 hours". Older and later dates read as before. `relativeDate(when, now)` is that distance alone. Modules need no change; a test that compared a recent date with a fixed text must compare with `compactDate()` instead. See decision 0144.
 - A `TextList` field with `suggestions` gets an **Add from List…** button under it, which opens a checklist of the suggestions to add. `mirante::widgets::ChoiceListDialog` is that checklist, with a filter, for a module's own editors too. A field without suggestions looks as before, so modules need no change. See decision 0139.
 - `SettingsScreen::serverChoiceFields()` and `listServerChoices()` let a module's server fill a `TextList` field of its settings screen, through an **Add from Server…** button under it. `ServerChoice` is a value with an optional detail. Both methods have defaults, so modules need no change. See decision 0138.
 - `ItemListView::filterChanged(column, values)` says when the user changes the values chosen in a filter, so a view can keep them and give them back with `setFilterDefault()` next time. Modules need no change.

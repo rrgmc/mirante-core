@@ -132,7 +132,7 @@ The summaries have fixed layouts, as in [decision 0066](decisions/0066-fixed-nat
   - Author;
   - Pipeline, a pill with the head pipeline's status;
   - Approvals, such as `1/2`, or just the count when none are required;
-  - Updated, compact, such as `10-30 14:32`, or `2025-10-30` for another year, sorted by the date;
+  - Updated, compact: "10 minutes ago" or "3 days ago" up to 6 days back, then `10-30 14:32`, or `2025-10-30` for another year, sorted by the date;
   - the links of the row, which never hide.
 - **A narrow cell** hides columns in this order: Author, Approvals, Updated, Pipeline, Ref.
 - **Pipeline and Approvals** are filled by the view, for the first 25 rows of the current page. It asks while it is visible, after each new status, each time it shows, and when a new page, sort or filter brings other rows. What is on the way for a row that leaves is dropped. The other rows show a dash, and so does a row whose request failed. A cell keeps its last answer until the new one comes. A hidden column asks for nothing. See decisions [0067](decisions/0067-lists-report-status.md) and [0071](decisions/0071-lists-link-out-without-a-preview.md).

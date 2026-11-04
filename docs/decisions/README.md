@@ -148,6 +148,8 @@ Each file records one design decision: what was decided, what else was considere
 | [0141](0141-one-menu-entry-for-links.md) | One menu entry adds items from a link | Accepted |
 | [0142](0142-item-dashboard-title.md) | Items have an optional title for dashboards | Accepted |
 | [0143](0143-claude-agents-list.md) | A list of local Claude agents, from `claude agents --json` | Accepted |
+| [0144](0144-recent-dates-as-a-distance.md) | Recent dates in lists read as a distance | Accepted |
+| [0145](0145-tasks-without-dashboards.md) | A task may have no dashboards | Accepted |
 
 ## Template
 
