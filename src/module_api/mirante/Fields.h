@@ -40,6 +40,8 @@ struct Field
     QString placeholder;        // grey text in an empty editor
     // Text: values offered in a drop-down list. The user may still type
     // another. Such as the project paths of a module's settings.
+    // TextList: values offered by an "Add from List…" button, in a checklist.
+    // See decision 0139.
     QStringList suggestions;
     // A short explanation, shown in small text under the editor.
     QString help;

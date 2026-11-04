@@ -16,6 +16,7 @@
 #include <QJsonArray>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QMimeData>
 #include <QPlainTextEdit>
 #include <QPushButton>
@@ -401,6 +402,47 @@ private slots:
 
         text->setPlainText(QStringLiteral("\n  \n"));
         QVERIFY(!form.config().contains(QStringLiteral("paths")));
+    }
+
+    // A text list without suggestions has no button. One with them has "Add
+    // from List…", whose checklist fixes the entries already present and
+    // appends the checked ones. See decision 0139.
+    void textListSuggestions()
+    {
+        FieldForm plain({field(QStringLiteral("paths"), QStringLiteral("Paths"), Field::Type::TextList)}, context());
+        QVERIFY(!plain.findChild<QPushButton *>(QStringLiteral("addFromList_paths")));
+
+        Field paths = field(QStringLiteral("paths"), QStringLiteral("Paths"), Field::Type::TextList);
+        paths.suggestions = {QStringLiteral("a/b"), QStringLiteral("c/d"), QStringLiteral("e/f")};
+        FieldForm form({paths}, context());
+        form.setConfig({{QStringLiteral("paths"), QJsonArray{QStringLiteral("A/B")}}});
+        auto *button = form.findChild<QPushButton *>(QStringLiteral("addFromList_paths"));
+        QVERIFY(button);
+        QSignalSpy changed(&form, &ItemEditor::changed);
+
+        QString title;
+        form.setExec([&](QDialog &dialog) {
+            title = dialog.windowTitle();
+            auto *list = dialog.findChild<QListWidget *>(QStringLiteral("choices"));
+            if (!list || list->count() != 3)
+                return false;
+            // Already present, without case: checked and fixed.
+            if (list->item(0)->checkState() != Qt::Checked || (list->item(0)->flags() & Qt::ItemIsEnabled))
+                return false;
+            list->item(2)->setCheckState(Qt::Checked);
+            return true;
+        });
+        button->click();
+        QCOMPARE(title, QStringLiteral("Add Paths from List"));
+        QCOMPARE(form.config().value(QStringLiteral("paths")).toArray(),
+                 (QJsonArray{QStringLiteral("A/B"), QStringLiteral("e/f")}));
+        QVERIFY(!changed.isEmpty());
+
+        // Cancel leaves the list as it is.
+        form.setExec([](QDialog &) { return false; });
+        button->click();
+        QCOMPARE(form.config().value(QStringLiteral("paths")).toArray(),
+                 (QJsonArray{QStringLiteral("A/B"), QStringLiteral("e/f")}));
     }
 
     // A text field with suggestions is an editable combo box: it offers them,
