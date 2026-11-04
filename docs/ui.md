@@ -180,6 +180,10 @@ Only the lower half of the title bar counts, because title bars differ in height
 
 Otherwise, as after a monitor was unplugged or a resolution shrank, the window opens centred on the primary screen, at the saved size made to fit that screen. Without a saved place, as from earlier versions, it opens centred too. The check works on the screens' available areas, without the menu bar and task bar, and is a pure function in `core/WindowPlacement`. The app's icon, a temporary one, is a blue square with three dashboard panes.
 
+### Dialogs on Windows
+
+A dialog opens centred on the window it belongs to, on that window's screen. Qt centres a dialog on its window, but then keeps it inside the screen it has on record for that window. On Windows that record can be stale. This happens when the window was shown while Windows reported one screen, as at sign-in before a monitor wakes, or when a monitor went away and came back. Each dialog then opened on the other screen. Before a dialog appears, an app-wide hook compares Qt's record with the screen that holds the window. If they differ, the hook places the dialog on that screen itself, so Qt does not, and writes a line to the log. A dialog that places itself is left alone. The code is in `src/platform/DialogScreens.cpp`; on macOS and Linux it does nothing.
+
 ### Starting Mirante again
 
 Only one Mirante runs with each [web data folder](README.md#glossary), because two would damage each other's logins. Starting Mirante while it runs brings the running window to the front, restored if it was minimized or hidden in the tray, and the new start exits. A workspace given with `--data` opens in the running window, unless it is the one already open, or a dialog is open there: then the window only comes to the front, with the dialog. If the running Mirante does not answer within five seconds, the new start says that Mirante is already running with this web data folder. Test runs that must run beside the user's own Mirante use `--web-data <folder>` for their own logins. See [decision 0058](decisions/0058-one-instance-per-web-data-folder.md).
