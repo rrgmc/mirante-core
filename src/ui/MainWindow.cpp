@@ -2020,6 +2020,9 @@ MainWindow::MainWindow(Model &model, const ItemTypeRegistry &types, Store &store
     d->services.editItem = [this](const QString &taskId, const QString &itemId) {
         d->actions->editItem(taskId, itemId);
     };
+    d->services.duplicateItem = [this](const QString &taskId, const QString &itemId) {
+        d->actions->duplicateItem(taskId, itemId);
+    };
     // An image dropped from another app on an image item's cell replaces its
     // image, as Ctrl+V does. See docs/decisions/0085-drop-images-from-other-apps.md.
     d->services.readImageDrop = &widgets::imageFromMime;

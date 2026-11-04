@@ -117,6 +117,11 @@ public:
     // the link with their module settings in the group's profile. See
     // decisions 0049 and 0054.
     QString newItem(const QString &taskId, const QString &url = QString());
+    // "Duplicate item…": opens the new item dialog on the item's page, filled
+    // with a copy of the item, and adds the copy to the same task, on no
+    // dashboard. Back still offers another type. Nothing happens for an item
+    // of a missing type. Returns the new id, or an empty string.
+    QString duplicateItem(const QString &taskId, const QString &itemId);
     QString newDashboard(const QString &taskId);
     // "Paste Image…": opens the paste dialog on the clipboard's image, then
     // adds the cropped image to the task as a new Image item, on no

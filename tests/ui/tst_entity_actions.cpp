@@ -315,6 +315,7 @@ private slots:
     void newProject();
     void newTask();
     void newItem();
+    void duplicateItem();
     void newDashboard();
     void cancelledCreation();
     void editing();
@@ -525,6 +526,49 @@ void TestEntityActions::newItem()
                         [](const auto &folder) { return folder.first == backendFolder; }));
     QVERIFY(std::any_of(lastFolders.begin(), lastFolders.end(),
                         [](const auto &folder) { return folder.first == deployFolder; }));
+}
+
+void TestEntityActions::duplicateItem()
+{
+    fill = [](QDialog &dialog) {
+        auto *item = qobject_cast<ItemDialog *>(&dialog);
+        item->setType(plainType);
+        item->setName(QStringLiteral("Memo"));
+    };
+    const QString source = actions->newItem(fixLoginTimeout);
+    QVERIFY(!source.isEmpty());
+    Item changed = *model.item(fixLoginTimeout, source);
+    changed.dashboardTitle = QStringLiteral("Memo title");
+    changed.config.insert(QStringLiteral("note"), QStringLiteral("copied"));
+    model.setItem(fixLoginTimeout, changed);
+    const size_t before = model.task(fixLoginTimeout)->items.size();
+
+    // The dialog opens on the item's page, filled with the item.
+    bool onItemPage = false;
+    QString shownName;
+    fill = [&](QDialog &dialog) {
+        auto *item = qobject_cast<ItemDialog *>(&dialog);
+        QVERIFY(item);
+        onItemPage = !item->choosingType();
+        shownName = item->value().name;
+    };
+    const QString copy = actions->duplicateItem(fixLoginTimeout, source);
+    QVERIFY(!copy.isEmpty());
+    QVERIFY(copy != source);
+    QVERIFY(onItemPage);
+    QCOMPARE(shownName, QStringLiteral("Memo"));
+    const Item *item = model.item(fixLoginTimeout, copy);
+    QVERIFY(item);
+    QCOMPARE(item->type, plainType);
+    QCOMPARE(item->dashboardTitle, QStringLiteral("Memo title"));
+    QCOMPARE(item->config.value(QStringLiteral("note")).toString(), QStringLiteral("copied"));
+    QCOMPARE(model.task(fixLoginTimeout)->items.size(), before + 1);
+    QVERIFY(model.item(fixLoginTimeout, source));
+
+    // Cancelled: nothing is added.
+    accept = false;
+    QVERIFY(actions->duplicateItem(fixLoginTimeout, source).isEmpty());
+    QCOMPARE(model.task(fixLoginTimeout)->items.size(), before + 1);
 }
 
 void TestEntityActions::newDashboard()
@@ -802,7 +846,8 @@ void TestEntityActions::menus()
 
     QMenu item;
     actions->fillMenu(&item, SidebarModel::Kind::Item, itemId(model, fixLoginTimeout, notesItem), fixLoginTimeout);
-    QCOMPARE(texts(item), (QStringList{QStringLiteral("Edit item…"), QStringLiteral("Delete item…")}));
+    QCOMPARE(texts(item), (QStringList{QStringLiteral("Edit item…"), QStringLiteral("Duplicate item…"),
+                                       QStringLiteral("Delete item…")}));
 
     // The default dashboard cannot be set as default again.
     const QString work = dashboardId(model, fixLoginTimeout, fixLoginWorkDashboard);

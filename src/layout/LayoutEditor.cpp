@@ -373,6 +373,11 @@ void LayoutEditor::Private::addItemCommands(QMenu &menu, Commands &commands, con
         addCommand(&menu, commands, LayoutEditor::tr("Edit Item…"), [edit, taskId, itemId] { edit(taskId, itemId); });
 
     const Item *item = model.item(taskId, itemId);
+    if (const auto duplicate = services->duplicateItem;
+        duplicate && item && services->types && services->types->contains(item->type)) {
+        addCommand(&menu, commands, LayoutEditor::tr("Duplicate Item…"),
+                   [duplicate, taskId, itemId] { duplicate(taskId, itemId); });
+    }
     if (item && services->types && services->types->contains(item->type)
         && services->types->type(item->type).hasStatus()) {
         const bool watched = item->watch;

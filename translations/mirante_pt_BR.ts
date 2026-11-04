@@ -862,6 +862,10 @@
         <translation>Editar item…</translation>
     </message>
     <message>
+        <source>Duplicate item…</source>
+        <translation>Duplicar item…</translation>
+    </message>
+    <message>
         <source>Delete item…</source>
         <translation>Excluir item…</translation>
     </message>
@@ -1164,6 +1168,10 @@
     <message>
         <source>Edit Item…</source>
         <translation>Editar item…</translation>
+    </message>
+    <message>
+        <source>Duplicate Item…</source>
+        <translation>Duplicar item…</translation>
     </message>
     <message>
         <source>Use Current Address</source>

@@ -8,6 +8,7 @@ The changes to the module interface, and what a module must do about them, are i
 
 ### Added
 
+- **Duplicate item…** in the context menu of an item in the sidebar, and **Duplicate Item…** in the menu of an item cell, open the new item dialog filled with a copy of the item.
 - Item cells have an **Open in browser** button in their header when the item has a page on the web. Item types give the address with `ItemContext::setWebLink()`. See [decision 0148](docs/decisions/0148-web-link-in-the-cell-header.md).
 - A profile can hold several accounts of a module, such as a personal GitHub account and a bot, or github.com and a GitHub Enterprise server. Each has its own settings and token. **Add Account…** in a module's submenu of Profiles > <profile> > Modules adds one, and an item chooses its account in the item dialog. A pasted link is read in the account of its host. See [decision 0146](docs/decisions/0146-several-accounts-per-module.md).
 

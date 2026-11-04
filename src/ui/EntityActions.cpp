@@ -653,6 +653,26 @@ QString EntityActions::newItem(const QString &taskId, const QString &url)
     return item.id;
 }
 
+QString EntityActions::duplicateItem(const QString &taskId, const QString &itemId)
+{
+    const Item *source = d->model.item(taskId, itemId);
+    if (!source || !d->types.contains(source->type))
+        return {};
+    Item item = *source;
+    item.id = edits::newId();
+    ItemDialog dialog(item, true, d->types, d->editorContext(taskId), d->dialogParent);
+    d->offerProfiles(dialog, taskId);
+    // Straight to the item's page, with the copied configuration.
+    dialog.setType(item.type);
+    if (!d->exec(dialog))
+        return {};
+    const Task *task = d->model.task(taskId);
+    if (!task)
+        return {};
+    d->model.setTask(edits::addItem(*task, dialog.value()));
+    return item.id;
+}
+
 QString EntityActions::newDashboard(const QString &taskId)
 {
     if (!d->model.task(taskId))
@@ -1207,6 +1227,8 @@ void EntityActions::fillMenu(QMenu *menu, SidebarModel::Kind kind, const QString
         if (!model.item(taskId, id))
             return;
         menu->addAction(tr("Edit item…"), this, [this, taskId, id] { editItem(taskId, id); });
+        menu->addAction(tr("Duplicate item…"), this, [this, taskId, id] { duplicateItem(taskId, id); })
+            ->setEnabled(d->types.contains(model.item(taskId, id)->type));
         addWatch(menu, taskId, id);
         menu->addSeparator();
         menu->addAction(tr("Delete item…"), this, [this, taskId, id] { removeItem(taskId, id); });
