@@ -70,6 +70,54 @@
 
 @end
 
+// The status item's button action. A left click calls onLeftClick; a right
+// click or a Control-click opens the menu.
+@interface MiranteTrayClickHandler : NSObject
+- (instancetype)initWithItem:(NSStatusItem *)item
+                        menu:(NSMenu *)menu
+                 onLeftClick:(std::function<void()>)onLeftClick;
+- (void)clicked:(id)sender;
+@end
+
+@implementation MiranteTrayClickHandler {
+    __weak NSStatusItem *_item;
+    NSMenu *_menu;
+    std::function<void()> _onLeftClick;
+}
+
+- (instancetype)initWithItem:(NSStatusItem *)item
+                        menu:(NSMenu *)menu
+                 onLeftClick:(std::function<void()>)onLeftClick
+{
+    if ((self = [super init])) {
+        _item = item;
+        _menu = menu;
+        _onLeftClick = std::move(onLeftClick);
+    }
+    return self;
+}
+
+- (void)clicked:(id)sender
+{
+    NSEvent *event = NSApp.currentEvent;
+    const bool menuClick = event.type == NSEventTypeRightMouseUp || event.type == NSEventTypeRightMouseDown
+                           || (event.modifierFlags & NSEventModifierFlagControl);
+    if (!menuClick) {
+        _onLeftClick();
+        return;
+    }
+    NSStatusItem *item = _item;
+    if (!item)
+        return;
+    // A status item with a menu opens it on every click, so the menu is set
+    // only while it is shown. performClick: returns once the menu closes.
+    item.menu = _menu;
+    [item.button performClick:nil];
+    item.menu = nil;
+}
+
+@end
+
 @interface MiranteReopenHandler : NSObject
 - (instancetype)initWithCallback:(std::function<void()>)callback;
 - (void)handleReopen:(NSAppleEventDescriptor *)event withReplyEvent:(NSAppleEventDescriptor *)reply;
@@ -124,6 +172,7 @@ struct Tray::Private
     NSStatusItem *item = nil;
     NSMenu *menu = nil;
     MiranteTrayMenuDelegate *delegate = nil;
+    MiranteTrayClickHandler *clickHandler = nil;
     MiranteReopenHandler *reopenHandler = nil;
     int count = 0;
     // The last state asked for, which a delayed change checks it still applies.
@@ -171,7 +220,19 @@ Tray::Tray(const QIcon &icon, const QIcon &monochromeIcon, const QString &toolTi
     d->item = [NSStatusBar.systemStatusBar statusItemWithLength:NSSquareStatusItemLength];
     d->item.button.image = toTemplateImage(monochromeIcon);
     d->item.button.toolTip = toolTip.toNSString();
-    d->item.menu = d->menu;
+    QPointer<Tray> tray(this);
+    d->clickHandler = [[MiranteTrayClickHandler alloc] initWithItem:d->item
+                                                               menu:d->menu
+                                                        onLeftClick:[tray] {
+                                                            // Toggle once AppKit has handled the click.
+                                                            if (tray)
+                                                                QMetaObject::invokeMethod(
+                                                                    tray.data(), [tray] { emit tray->triggered(); },
+                                                                    Qt::QueuedConnection);
+                                                        }];
+    d->item.button.target = d->clickHandler;
+    d->item.button.action = @selector(clicked:);
+    [d->item.button sendActionOn:NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp];
 
     MiranteReopenHandler *handler = [[MiranteReopenHandler alloc] initWithCallback:[this] { emit reopened(); }];
     d->reopenHandler = handler;

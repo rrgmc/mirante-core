@@ -49,7 +49,8 @@ public:
     void setDockIconVisible(bool visible);
 
 signals:
-    // A left click. Not emitted on macOS, where any click opens the menu.
+    // A left click. On macOS a right click or a Control-click opens the menu
+    // instead.
     void triggered();
     // The last message was clicked. Not emitted on macOS.
     void messageClicked();
