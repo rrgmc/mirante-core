@@ -1,5 +1,6 @@
 #include "ui/AppStyle.h"
 
+#include "ui/ColourChooser.h"
 #include "ui/RootTabBar.h"
 
 #include <QAbstractButton>
@@ -163,7 +164,8 @@ void AppStyle::drawControl(ControlElement element, const QStyleOption *option, Q
         QStyleOptionTab label = *tab;
         label.documentMode = true;
         // The current tab's text and icon in the highlighted text colour, for
-        // its fill. The app's tab icons are single-colour line drawings.
+        // its fill. The app's tab icons are single-colour line drawings,
+        // except the colour dots of root dashboards.
         if (tab->state & State_Selected) {
             const QColor text = selectedTabText(tab->palette);
             for (const auto group : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) {
@@ -176,7 +178,12 @@ void AppStyle::drawControl(ControlElement element, const QStyleOption *option, Q
                     const int extent = pixelMetric(PM_TabBarIconSize, tab, widget);
                     size = QSize(extent, extent);
                 }
-                label.icon = tinted(tab->icon, size, painter->device()->devicePixelRatioF(), text);
+                const qreal dpr = painter->device()->devicePixelRatioF();
+                // A root dashboard's colour dot keeps its colour, with a ring
+                // in the text colour that sets it off from the fill.
+                label.icon = isColourDot(tab->icon)
+                    ? QIcon(tab->icon.pixmap(size, dpr, QIcon::Selected, QIcon::Off))
+                    : tinted(tab->icon, size, dpr, text);
             }
         }
         QProxyStyle::drawControl(element, &label, painter, widget);
