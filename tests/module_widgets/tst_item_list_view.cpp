@@ -378,6 +378,22 @@ private slots:
                                           {RefColumn, AuthorColumn, UpdatedColumn}}));
     }
 
+    // A long title is elided, and does not push the other columns out.
+    void aLongTitleDoesNotHideTheOtherColumns()
+    {
+        ItemListView view;
+        view.setColumns(fourColumns(), UpdatedColumn);
+        view.setRows({makeRow(QStringLiteral("a"), 1, QString(400, QLatin1Char('x')))});
+        QTableView *table = tableOf(view);
+        view.resize(700, 400);
+        view.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&view));
+        QCoreApplication::processEvents();
+        QVERIFY(table->horizontalHeader()->sectionSize(TitleColumn) < 700);
+        for (int column = 0; column < 4; ++column)
+            QVERIFY2(!table->isColumnHidden(column), qPrintable(QString::number(column)));
+    }
+
     void setColumnVisibleOverridesWidth()
     {
         ItemListView view;

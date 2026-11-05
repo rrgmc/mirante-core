@@ -7,6 +7,7 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QEvent>
+#include <QFontMetricsF>
 #include <QHash>
 #include <QHeaderView>
 #include <QHBoxLayout>
@@ -28,6 +29,7 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <utility>
 
@@ -431,8 +433,11 @@ public:
             const QRect last = linkRects(QRect(), option.fontMetrics, labels).last();
             size.setWidth(last.left() + last.width() + linkMargin);
         } else if (index.data(StatusColoursRole).isValid()) {
-            const int wanted = option.fontMetrics.horizontalAdvance(index.data().toString());
-            size.setWidth(wanted + 2 * (pillPadding + pillMargin));
+            // Rounded up, because horizontalAdvance() rounds a fractional width
+            // down on macOS, and the text then elides by a pixel.
+            const int wanted = static_cast<int>(std::ceil(
+                    QFontMetricsF(option.font).horizontalAdvance(index.data().toString())));
+            size.setWidth(wanted + 2 * (pillPadding + pillMargin) + 1);
         }
         return size;
     }
@@ -693,8 +698,12 @@ struct ItemListView::Private : public QObject
         const QHeaderView *header = table->horizontalHeader();
         const int headerWidth = header->fontMetrics().horizontalAdvance(model->columns()[column].title)
                 + headerPadding;
-        const int width = std::max(headerWidth, view->sizeHintForColumn(column));
-        return model->columns()[column].stretch ? std::max(width, stretchColumnWidth) : width;
+        const int contentWidth = view->sizeHintForColumn(column);
+        // A stretching column counts only up to stretchColumnWidth. Longer text
+        // is elided, so that one long title does not hide the other columns.
+        if (model->columns()[column].stretch)
+            return std::max(headerWidth, std::min(contentWidth, stretchColumnWidth));
+        return std::max(headerWidth, contentWidth);
     }
 
     // Hides columns by priority until the rest fit. It always starts from all
