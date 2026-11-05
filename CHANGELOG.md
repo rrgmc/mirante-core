@@ -6,8 +6,16 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-05
+
+### Changed
+
+- **Collapse All Tasks** works in two steps: the first press closes every task, and a second press, while every task is closed, closes the projects too. **Expand All Tasks** is the reverse: it opens the projects first, then every task with its lists. The sidebar's header buttons do the same.
+- On macOS, a left click on the menu bar icon shows or hides Mirante, as a click on the tray icon does on Windows and Linux. A right click or a Control-click opens the menu.
+
 ### Fixed
 
+- The colour dot of the current root dashboard tab keeps its colour, with a ring around it so it shows on the highlight. Before, it turned white.
 - In native lists, such as Jira issues or GitLab merge requests, a long title or summary no longer hides the other columns. The title's text is elided instead. Status pills no longer cut a word short on macOS, as in "Pass…" for "Passed".
 
 ## [0.12.0] - 2026-11-04
@@ -118,7 +126,8 @@ The first release of the core on its own, after it was split from `mirante` for 
 
 - `qrc:` addresses in item web views, which shared one origin among all pages.
 
-[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/rrgmc/mirante-core/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/rrgmc/mirante-core/compare/v0.8.6...v0.12.0
 [0.8.6]: https://github.com/rrgmc/mirante-core/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/rrgmc/mirante-core/compare/v0.8.4...v0.8.5
