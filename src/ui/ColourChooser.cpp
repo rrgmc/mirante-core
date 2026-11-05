@@ -14,6 +14,9 @@ namespace mirante {
 
 namespace {
 
+// The name colourDot() icons report, by which isColourDot() knows them.
+constexpr const char *colourDotName = "mirante-colour-dot";
+
 // A colour swatch: a filled circle, with a ring in the text colour around it
 // while chosen.
 class SwatchIconEngine : public PaintedIconEngine
@@ -21,7 +24,7 @@ class SwatchIconEngine : public PaintedIconEngine
 public:
     explicit SwatchIconEngine(const QColor &colour) : m_colour(colour) {}
 
-    void paint(QPainter *painter, const QRect &rect, QIcon::Mode, QIcon::State state) override
+    void paint(QPainter *painter, const QRect &rect, QIcon::Mode mode, QIcon::State state) override
     {
         const qreal side = qMin(rect.width(), rect.height());
         const QRectF outer(rect.x() + (rect.width() - side) / 2.0, rect.y() + (rect.height() - side) / 2.0,
@@ -36,11 +39,19 @@ public:
         painter->setPen(Qt::NoPen);
         painter->setBrush(m_colour);
         const qreal inset = side * 0.22;
-        painter->drawEllipse(outer.adjusted(inset, inset, -inset, -inset));
+        const QRectF dot = outer.adjusted(inset, inset, -inset, -inset);
+        painter->drawEllipse(dot);
+        if (mode == QIcon::Selected) {
+            painter->setPen(QPen(QApplication::palette().color(QPalette::Active, QPalette::HighlightedText), 1.5));
+            painter->setBrush(Qt::NoBrush);
+            painter->drawEllipse(dot.adjusted(-0.75, -0.75, 0.75, 0.75));
+        }
         painter->restore();
     }
 
     QIconEngine *clone() const override { return new SwatchIconEngine(m_colour); }
+
+    QString iconName() override { return QString::fromLatin1(colourDotName); }
 
 private:
     QColor m_colour;
@@ -49,6 +60,8 @@ private:
 } // namespace
 
 QIcon colourDot(const QColor &colour) { return QIcon(new SwatchIconEngine(colour)); }
+
+bool isColourDot(const QIcon &icon) { return icon.name() == QLatin1String(colourDotName); }
 
 struct ColourChooser::Private
 {

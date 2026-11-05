@@ -11,8 +11,14 @@ class QColor;
 namespace mirante {
 
 // A filled circle in colour, for a swatch or a tab. In its On state, as on a
-// checked button, a ring in the text colour goes around it.
+// checked button, a ring in the text colour goes around it. In its Selected
+// mode, as on the current tab, a ring in the highlighted text colour hugs the
+// dot, so it stays visible on the highlight fill.
 QIcon colourDot(const QColor &colour);
+
+// Whether icon was made by colourDot(). AppStyle keeps the colour of such
+// icons on the current tab instead of tinting them.
+bool isColourDot(const QIcon &icon);
 
 // A row of colour swatches: the group colour palette, a swatch for a colour
 // outside it, and "Other…", which opens QColorDialog. With allowNone it also
