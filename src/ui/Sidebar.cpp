@@ -104,15 +104,38 @@ struct Sidebar::Private
 
     // Calls fn for every task row under parent. Tasks sit under projects, so
     // the walk stops at them.
-    void forEachTask(const QModelIndex &parent, const std::function<void(const QModelIndex &)> &fn)
+    // Calls fn for every entry of the given kind under parent. It does not
+    // look inside the entries it finds.
+    void forEach(SidebarModel::Kind wanted, const QModelIndex &parent,
+                 const std::function<void(const QModelIndex &)> &fn)
     {
         for (int row = 0; row < model->rowCount(parent); ++row) {
             const QModelIndex index = model->index(row, 0, parent);
-            if (kind(index) == SidebarModel::Kind::Task)
+            if (kind(index) == wanted)
                 fn(index);
             else
-                forEachTask(index, fn);
+                forEach(wanted, index, fn);
         }
+    }
+
+    // Whether some entry of the given kind that has contents is open.
+    bool anyExpanded(SidebarModel::Kind wanted)
+    {
+        bool found = false;
+        forEach(wanted, {}, [&](const QModelIndex &index) {
+            found = found || (model->rowCount(index) > 0 && tree->isExpanded(index));
+        });
+        return found;
+    }
+
+    // Whether some entry of the given kind that has contents is closed.
+    bool anyCollapsed(SidebarModel::Kind wanted)
+    {
+        bool found = false;
+        forEach(wanted, {}, [&](const QModelIndex &index) {
+            found = found || (model->rowCount(index) > 0 && !tree->isExpanded(index));
+        });
+        return found;
     }
 
     void applyFilter()
@@ -165,8 +188,9 @@ Sidebar::Sidebar(const Model &model, const ItemTypeRegistry &types, QWidget *par
     collapse->setAutoRaise(true);
     connect(collapse, &QToolButton::clicked, this, &Sidebar::collapseRequested);
 
-    // Expand or collapse every task at once. Groups and projects are left as
-    // they are; they open and close by hand only.
+    // Expand or collapse every task at once. A second press goes one level
+    // further: collapsing closes the projects once every task is closed, and
+    // expanding opens the projects first. Groups open and close by hand only.
     auto *expandTasks = new QToolButton(this);
     expandTasks->setObjectName(QStringLiteral("expandAllTasks"));
     expandTasks->setIcon(QIcon(QStringLiteral(":/icons/expand-all.svg")));
@@ -397,9 +421,17 @@ void Sidebar::reveal(const QString &id)
     d->tree->scrollTo(index);
 }
 
+// Expanding works in two steps, the reverse of collapsing: while a project is
+// closed, the first press opens the projects; once they are all open, it
+// opens every task with its lists.
 void Sidebar::expandAllTasks()
 {
-    d->forEachTask({}, [this](const QModelIndex &task) {
+    using Kind = SidebarModel::Kind;
+    if (d->anyCollapsed(Kind::Project)) {
+        d->forEach(Kind::Project, {}, [this](const QModelIndex &project) { d->tree->expand(project); });
+        return;
+    }
+    d->forEach(Kind::Task, {}, [this](const QModelIndex &task) {
         d->tree->expand(task);
         // The Dashboards and Items lists under it open too.
         for (int row = 0; row < d->model->rowCount(task); ++row)
@@ -407,9 +439,16 @@ void Sidebar::expandAllTasks()
     });
 }
 
+// Collapsing works in two steps: while a task is open, the first press closes
+// the tasks; once they are all closed, it closes the projects.
 void Sidebar::collapseAllTasks()
 {
-    d->forEachTask({}, [this](const QModelIndex &task) { d->tree->collapse(task); });
+    using Kind = SidebarModel::Kind;
+    if (d->anyExpanded(Kind::Task)) {
+        d->forEach(Kind::Task, {}, [this](const QModelIndex &task) { d->tree->collapse(task); });
+        return;
+    }
+    d->forEach(Kind::Project, {}, [this](const QModelIndex &project) { d->tree->collapse(project); });
 }
 
 SidebarModel *Sidebar::model() const { return d->model; }

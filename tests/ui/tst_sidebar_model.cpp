@@ -651,19 +651,29 @@ void TestSidebarModel::sidebarWidget()
     QCOMPARE(stateTabs->currentIndex(), 0);
     QCOMPARE(tree->currentIndex(), sidebarModel->indexOf(fixLoginTimeout));
 
-    // Expand all opens every task with its lists; collapse all closes the
-    // tasks only, and leaves groups and projects open.
+    // Collapse all closes the tasks first, and leaves groups and projects
+    // open. Pressed again with every task closed, it closes the projects.
+    const QModelIndex project = sidebarModel->indexOf(backendProject);
     sidebar.collapseAllTasks();
     QVERIFY(!tree->isExpanded(sidebarModel->indexOf(fixLoginTimeout)));
-    QVERIFY(tree->isExpanded(sidebarModel->indexOf(backendProject)));
-    sidebar.expandAllTasks();
+    QVERIFY(tree->isExpanded(project));
+    sidebar.collapseAllTasks();
+    QVERIFY(!tree->isExpanded(project));
+    QVERIFY(tree->isExpanded(sidebarModel->indexOf(workGroup)));
+
+    // Expand all is the reverse: it opens the projects first, and pressed
+    // again it opens every task with its lists.
     const QModelIndex task = sidebarModel->indexOf(addRateLimiting);
+    sidebar.expandAllTasks();
+    QVERIFY(tree->isExpanded(project));
+    QVERIFY(!tree->isExpanded(task));
+    sidebar.expandAllTasks();
     QVERIFY(tree->isExpanded(task));
     QVERIFY(tree->isExpanded(sidebarModel->index(0, 0, task)));
     QVERIFY(tree->isExpanded(sidebarModel->index(1, 0, task)));
     sidebar.collapseAllTasks();
     QVERIFY(!tree->isExpanded(task));
-    QVERIFY(tree->isExpanded(sidebarModel->indexOf(backendProject)));
+    QVERIFY(tree->isExpanded(project));
     QVERIFY(tree->isExpanded(sidebarModel->indexOf(workGroup)));
 }
 
