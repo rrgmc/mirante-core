@@ -6,6 +6,10 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+### Fixed
+
+- In native lists, such as Jira issues or GitLab merge requests, a long title or summary no longer hides the other columns. The title's text is elided instead. Status pills no longer cut a word short on macOS, as in "Pass…" for "Passed".
+
 ## [0.12.0] - 2026-11-04
 
 ### Added
