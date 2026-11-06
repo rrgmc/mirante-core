@@ -14,7 +14,7 @@ NSWindow *nativeWindow(QWidget *widget)
 {
     if (!widget || !widget->testAttribute(Qt::WA_WState_Created))
         return nil;
-    auto *view = reinterpret_cast<NSView *>(widget->winId());
+    NSView *view = (__bridge NSView *)reinterpret_cast<void *>(widget->winId());
     return view ? view.window : nil;
 }
 
