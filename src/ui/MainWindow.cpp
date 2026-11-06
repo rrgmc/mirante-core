@@ -30,6 +30,7 @@
 #include "layout/LockState.h"
 #include "layout/SingleViewTracker.h"
 #include "layout/TaskCell.h"
+#include "platform/ActiveSpace.h"
 #include "platform/Foreground.h"
 #include "platform/GlobalHotkey.h"
 #include "platform/LoginItem.h"
@@ -2312,6 +2313,16 @@ void MainWindow::setTrayPresent(bool present)
 
 void MainWindow::showAndRaise()
 {
+    // Windows hidden to the tray come back on the current desktop. Before the
+    // Dock icon returns, because that activates the app.
+    QList<QWidget *> hidden;
+    if (!isVisible())
+        hidden << this;
+    for (const QPointer<QWidget> &other : std::as_const(d->hiddenWithWindow)) {
+        if (other)
+            hidden << other.data();
+    }
+    platform::showOnActiveSpace(hidden);
     if (d->tray)
         d->tray->setDockIconVisible(true);
     d->pageFreezer.thaw();
