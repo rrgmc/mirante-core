@@ -3,6 +3,7 @@
 
 #import <AppKit/AppKit.h>
 
+#include <QGuiApplication>
 #include <QPointer>
 #include <QWidget>
 
@@ -12,6 +13,10 @@ namespace {
 
 NSWindow *nativeWindow(QWidget *widget)
 {
+    // Only the Cocoa platform has an NSView behind winId(). Under another
+    // platform, such as the offscreen one the tests use, it is not a pointer.
+    if (QGuiApplication::platformName() != QLatin1String("cocoa"))
+        return nil;
     if (!widget || !widget->testAttribute(Qt::WA_WState_Created))
         return nil;
     NSView *view = (__bridge NSView *)reinterpret_cast<void *>(widget->winId());
