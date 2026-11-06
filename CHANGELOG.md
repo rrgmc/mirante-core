@@ -6,6 +6,10 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+### Fixed
+
+- On macOS, Mirante hidden to the menu bar shows again on the current desktop (Space). Before, macOS switched back to the desktop the window was hidden from.
+
 ## [0.13.0] - 2026-11-05
 
 ### Changed
