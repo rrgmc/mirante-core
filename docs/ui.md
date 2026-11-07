@@ -257,7 +257,7 @@ A root dashboard is a tab in the main tab bar. It has a name and a [layout tree]
 
 - Unlock the dashboard, then drag an item or a task dashboard from the sidebar onto it. A task dashboard dropped on a root dashboard places its task there, showing that dashboard. The drop overlay shows where it lands. See [editing](#editing-layouts). A locked dashboard refuses every drop: it shows no drop zones, and the cursor shows that the drop is not possible.
 - Or use "Add to dashboard…" in the context menu, then pick a dashboard and click a cell. An empty cell is filled; any other cell is split.
-- Tasks go only into root dashboards. A task dashboard shown in a root dashboard is read-only there: it has no lock, no edit menus, and takes no drops. A drop on it acts on the root dashboard. To change a task dashboard, open it on its own with a double click on its title, its "Edit task dashboard" button or its menu, and edit it there. A double click on the title of an item inside it opens the item dialog. See [decision 0020](decisions/0020-edit-task-dashboards-alone.md) and [decision 0151](decisions/0151-double-click-in-task-cells.md).
+- Tasks go only into root dashboards. A task dashboard shown in a root dashboard is read-only there: it has no lock, no edit menus, and takes no drops. A drop on it acts on the root dashboard. To change a task dashboard, open it on its own with a double click on its title, its "Edit task dashboard" button or its menu, and edit it there. See [decision 0020](decisions/0020-edit-task-dashboards-alone.md) and [decision 0151](decisions/0151-double-click-in-task-cells.md).
 
 ## Task dashboards
 
@@ -270,6 +270,8 @@ Each cell has a small header containing:
 - in a root dashboard, where an item can come from any task, a grey **place pill** with its project and task after the name, such as "backend › Overview";
 - the item's [status](#attention): an attention badge, a problem pill, or the data's age;
 - buttons: open in browser, refresh, a menu, and maximise. Refresh shows only for items of types that report status. **Open in browser** shows only when the item has a web link: the page a web view shows, the page of "Open page" while it is shown, or the address a native view gives, such as a pull request's page. It opens that address in the external browser, and its tooltip shows it. See [decision 0148](decisions/0148-web-link-in-the-cell-header.md).
+
+A double click on an item cell's header opens the [item dialog](#item-dialog), as "Edit Item…" does. It works in every dashboard, locked or not, including a task dashboard shown inside a task cell. See [decision 0151](decisions/0151-double-click-in-task-cells.md).
 
 ### A bigger view of an item
 

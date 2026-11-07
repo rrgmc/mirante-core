@@ -9,6 +9,7 @@
 #include "layout/TaskCell.h"
 
 #include <QCoreApplication>
+#include <QTimer>
 
 namespace mirante {
 
@@ -145,6 +146,15 @@ QWidget *DashboardCellFactory::createCell(const std::optional<CellRef> &ref, boo
         const QString taskId = d->dashboard.isRoot() ? ref->task : d->dashboard.taskId;
         QObject::connect(frame, &CellFrame::openAloneRequested, frame,
                          [openAlone, taskId, item = ref->item] { openAlone(taskId, item); });
+    }
+    // A double click on the header opens the item dialog, in any dashboard,
+    // including one shown inside a task cell. The dialog is modal, so it opens
+    // once the event handler has returned. See decision 0151.
+    if (const auto edit = d->services.editItem) {
+        const QString taskId = d->dashboard.isRoot() ? ref->task : d->dashboard.taskId;
+        QObject::connect(frame, &CellFrame::editRequested, frame, [edit, taskId, item = ref->item] {
+            QTimer::singleShot(0, [edit, taskId, item] { edit(taskId, item); });
+        });
     }
     // An image dropped from another app replaces the image of an item whose
     // type takes pasted images, as Ctrl+V does, even on a locked dashboard.

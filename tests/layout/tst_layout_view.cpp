@@ -225,6 +225,7 @@ private slots:
     void factoryMakesPlacements();
     void factoryConnectsStatus();
     void factoryOpenAloneButton();
+    void factoryDoubleClickEditsItem();
     void factoryDashboardTitle();
 };
 
@@ -1151,6 +1152,63 @@ void TestLayoutView::factoryOpenAloneButton()
     QVERIFY(!button->icon().isNull());
     button->click();
     QCOMPARE(opened, QStringList{QStringLiteral("t1/i1")});
+}
+
+// A double click on an item cell's header opens the item dialog, in a task
+// dashboard and on a root dashboard. Without editItem, the click goes on to
+// the parent. See decision 0151.
+void TestLayoutView::factoryDoubleClickEditsItem()
+{
+    ItemTypeRegistry types;
+    types.registerModule(QStringLiteral("view"), &registerViewType);
+    Model model;
+    Task task;
+    task.id = QStringLiteral("t1");
+    Item item;
+    item.id = QStringLiteral("i1");
+    item.type = QStringLiteral("view.type");
+    item.name = QStringLiteral("i1");
+    task.items.push_back(item);
+    model.reset({}, {}, {task}, {});
+
+    QStringList edited;
+    LayoutServices services;
+    services.model = &model;
+    services.types = &types;
+    services.editItem = [&edited](const QString &taskId, const QString &itemId) {
+        edited << taskId + QLatin1Char('/') + itemId;
+    };
+
+    DashboardCellFactory inTask(services, DashboardRef{QStringLiteral("t1"), QStringLiteral("d1")});
+    std::unique_ptr<QWidget> taskCell(inTask.createCell(itemRef(QStringLiteral("i1")), false, nullptr));
+    QTest::mouseDClick(taskCell->findChild<QWidget *>(QStringLiteral("cellHeader")), Qt::LeftButton);
+    QTRY_COMPARE(edited, QStringList{QStringLiteral("t1/i1")});
+    edited.clear();
+
+    DashboardCellFactory onRoot(services, DashboardRef{QString(), QStringLiteral("r1")});
+    std::unique_ptr<QWidget> rootCell(
+        onRoot.createCell(CellRef{QStringLiteral("i1"), QStringLiteral("t1"), QString()}, false, nullptr));
+    QTest::mouseDClick(rootCell->findChild<QWidget *>(QStringLiteral("cellHeader")), Qt::LeftButton);
+    QTRY_COMPARE(edited, QStringList{QStringLiteral("t1/i1")});
+
+    // A frame nobody listens to leaves the double click to its parent.
+    QWidget parent;
+    int parentClicks = 0;
+    struct Watcher : QObject
+    {
+        int *count;
+        explicit Watcher(int *c) : count(c) {}
+        bool eventFilter(QObject *, QEvent *event) override
+        {
+            if (event->type() == QEvent::MouseButtonDblClick)
+                ++*count;
+            return false;
+        }
+    } watcher(&parentClicks);
+    parent.installEventFilter(&watcher);
+    auto *empty = new CellFrame(std::nullopt, false, nullptr, QString(), &parent);
+    QTest::mouseDClick(empty->findChild<QWidget *>(QStringLiteral("cellHeader")), Qt::LeftButton);
+    QCOMPARE(parentClicks, 1);
 }
 
 // The header shows the item's dashboard title, else its name, and follows
