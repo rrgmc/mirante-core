@@ -359,7 +359,7 @@ TaskCell::TaskCell(const LayoutServices &services, const DashboardRef &rootDashb
     d->openButton->setObjectName(QStringLiteral("openAloneButton"));
     d->openButton->setIcon(QIcon(QStringLiteral(":/icons/open-alone.svg")));
     d->openButton->setText(tr("Edit task dashboard"));
-    d->openButton->setToolTip(tr("Open this task dashboard on its own to edit it (or double-click the cell)"));
+    d->openButton->setToolTip(tr("Open this task dashboard on its own to edit it (or double-click its title)"));
     d->openButton->setAutoRaise(true);
     headerLayout->addWidget(d->openButton);
 
@@ -413,16 +413,20 @@ void TaskCell::openAlone()
         d->services.openTaskAlone(d->taskId, d->dashboardId);
 }
 
-// A double click anywhere in the cell opens the task dashboard on its own.
-// The cells inside do not use double clicks, so theirs arrive here.
+// A double click on the task cell's header opens the task dashboard on its
+// own. An item cell inside takes a double click on its own header and opens
+// the item dialog. Any other double click that arrives here does nothing.
+// See decision 0151.
 void TaskCell::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton) {
-        openAlone();
-        event->accept();
+    if (event->button() != Qt::LeftButton) {
+        QWidget::mouseDoubleClickEvent(event);
         return;
     }
-    QWidget::mouseDoubleClickEvent(event);
+    event->accept();
+    const QWidget *target = childAt(event->position().toPoint());
+    if (target && (target == d->header || d->header->isAncestorOf(target)))
+        openAlone();
 }
 
 void TaskCell::setEditMode(bool on)

@@ -20,6 +20,7 @@
 #include <QHBoxLayout>
 #include <QKeySequence>
 #include <QLabel>
+#include <QMetaMethod>
 #include <QMouseEvent>
 #include <QPointer>
 #include <QPushButton>
@@ -36,16 +37,27 @@ namespace mirante {
 namespace {
 
 // The header of a cell. In edit mode a drag past the drag distance calls onDrag
-// once per press.
+// once per press. A left double click calls onDoubleClick, which returns
+// whether it took the click; one it does not take goes on to the parent.
 class CellHeader : public QWidget
 {
 public:
     using QWidget::QWidget;
 
     std::function<void()> onDrag;
+    std::function<bool()> onDoubleClick;
     bool editMode = false;
 
 protected:
+    void mouseDoubleClickEvent(QMouseEvent *event) override
+    {
+        if (event->button() == Qt::LeftButton && onDoubleClick && onDoubleClick()) {
+            event->accept();
+            return;
+        }
+        QWidget::mouseDoubleClickEvent(event);
+    }
+
     void mousePressEvent(QMouseEvent *event) override
     {
         if (event->button() == Qt::LeftButton) {
@@ -196,6 +208,14 @@ CellFrame::CellFrame(const std::optional<CellRef> &ref, bool removed, const Item
     d->header->setObjectName(QStringLiteral("cellHeader"));
     cellstyle::tintHeader(d->header, cellstyle::itemHeaderStrength);
     d->header->onDrag = [this] { emit dragStarted(); };
+    // Only a cell whose owner listens takes the double click, so one on an
+    // empty or removed cell still reaches the cells around it.
+    d->header->onDoubleClick = [this] {
+        if (!isSignalConnected(QMetaMethod::fromSignal(&CellFrame::editRequested)))
+            return false;
+        emit editRequested();
+        return true;
+    };
     auto *headerLayout = new QHBoxLayout(d->header);
     d->headerLayout = headerLayout;
     headerLayout->setContentsMargins(6, 1, 2, 1);

@@ -25,7 +25,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0017](0017-parallel-tasks-with-fixed-interfaces.md) | Parallel tasks with fixed interfaces and globbed sources | Accepted; merging by 0109 and 0111 |
 | [0018](0018-no-default-task.md) | No Default task in projects | Accepted |
 | [0019](0019-fixed-task-cells-and-item-windows.md) | Task cells show one dashboard, and items open alone | Accepted |
-| [0020](0020-edit-task-dashboards-alone.md) | Task dashboards are edited only on their own | Accepted |
+| [0020](0020-edit-task-dashboards-alone.md) | Task dashboards are edited only on their own | Accepted; the double click by 0151 |
 | [0021](0021-image-items-as-files.md) | Image items, with images stored as files | Accepted |
 | [0022](0022-task-dashboard-tabs.md) | Task dashboards open in their own kind of tab | Accepted; place of the preview by 0048; pinning by 0052 |
 | [0023](0023-item-tabs.md) | Items open alone in a tab | Accepted; place of the preview by 0048; pinning by 0052 |
@@ -155,6 +155,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0148](0148-web-link-in-the-cell-header.md) | The cell header opens an item's web link | Accepted |
 | [0149](0149-public-status-pages-without-a-server.md) | Status of public status pages, fetched without the profile's server | Accepted |
 | [0150](0150-claude-bridge-plugin.md) | A Claude Code plugin reports to the Claude agents list through a folder | Accepted |
+| [0151](0151-double-click-in-task-cells.md) | A double click on an item's title opens the item dialog | Accepted |
 
 ## Template
 

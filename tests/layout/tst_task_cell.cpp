@@ -4,6 +4,7 @@
 #include "core/Model.h"
 #include "core/Store.h"
 #include "items/ItemTypeRegistry.h"
+#include "layout/CellFrame.h"
 #include "layout/DashboardCellFactory.h"
 #include "layout/LayoutView.h"
 #include "layout/LockState.h"
@@ -94,6 +95,7 @@ private slots:
     void nestedViewIsReadOnly();
     void rootItemsNameTheirTask();
     void openAlone();
+    void doubleClickOnItemHeader();
     void removedTask();
     void trashedTask();
     void headerMenuAndDrag();
@@ -332,14 +334,53 @@ void TestTaskCell::openAlone()
     button->click();
     QCOMPARE(opened, QStringList{expected});
 
-    // So does a double click, on the header or on a cell inside.
+    // So does a double click on the header.
+    cell.resize(800, 600);
+    cell.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&cell));
     QTest::mouseDClick(header(cell), Qt::LeftButton);
-    QCOMPARE(opened.size(), 2);
-    QTest::mouseDClick(cell.view()->cellAt(cell.view()->visibleCells().empty() ? NodePath{}
-                                                                                 : *cell.view()->pathOf(cell.view()->visibleCells().front())),
-                       Qt::LeftButton);
-    QCOMPARE(opened.size(), 3);
-    QCOMPARE(opened.back(), expected);
+    QCOMPARE(opened, (QStringList{expected, expected}));
+}
+
+// A double click on an item cell's header inside a task cell opens the item's
+// dialog, not the task dashboard. One on the item's body does nothing.
+void TestTaskCell::doubleClickOnItemHeader()
+{
+    QStringList opened;
+    m_services.openTaskAlone = [&opened](const QString &taskId, const QString &dashboardId) {
+        opened.append(taskId + QLatin1Char('/') + dashboardId);
+    };
+    QStringList edited;
+    m_services.editItem = [&edited](const QString &taskId, const QString &itemId) {
+        edited.append(taskId + QLatin1Char('/') + itemId);
+    };
+    TaskCell cell(m_services, {QString(), kMorningRoot}, taskRef(kFixLoginTask, kReviewDashboard));
+    cell.resize(800, 600);
+    cell.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&cell));
+
+    CellFrame *frame = nullptr;
+    for (QWidget *widget : cell.view()->visibleCells()) {
+        auto *candidate = qobject_cast<CellFrame *>(widget);
+        if (candidate && candidate->ref() && candidate->ref()->isItem()) {
+            frame = candidate;
+            break;
+        }
+    }
+    QVERIFY(frame);
+    const QString expected = kFixLoginTask + QLatin1Char('/') + frame->ref()->item;
+
+    auto *itemHeader = frame->findChild<QWidget *>(QStringLiteral("cellHeader"));
+    QVERIFY(itemHeader);
+    QTest::mouseDClick(itemHeader, Qt::LeftButton, {}, QPoint(4, itemHeader->height() / 2));
+    QTRY_COMPARE(edited, QStringList{expected});
+    QVERIFY(opened.isEmpty());
+
+    // Below the header is the item's body.
+    QTest::mouseDClick(frame, Qt::LeftButton, {}, QPoint(frame->width() / 2, (itemHeader->height() + frame->height()) / 2));
+    QCoreApplication::processEvents();
+    QCOMPARE(edited.size(), 1);
+    QVERIFY(opened.isEmpty());
 }
 
 void TestTaskCell::removedTask()

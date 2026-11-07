@@ -2752,8 +2752,8 @@ Os dados são de %2.</translation>
         <translation>Editar painel da tarefa</translation>
     </message>
     <message>
-        <source>Open this task dashboard on its own to edit it (or double-click the cell)</source>
-        <translation>Abrir este painel da tarefa sozinho para editá-lo (ou clique duas vezes na célula)</translation>
+        <source>Open this task dashboard on its own to edit it (or double-click its title)</source>
+        <translation>Abrir este painel da tarefa sozinho para editá-lo (ou clique duas vezes no título)</translation>
     </message>
 </context>
 <context>
