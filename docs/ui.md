@@ -257,7 +257,7 @@ A root dashboard is a tab in the main tab bar. It has a name and a [layout tree]
 
 - Unlock the dashboard, then drag an item or a task dashboard from the sidebar onto it. A task dashboard dropped on a root dashboard places its task there, showing that dashboard. The drop overlay shows where it lands. See [editing](#editing-layouts). A locked dashboard refuses every drop: it shows no drop zones, and the cursor shows that the drop is not possible.
 - Or use "Add to dashboard…" in the context menu, then pick a dashboard and click a cell. An empty cell is filled; any other cell is split.
-- Tasks go only into root dashboards. A task dashboard shown in a root dashboard is read-only there: it has no lock, no edit menus, and takes no drops. A drop on it acts on the root dashboard. To change a task dashboard, open it on its own with a double click on its cell, its "Edit task dashboard" button or its menu, and edit it there. See [decision 0020](decisions/0020-edit-task-dashboards-alone.md).
+- Tasks go only into root dashboards. A task dashboard shown in a root dashboard is read-only there: it has no lock, no edit menus, and takes no drops. A drop on it acts on the root dashboard. To change a task dashboard, open it on its own with a double click on its title, its "Edit task dashboard" button or its menu, and edit it there. A double click on the title of an item inside it opens the item dialog. See [decision 0020](decisions/0020-edit-task-dashboards-alone.md) and [decision 0151](decisions/0151-double-click-in-task-cells.md).
 
 ## Task dashboards
 

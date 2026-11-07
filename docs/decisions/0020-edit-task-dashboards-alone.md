@@ -1,6 +1,6 @@
 # 0020. Task dashboards are edited only on their own
 
-- Status: Accepted
+- Status: Accepted; the double click superseded by 0151
 - Date: 2026-10-28
 
 ## Context

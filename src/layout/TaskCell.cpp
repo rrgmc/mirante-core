@@ -2,6 +2,7 @@
 
 #include "core/GroupColours.h"
 
+#include "layout/CellFrame.h"
 #include "layout/CellStyle.h"
 #include "layout/DashboardCellFactory.h"
 #include "layout/HeaderPill.h"
@@ -359,7 +360,7 @@ TaskCell::TaskCell(const LayoutServices &services, const DashboardRef &rootDashb
     d->openButton->setObjectName(QStringLiteral("openAloneButton"));
     d->openButton->setIcon(QIcon(QStringLiteral(":/icons/open-alone.svg")));
     d->openButton->setText(tr("Edit task dashboard"));
-    d->openButton->setToolTip(tr("Open this task dashboard on its own to edit it (or double-click the cell)"));
+    d->openButton->setToolTip(tr("Open this task dashboard on its own to edit it (or double-click its title)"));
     d->openButton->setAutoRaise(true);
     headerLayout->addWidget(d->openButton);
 
@@ -413,16 +414,36 @@ void TaskCell::openAlone()
         d->services.openTaskAlone(d->taskId, d->dashboardId);
 }
 
-// A double click anywhere in the cell opens the task dashboard on its own.
-// The cells inside do not use double clicks, so theirs arrive here.
+// A double click on the task cell's header opens the task dashboard on its
+// own. A double click on the header of an item cell inside opens that item's
+// dialog. The cells inside do not use double clicks, so theirs arrive here.
+// A double click anywhere else does nothing. See decision 0151.
 void TaskCell::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton) {
-        openAlone();
-        event->accept();
+    if (event->button() != Qt::LeftButton) {
+        QWidget::mouseDoubleClickEvent(event);
         return;
     }
-    QWidget::mouseDoubleClickEvent(event);
+    event->accept();
+    for (QWidget *widget = childAt(event->position().toPoint()); widget && widget != this;
+         widget = widget->parentWidget()) {
+        if (widget == d->header) {
+            openAlone();
+            return;
+        }
+        auto *frame = qobject_cast<CellFrame *>(widget->parentWidget());
+        if (frame && widget->objectName() == QLatin1String("cellHeader")) {
+            const std::optional<CellRef> ref = frame->ref();
+            if (!d->removed && ref && ref->isItem() && d->services.editItem && d->services.model
+                && d->services.model->item(d->taskId, ref->item)) {
+                // The dialog is modal, so it opens once this handler has returned.
+                QTimer::singleShot(0, this, [edit = d->services.editItem, task = d->taskId, item = ref->item] {
+                    edit(task, item);
+                });
+            }
+            return;
+        }
+    }
 }
 
 void TaskCell::setEditMode(bool on)
