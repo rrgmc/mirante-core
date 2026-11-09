@@ -75,7 +75,13 @@ An app repository does the same for the core, with `FETCHCONTENT_SOURCE_DIR_MIRA
 
 ## Releases of the core
 
-The core's version is in `VERSION`, as `X.Y.Z`. A merged pull request that raises it makes the release tag `vX.Y.Z`, through `.github/workflows/tag-release.yml`, which repositories of modules call too. Apps pin these tags. Raise the minor version for a change to the module interface. Each change goes under Unreleased in [CHANGELOG.md](CHANGELOG.md), and the pull request that raises `VERSION` moves those entries under a section for the new version, which the workflow requires. See [decision 0134](docs/decisions/0134-release-tags-from-a-version-file.md).
+The core's version is in `VERSION`, as `X.Y.Z`. A merged pull request that raises it makes the release tag `vX.Y.Z`, through `.github/workflows/tag-release.yml`, which repositories of modules call too. Apps pin these tags. Raise the minor version for a change to the module interface. Each pull request adds its changelog entries as a fragment in [changelog.d](changelog.d/README.md). An interface change also adds one in [src/module_api/changelog.d](src/module_api/changelog.d/README.md). Pull requests never edit the changelogs, so they do not conflict there. The pull request that raises `VERSION` runs this:
+
+```sh
+python3 tools/release-changelog.py release X.Y.Z
+```
+
+It writes `VERSION`, moves the fragments into a section for the new version of `CHANGELOG.md`, which the workflow requires, and into the Unreleased list of `src/module_api/CHANGELOG.md`, and deletes them. Review the result before committing it. See decisions [0134](docs/decisions/0134-release-tags-from-a-version-file.md) and [0154](docs/decisions/0154-changelog-fragments.md).
 
 An interface change that breaks the modules takes these steps: a branch in `mirante-modules` with the fix, the core's pull request with `ci/modules.json` pinned to that branch, a new pin of the core in `mirante-modules`, and the merged commit in `ci/modules.json`.
 

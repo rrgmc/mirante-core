@@ -27,6 +27,7 @@ Several sessions may work on this repository at the same time, so each piece of 
 - Record each significant design decision as a new file in `docs/decisions/`, using the template in `docs/decisions/README.md`. Do not rewrite an accepted decision; add a new one that supersedes it.
 - Write a detailed code plan for a milestone just before implementing it, not earlier. The milestones are in `docs/roadmap.md`.
 - Use the terms defined in the glossary in `docs/README.md`.
+- Never edit `CHANGELOG.md` or `src/module_api/CHANGELOG.md` in a pull request. Add a fragment named after the branch to `changelog.d/`, and for a change to `src/module_api` also to `src/module_api/changelog.d/`. Each folder's `README.md` gives the format. Only a release moves fragments into the changelogs, with `tools/release-changelog.py`. See [decision 0154](docs/decisions/0154-changelog-fragments.md).
 
 ## Building
 

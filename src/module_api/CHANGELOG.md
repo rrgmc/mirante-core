@@ -1,6 +1,6 @@
 # Module interface changelog
 
-What changed in the module interface, newest first, and what a module must do about it. CI fails if a pull request changes `src/module_api` without changing this file. See [decision 0119](../../docs/decisions/0119-module-interface-versions-and-checks.md).
+What changed in the module interface, newest first, and what a module must do about it. A pull request does not edit this file. It adds a fragment to [changelog.d](changelog.d/README.md), and CI fails if it changes `src/module_api` without one. A release of the core moves the fragments here. See decisions [0119](../../docs/decisions/0119-module-interface-versions-and-checks.md) and [0154](../../docs/decisions/0154-changelog-fragments.md).
 
 While the version is 0.x, any minor version may break modules, so a module must state the exact version. From 1.0, a minor version only adds things, and only a major version may break them.
 
