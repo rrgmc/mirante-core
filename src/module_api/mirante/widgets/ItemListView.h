@@ -84,6 +84,11 @@ public:
     // the user changes the filter; then the defaults no longer apply. Call it
     // after addFilter().
     void setFilterDefault(int column, const QStringList &values);
+    // The values that the column's filter always lists, in this order, whether
+    // or not a row has them, such as every state of a Status column. A chosen
+    // value among them stays chosen while no row has it. Values of rows that
+    // are not among them follow, sorted. Call it after addFilter().
+    void setFilterValues(int column, const QStringList &values);
 
     // A line above the table that says what the list shows, such as "Assigned
     // to me · acme/backend". Empty hides it.

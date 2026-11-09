@@ -481,6 +481,8 @@ struct ItemListView::Private : public QObject
     {
         int column = 0;
         FilterChoice *choice = nullptr;
+        // Listed first, whether or not a row has them.
+        QStringList fixedValues;
     };
 
     ItemListView *q = nullptr;
@@ -598,12 +600,17 @@ struct ItemListView::Private : public QObject
         table->scrollToTop();
     }
 
-    // Fills the drop-downs from the rows. A list that has not changed stays as it
-    // is, so that new rows do not disturb an open drop-down.
+    // Fills the drop-downs from their fixed values and the rows. A list that has
+    // not changed stays as it is, so that new rows do not disturb an open
+    // drop-down.
     void updateFilters()
     {
         for (const Filter &filter : std::as_const(filters)) {
-            const QStringList values = model->valuesOf(filter.column);
+            QStringList values = filter.fixedValues;
+            for (const QString &value : model->valuesOf(filter.column)) {
+                if (!filter.fixedValues.contains(value))
+                    values.append(value);
+            }
             if (values == filter.choice->values() && filter.choice->count() > 0)
                 continue;
 
@@ -938,7 +945,7 @@ void ItemListView::addFilter(int column, const QString &label)
     holder->show();
     d->filterRow->show();
 
-    d->filters.append({column, choice});
+    d->filters.append({column, choice, {}});
     d->updateFilters();
     choice->changed = [this, column, choice] {
         d->changeRows([this, column, choice] {
@@ -967,6 +974,20 @@ void ItemListView::setFilterDefault(int column, const QStringList &values)
         d->proxy->setChoice(column, choice->chosen());
         d->page = 0;
     });
+}
+
+void ItemListView::setFilterValues(int column, const QStringList &values)
+{
+    const auto filter = std::find_if(d->filters.begin(), d->filters.end(),
+                                     [column](const Private::Filter &filter) { return filter.column == column; });
+    Q_ASSERT_X(filter != d->filters.end(), "ItemListView", "fixed values for a column without a filter");
+    if (filter == d->filters.end())
+        return;
+
+    filter->fixedValues = values;
+    filter->fixedValues.removeDuplicates();
+    filter->fixedValues.removeAll(QString());
+    d->changeRows([this] { d->updateFilters(); });
 }
 
 void ItemListView::setDescription(const QString &text)

@@ -6,6 +6,10 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+### Added
+
+- A list filter can always list a fixed set of values, such as every state of a Status column, so a chosen state stays chosen while no row has it. See `ItemListView::setFilterValues()` in [the module interface changelog](src/module_api/CHANGELOG.md).
+
 ## [0.14.0] - 2026-11-09
 
 ### Changed
