@@ -25,6 +25,12 @@ constexpr qreal itemHeaderStrength = 0.12;
 // with their group's colour. See docs/decisions/0046-group-colours.md.
 constexpr qreal taskHeaderStrength = 0.22;
 
+// Problems: dark text on amber, readable in light and dark themes. Used by
+// the problem pill in cell headers, such as "Token refused", and by the
+// main window's warning bar.
+inline const QColor problemFill(0xf2, 0xb8, 0x3a);
+inline const QColor problemText(0x3d, 0x2a, 0x00);
+
 // The style sheet border of a cell: dashed in the highlight colour in edit
 // mode, solid and thicker when the cell has the focus, and a thin, light line
 // otherwise. selector is the cell's class, such as "mirante--CellFrame".
