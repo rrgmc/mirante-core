@@ -1028,6 +1028,43 @@ private slots:
         QCOMPARE(view.visibleKeys().size(), 2);
     }
 
+    void aFilterListsItsFixedValuesWithoutRows()
+    {
+        ItemListView view;
+        view.setColumns(fourColumns(), UpdatedColumn);
+        view.addFilter(AuthorColumn, QStringLiteral("Author"));
+        view.setFilterValues(AuthorColumn, {QStringLiteral("dave"), QStringLiteral("carol")});
+        QComboBox *box = authorFilter(view);
+        QCOMPARE(itemsOf(box), (QStringList{QStringLiteral("All"), QStringLiteral("dave"), QStringLiteral("carol")}));
+
+        // Values of rows that are not fixed follow, sorted.
+        view.setRows({authoredRow(QStringLiteral("a"), 1, QStringLiteral("carol")),
+                      authoredRow(QStringLiteral("b"), 2, QStringLiteral("bob"))});
+        QCOMPARE(itemsOf(box), (QStringList{QStringLiteral("All"), QStringLiteral("dave"), QStringLiteral("carol"),
+                                            QStringLiteral("bob")}));
+
+        // A fixed value stays chosen while no row has it.
+        box->setCurrentIndex(box->findText(QStringLiteral("carol")));
+        view.setRows({authoredRow(QStringLiteral("b"), 2, QStringLiteral("bob"))});
+        QCOMPARE(box->currentText(), QStringLiteral("carol"));
+        QVERIFY(view.visibleKeys().isEmpty());
+        view.setRows({authoredRow(QStringLiteral("a"), 1, QStringLiteral("carol")),
+                      authoredRow(QStringLiteral("b"), 2, QStringLiteral("bob"))});
+        QCOMPARE(view.visibleKeys(), QStringList{QStringLiteral("a")});
+    }
+
+    void aFilterDefaultAmongFixedValuesIsChosenWithoutRows()
+    {
+        ItemListView view;
+        view.setColumns(fourColumns(), UpdatedColumn);
+        view.addFilter(AuthorColumn, QStringLiteral("Author"));
+        view.setFilterValues(AuthorColumn, {QStringLiteral("carol"), QStringLiteral("dave")});
+        view.setFilterDefault(AuthorColumn, {QStringLiteral("dave")});
+        view.setRows({authoredRow(QStringLiteral("b"), 2, QStringLiteral("bob"))});
+        QCOMPARE(authorFilter(view)->currentText(), QStringLiteral("dave"));
+        QVERIFY(view.visibleKeys().isEmpty());
+    }
+
     void aFilterDefaultIsChosenOnceARowHasIt()
     {
         ItemListView view;
