@@ -2,7 +2,7 @@
 
 All notable changes to the core of Mirante are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the core follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). While the version is 0.x, a minor version may break apps and modules.
 
-The changes to the module interface, and what a module must do about them, are in [src/module_api/CHANGELOG.md](src/module_api/CHANGELOG.md). A release is tagged when a merged pull request raises `VERSION`. See [decision 0134](docs/decisions/0134-release-tags-from-a-version-file.md).
+The changes to the module interface, and what a module must do about them, are in [src/module_api/CHANGELOG.md](src/module_api/CHANGELOG.md). A release is tagged when a merged pull request raises `VERSION`. See [decision 0134](docs/decisions/0134-release-tags-from-a-version-file.md). A pull request does not edit this file. It adds a fragment to [changelog.d](changelog.d/README.md), and the release moves the fragments here. See [decision 0154](docs/decisions/0154-changelog-fragments.md).
 
 ## [Unreleased]
 

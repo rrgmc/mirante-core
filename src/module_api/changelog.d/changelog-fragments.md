@@ -1,0 +1,1 @@
+- This changelog is written from fragments: a pull request that changes `src/module_api` adds a file to `src/module_api/changelog.d/` instead of editing this file, and a release of the core moves the fragments here. See decision 0154. Modules need no change.

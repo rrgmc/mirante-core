@@ -123,7 +123,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0116](0116-custom-builds-in-separate-repositories.md) | Custom builds split the core, the modules and the app into repositories, tried first as a sample | Accepted |
 | [0117](0117-app-repository-and-json-manifest.md) | The app is the top-level project, and a JSON manifest pins what it fetches | Accepted |
 | [0118](0118-all-builds-are-one-app.md) | All builds are the same app | Accepted |
-| [0119](0119-module-interface-versions-and-checks.md) | The module interface has a version, compatibility rules and checks | Accepted |
+| [0119](0119-module-interface-versions-and-checks.md) | The module interface has a version, compatibility rules and checks | Accepted; the changelog check by 0154 |
 | [0120](0120-fields-are-a-shortcut.md) | Declared fields are a shortcut, and every configuration screen can be custom | Accepted |
 | [0121](0121-modules-are-trusted-code.md) | Modules are trusted code, linked statically, without a sandbox | Accepted |
 | [0122](0122-custom-configuration-screens.md) | How a module gives a custom configuration screen | Accepted |
@@ -138,7 +138,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0131](0131-editions.md) | Editions name an app repository's build, which stays the same app | Accepted |
 | [0132](0132-extension-points.md) | Extension points: a module lets an app replace part of its code | Accepted |
 | [0133](0133-work-modules-in-their-own-repository.md) | The work modules move to a repository of their own | Accepted |
-| [0134](0134-release-tags-from-a-version-file.md) | Release tags from a version file, and apps pin tags | Accepted |
+| [0134](0134-release-tags-from-a-version-file.md) | Release tags from a version file, and apps pin tags | Accepted; changelog entries by 0154 |
 | [0135](0135-mirante-is-a-custom-build.md) | Mirante is built from a manifest, like every app | Accepted |
 | [0136](0136-github-releases-from-the-changelog.md) | GitHub releases from the changelog | Accepted |
 | [0137](0137-the-setup-does-not-start-mirante-at-sign-in-by-default.md) | The Windows setup does not start Mirante at sign-in by default | Accepted |
@@ -158,6 +158,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0151](0151-double-click-in-task-cells.md) | A double click on an item's title opens the item dialog | Accepted; superseded in part by 0153 |
 | [0152](0152-403-fails-only-its-request.md) | A 403 fails only its own request | Accepted |
 | [0153](0153-double-click-opens-the-item-alone.md) | A double click on an item's title opens the item alone | Accepted |
+| [0154](0154-changelog-fragments.md) | Changelog fragments, and a merge queue | Accepted |
 
 ## Template
 

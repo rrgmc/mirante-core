@@ -23,6 +23,9 @@ on:
   push:
     branches: [master]
   pull_request:
+  # A pull request in the merge queue is checked again on top of master, so
+  # that branches need not be brought up to date by hand. See decision 0154.
+  merge_group:
 
 # A new push to a pull request cancels its run that is still going. Runs on
 # master all finish, since they fill the caches that pull requests read.
@@ -244,21 +247,31 @@ jobs:
           git diff --exit-code translations/
           test -z "$(git status --porcelain translations/)"
 
-  # An interface change must say what a module has to do about it. Only pull
-  # requests have a list of changed files to compare. See decision 0119.
+  # An interface change must say what a module has to do about it, in a
+  # changelog fragment of its own, and every fragment must be well formed. Only
+  # pull requests have a list of changed files to compare. See decisions 0119
+  # and 0154.
   interface-changelog:
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-24.04
     steps:
-      - name: Check the changelog
+      - uses: actions/checkout@v7
+
+      - name: Check the fragments
+        run: python3 tools/release-changelog.py check
+
+      - name: Check the interface changelog
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
         run: |
-          files=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/files" --jq '.[].filename')
-          if echo "$files" | grep -q '^src/module_api/' && ! echo "$files" | grep -qx 'src/module_api/CHANGELOG.md'; then
-            echo "::error::This pull request changes src/module_api, so src/module_api/CHANGELOG.md must say what changed."
+          # The changelog itself and its fragments are not the interface. A
+          # release moves the fragments, so it adds none.
+          files=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/files" --jq '.[] | "\(.status) \(.filename)"')
+          if echo "$files" | cut -d' ' -f2- | grep '^src/module_api/' | grep -qvE '^src/module_api/(CHANGELOG\.md|changelog\.d/)' &&
+             ! echo "$files" | grep -v '/README\.md$' | grep -qE '^(added|modified|renamed) src/module_api/changelog\.d/[^/]+\.md$'; then
+            echo "::error::This pull request changes src/module_api, so it must add a fragment to src/module_api/changelog.d that says what changed. See src/module_api/changelog.d/README.md."
             exit 1
           fi
 
