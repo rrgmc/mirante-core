@@ -945,7 +945,7 @@ void ItemListView::addFilter(int column, const QString &label)
     holder->show();
     d->filterRow->show();
 
-    d->filters.append({column, choice});
+    d->filters.append({column, choice, {}});
     d->updateFilters();
     choice->changed = [this, column, choice] {
         d->changeRows([this, column, choice] {
