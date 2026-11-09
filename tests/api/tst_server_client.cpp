@@ -238,7 +238,7 @@ private slots:
     void givesUpAfterThreeRateLimited403();
     void refusedPausesUntilTokenChanges();
     void settingsChangeResumes();
-    void forbiddenGetPauses();
+    void forbiddenGetDoesNotPause();
     void forbiddenPostDoesNotPause();
     void putSendsMethodAndBody();
     void putSendsNoEtag();
@@ -726,15 +726,25 @@ void TestServerClient::settingsChangeResumes()
     QVERIFY(!m_clients->failing(kProfile, kModule));
 }
 
-void TestServerClient::forbiddenGetPauses()
+void TestServerClient::forbiddenGetDoesNotPause()
 {
     // A 403 with requests left is no rate limit: it is not sent again.
-    m_network->handler = [](const FakeNetwork::Sent &) {
-        return Answer{403, {}, {{"x-ratelimit-remaining", "4999"}, {"x-ratelimit-reset", "1"}}};
+    m_network->handler = [](const FakeNetwork::Sent &sent) {
+        if (sent.request.url().path() == QLatin1String("/hidden"))
+            return Answer{403, {}, {{"x-ratelimit-remaining", "4999"}, {"x-ratelimit-reset", "1"}}};
+        return Answer{200, "{}", {}};
     };
-    QCOMPARE(getAndWait(QStringLiteral("x")).error, ApiReply::Error::Refused);
-    QVERIFY(m_clients->failing(kProfile, kModule));
+    QSignalSpy changed(m_clients.get(), &ServerClients::failingChanged);
+    const ApiReply hidden = getAndWait(QStringLiteral("hidden"));
+    QCOMPARE(hidden.error, ApiReply::Error::Forbidden);
+    QCOMPARE(hidden.message, QStringLiteral("Not allowed (403)"));
+    QVERIFY(!m_clients->failing(kProfile, kModule));
+    QVERIFY(changed.isEmpty());
     QCOMPARE(m_network->sent.size(), 1);
+
+    // The server's other requests are still sent.
+    QVERIFY(getAndWait(QStringLiteral("visible")).ok());
+    QCOMPARE(m_network->sent.size(), 2);
 }
 
 void TestServerClient::forbiddenPostDoesNotPause()
