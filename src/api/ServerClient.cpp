@@ -502,7 +502,7 @@ void ServerClient::finished(QNetworkReply *reply, const RequestPtr &request)
             result.body = kept->second.body;
             result.headers = kept->second.headers;
         }
-    } else if (result.httpStatus == 401 || (result.httpStatus == 403 && isGet)) {
+    } else if (result.httpStatus == 401) {
         result.error = ApiReply::Error::Refused;
         result.message = ServerClients::tr("Token refused (%1)").arg(result.httpStatus);
         m_failingValues = request->values;
@@ -511,6 +511,9 @@ void ServerClient::finished(QNetworkReply *reply, const RequestPtr &request)
         pump();
         return;
     } else if (result.httpStatus == 403) {
+        // The token works, but cannot see this resource or do this action,
+        // such as one project's pipelines. Only this request fails. See
+        // decision 0152.
         result.error = ApiReply::Error::Forbidden;
         result.message = ServerClients::tr("Not allowed (403)");
     } else if (result.httpStatus == 404) {
