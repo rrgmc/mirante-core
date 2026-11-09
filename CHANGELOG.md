@@ -6,6 +6,12 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-09
+
+### Changed
+
+- A double click on an item cell's header opens the item dialog, as "Edit Item…" does, in every dashboard. In a task cell, only a double click on the task cell's own header opens the task dashboard; before, a double click anywhere in the cell did. See [decision 0151](docs/decisions/0151-double-click-in-task-cells.md).
+
 ### Fixed
 
 - On macOS, Mirante hidden to the menu bar shows again on the current desktop (Space). Before, macOS switched back to the desktop the window was hidden from.
@@ -130,7 +136,8 @@ The first release of the core on its own, after it was split from `mirante` for 
 
 - `qrc:` addresses in item web views, which shared one origin among all pages.
 
-[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/rrgmc/mirante-core/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/rrgmc/mirante-core/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/rrgmc/mirante-core/compare/v0.8.6...v0.12.0
 [0.8.6]: https://github.com/rrgmc/mirante-core/compare/v0.8.5...v0.8.6
