@@ -71,7 +71,7 @@ cmake --preset dev -DFETCHCONTENT_SOURCE_DIR_MIRANTE_MODULES=<folder>
 
 An app repository does the same for the core, with `FETCHCONTENT_SOURCE_DIR_MIRANTE_CORE`. On Windows, `tools/build.ps1 -Source <folder>` builds the presets of an app repository.
 
-`.github/workflows/build-app.yml` is the workflow that an app repository calls to build, test and package itself. Its only other requirement is a preset named `ci`. `release-app.yml` publishes what it built, and `update-app.yml` opens a pull request that moves the pins to the newest versions, with `tools/update-pins.py`. See [decision 0127](docs/decisions/0127-automatic-pin-updates.md).
+`.github/workflows/build-app.yml` is the workflow that an app repository calls to build, test and package itself. Its only other requirement is a preset named `ci`. If the repository has `changelog.d/`, it checks the changelog fragments there, and the repository's release runs `tools/release-changelog.py --root <repository> release X.Y.Z` from the core. See [decision 0154](docs/decisions/0154-changelog-fragments.md). `release-app.yml` publishes what it built, and `update-app.yml` opens a pull request that moves the pins to the newest versions, with `tools/update-pins.py`. See [decision 0127](docs/decisions/0127-automatic-pin-updates.md).
 
 ## Releases of the core
 

@@ -5,11 +5,11 @@ Each pull request adds its changelog entries as a file of its own, so that
 pull requests never edit the same lines. A release moves them into the
 changelogs. See docs/decisions/0154-changelog-fragments.md.
 
-    python3 tools/release-changelog.py check
+    python3 tools/release-changelog.py [--root FOLDER] check
         Checks every fragment. CI runs it on each pull request.
 
-    python3 tools/release-changelog.py release X.Y.Z [--date YYYY-MM-DD]
-        Writes X.Y.Z to VERSION. Moves the fragments of changelog.d/, with the
+    python3 tools/release-changelog.py [--root FOLDER] release X.Y.Z [--date YYYY-MM-DD]
+        Writes X.Y.Z to VERSION, if the repository has one. Moves the fragments of changelog.d/, with the
         entries already under Unreleased, into a new section "## [X.Y.Z]" of
         CHANGELOG.md, and adds its link. Moves the fragments of
         src/module_api/changelog.d/ to the top of the Unreleased list of
@@ -19,6 +19,11 @@ A fragment of changelog.d/ holds one or more headings of Keep a Changelog, such
 as "### Fixed", each with its entries. A fragment of src/module_api/changelog.d/
 holds entries only. An entry is a line that starts with "- ", and the lines
 under it that are indented. Fragments are read in the order of their names.
+
+--root names the repository to work on. The default is the core itself. A
+repository without src/module_api/changelog.d/ has only the first kind of
+fragment. build-app.yml checks the fragments of each app repository that has
+changelog.d/.
 """
 
 import argparse
@@ -27,12 +32,18 @@ import pathlib
 import re
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
-MAIN_FRAGMENTS = ROOT / "changelog.d"
-MAIN_CHANGELOG = ROOT / "CHANGELOG.md"
-API_FRAGMENTS = ROOT / "src" / "module_api" / "changelog.d"
-API_CHANGELOG = ROOT / "src" / "module_api" / "CHANGELOG.md"
-VERSION = ROOT / "VERSION"
+def set_root(root):
+    """Points every path at the repository in root."""
+    global ROOT, MAIN_FRAGMENTS, MAIN_CHANGELOG, API_FRAGMENTS, API_CHANGELOG, VERSION
+    ROOT = pathlib.Path(root).resolve()
+    MAIN_FRAGMENTS = ROOT / "changelog.d"
+    MAIN_CHANGELOG = ROOT / "CHANGELOG.md"
+    API_FRAGMENTS = ROOT / "src" / "module_api" / "changelog.d"
+    API_CHANGELOG = ROOT / "src" / "module_api" / "CHANGELOG.md"
+    VERSION = ROOT / "VERSION"
+
+
+set_root(pathlib.Path(__file__).resolve().parent.parent)
 
 # The order of Keep a Changelog.
 KINDS = ["Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"]
@@ -165,20 +176,33 @@ def release_main(version, date):
             released += [f"### {kind}", ""] + sections[kind] + [""]
     lines[start + 1:end] = [""] + released
 
-    # The links at the end: Unreleased compares from the new tag, which
-    # compares from the previous one.
-    for index, line in enumerate(lines):
-        link = re.match(r"^\[Unreleased\]: (.+)/compare/(v[^.]+\.[^.]+\.[^.]+)\.\.\.HEAD$", line)
-        if link:
-            base, previous = link.groups()
-            lines[index] = f"[Unreleased]: {base}/compare/v{version}...HEAD"
-            lines.insert(index + 1, f"[{version}]: {base}/compare/{previous}...v{version}")
-            break
-    else:
-        raise FragmentError("CHANGELOG.md has no link \"[Unreleased]: .../compare/vX.Y.Z...HEAD\".")
-
+    add_links(lines, version)
     write_text(MAIN_CHANGELOG, "\n".join(lines))
     return paths
+
+
+def add_links(lines, version):
+    """Adds the new version's link at the end, comparing from the previous
+    version, and moves the Unreleased link, if there is one, to compare from
+    the new version."""
+    previous = next((m.group(1) for m in (re.match(r"^## \[(\d+\.\d+\.\d+)\]", line) for line in lines)
+                     if m and m.group(1) != version), None)
+    # The repository's address, from any link that compares two versions.
+    base = next((m.group(1) for m in (re.match(r"^\[[^\]]+\]: (https://\S+?)/(?:compare|releases|tree)/", line)
+                                      for line in lines) if m), None)
+    if previous is None or base is None:
+        raise FragmentError("CHANGELOG.md has no earlier version with a link, to compare the new one with.")
+    link = f"[{version}]: {base}/compare/v{previous}...v{version}"
+    unreleased = next((i for i, line in enumerate(lines) if line.startswith("[Unreleased]: ")), None)
+    if unreleased is not None:
+        lines[unreleased] = f"[Unreleased]: {base}/compare/v{version}...HEAD"
+        lines.insert(unreleased + 1, link)
+        return
+    # Without an Unreleased link, the new link goes above the previous one.
+    at = next((i for i, line in enumerate(lines) if line.startswith(f"[{previous}]: ")), None)
+    if at is None:
+        raise FragmentError(f"CHANGELOG.md has no link for {previous}.")
+    lines.insert(at, link)
 
 
 def release_api():
@@ -212,15 +236,22 @@ def release(version, date):
     for path in fragments(API_FRAGMENTS):
         read_api_fragment(path)
     used = release_main(version, date) + release_api()
-    write_text(VERSION, version + "\n")
     for path in used:
         path.unlink()
-    print(f"VERSION is {version}. Moved {len(used)} fragment(s) into the changelogs.")
+    print(f"Moved {len(used)} fragment(s) into the changelogs.")
+    # An app keeps its version elsewhere, such as MIRANTE_VERSION in
+    # CMakeLists.txt, and raises it itself.
+    if VERSION.exists():
+        write_text(VERSION, version + "\n")
+        print(f"VERSION is {version}.")
+    else:
+        print(f"There is no VERSION file: raise the version to {version} where the repository keeps it.")
     return 0
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--root", help="the repository to work on; the core itself by default")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check", help="check every fragment")
     release_command = commands.add_parser("release", help="fold the fragments into the changelogs")
@@ -228,6 +259,8 @@ def main():
     release_command.add_argument("--date", default=datetime.date.today().isoformat(),
                                  help="the release date, YYYY-MM-DD; today by default")
     arguments = parser.parse_args()
+    if arguments.root:
+        set_root(arguments.root)
     try:
         if arguments.command == "check":
             return check()
