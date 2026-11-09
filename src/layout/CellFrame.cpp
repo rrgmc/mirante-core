@@ -211,9 +211,9 @@ CellFrame::CellFrame(const std::optional<CellRef> &ref, bool removed, const Item
     // Only a cell whose owner listens takes the double click, so one on an
     // empty or removed cell still reaches the cells around it.
     d->header->onDoubleClick = [this] {
-        if (!isSignalConnected(QMetaMethod::fromSignal(&CellFrame::editRequested)))
+        if (!isSignalConnected(QMetaMethod::fromSignal(&CellFrame::headerDoubleClicked)))
             return false;
-        emit editRequested();
+        emit headerDoubleClicked();
         return true;
     };
     auto *headerLayout = new QHBoxLayout(d->header);
