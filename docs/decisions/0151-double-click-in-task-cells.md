@@ -1,6 +1,6 @@
 # 0151. A double click on an item's title opens the item dialog
 
-- Status: Accepted
+- Status: Accepted; what a double click on an item's title opens superseded by 0153
 - Date: 2026-11-07
 
 ## Context

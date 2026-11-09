@@ -147,13 +147,14 @@ QWidget *DashboardCellFactory::createCell(const std::optional<CellRef> &ref, boo
         QObject::connect(frame, &CellFrame::openAloneRequested, frame,
                          [openAlone, taskId, item = ref->item] { openAlone(taskId, item); });
     }
-    // A double click on the header opens the item dialog, in any dashboard,
-    // including one shown inside a task cell. The dialog is modal, so it opens
-    // once the event handler has returned. See decision 0151.
-    if (const auto edit = d->services.editItem) {
+    // A double click on the header opens the item alone, as "Open Alone"
+    // does, in any dashboard, including one shown inside a task cell. It
+    // opens once the event handler has returned, because opening may replace
+    // this cell. See decision 0153.
+    if (const auto openAlone = d->services.openItemAlone) {
         const QString taskId = d->dashboard.isRoot() ? ref->task : d->dashboard.taskId;
-        QObject::connect(frame, &CellFrame::editRequested, frame, [edit, taskId, item = ref->item] {
-            QTimer::singleShot(0, [edit, taskId, item] { edit(taskId, item); });
+        QObject::connect(frame, &CellFrame::headerDoubleClicked, frame, [openAlone, taskId, item = ref->item] {
+            QTimer::singleShot(0, [openAlone, taskId, item] { openAlone(taskId, item); });
         });
     }
     // An image dropped from another app replaces the image of an item whose

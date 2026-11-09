@@ -155,7 +155,8 @@ Each file records one design decision: what was decided, what else was considere
 | [0148](0148-web-link-in-the-cell-header.md) | The cell header opens an item's web link | Accepted |
 | [0149](0149-public-status-pages-without-a-server.md) | Status of public status pages, fetched without the profile's server | Accepted |
 | [0150](0150-claude-bridge-plugin.md) | A Claude Code plugin reports to the Claude agents list through a folder | Accepted |
-| [0151](0151-double-click-in-task-cells.md) | A double click on an item's title opens the item dialog | Accepted |
+| [0151](0151-double-click-in-task-cells.md) | A double click on an item's title opens the item dialog | Accepted; superseded in part by 0153 |
+| [0153](0153-double-click-opens-the-item-alone.md) | A double click on an item's title opens the item alone | Accepted |
 
 ## Template
 
