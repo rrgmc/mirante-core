@@ -115,7 +115,7 @@ signals:
     void openAloneRequested();
     // The header was double-clicked. Emitted only while something is
     // connected; otherwise the double click goes on to the parent widget.
-    void editRequested();
+    void headerDoubleClicked();
     void refreshRequested();
     // The problem pill was clicked, such as "Token not set".
     void fixRequested();

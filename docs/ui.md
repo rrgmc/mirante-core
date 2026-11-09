@@ -271,7 +271,7 @@ Each cell has a small header containing:
 - the item's [status](#attention): an attention badge, a problem pill, or the data's age;
 - buttons: open in browser, refresh, a menu, and maximise. Refresh shows only for items of types that report status. **Open in browser** shows only when the item has a web link: the page a web view shows, the page of "Open page" while it is shown, or the address a native view gives, such as a pull request's page. It opens that address in the external browser, and its tooltip shows it. See [decision 0148](decisions/0148-web-link-in-the-cell-header.md).
 
-A double click on an item cell's header opens the [item dialog](#item-dialog), as "Edit Item…" does. It works in every dashboard, locked or not, including a task dashboard shown inside a task cell. See [decision 0151](decisions/0151-double-click-in-task-cells.md).
+A double click on an item cell's header opens the item alone in the preview slot, as "Open Alone" does. It works in every dashboard, locked or not, including a task dashboard shown inside a task cell. See [decision 0153](decisions/0153-double-click-opens-the-item-alone.md).
 
 ### A bigger view of an item
 
