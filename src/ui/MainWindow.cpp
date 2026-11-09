@@ -1861,9 +1861,11 @@ struct MainWindow::Private
         warningBar->setObjectName(QStringLiteral("warningBar"));
         warningBar->setFrameShape(QFrame::NoFrame);
         warningBar->setAutoFillBackground(true);
+        // The amber of the cells' problem pills, so a warning is noticed.
         QPalette palette = warningBar->palette();
-        palette.setColor(QPalette::Window, palette.color(QPalette::ToolTipBase));
-        palette.setColor(QPalette::WindowText, palette.color(QPalette::ToolTipText));
+        palette.setColor(QPalette::Window, cellstyle::problemFill);
+        palette.setColor(QPalette::WindowText, cellstyle::problemText);
+        palette.setColor(QPalette::ButtonText, cellstyle::problemText);
         warningBar->setPalette(palette);
 
         warningText = new QLabel(warningBar);

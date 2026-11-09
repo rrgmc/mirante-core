@@ -99,9 +99,9 @@ QLabel *centredLabel(const QString &text, QWidget *parent) { return createMessag
 // badges (SidebarDelegate.cpp).
 const QColor attentionColour(0xd9, 0x48, 0x3b);
 
-// The problem pill: dark text on amber, readable in light and dark themes.
-const QColor problemFill(0xf2, 0xb8, 0x3a);
-const QColor problemText(0x3d, 0x2a, 0x00);
+// The problem pill takes cellstyle::problemFill and problemText.
+using cellstyle::problemFill;
+using cellstyle::problemText;
 
 // A rounded style sheet for a badge or a pill of the given height.
 QString pillStyle(const QString &selector, const QColor &fill, const QColor &text, int height, bool bold)
