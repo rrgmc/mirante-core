@@ -54,8 +54,8 @@ struct ApiReply
         None,
         NoServer,   // no base URL in the profile, or ServerType::problem()
         NoToken,    // no token on this device
-        Refused,    // 401, or 403 on a GET: the server is now failing
-        Forbidden,  // 403 on a POST or a PUT
+        Refused,    // 401: the server is now failing
+        Forbidden,  // 403: only this request fails
         NotFound,   // 404
         Http,       // any other status of 400 or more
         Network,    // no answer: DNS, TLS, timeout, offline
