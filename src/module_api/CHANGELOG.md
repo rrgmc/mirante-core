@@ -8,6 +8,8 @@ While the version is 0.x, any minor version may break modules, so a module must 
 
 Changes that do not affect modules are listed here too.
 
+- `ApiReply::Error::Forbidden` covers a 403 on any request, `GET` included, and only that request fails. Before, a 403 on a `GET` gave `Refused` and marked the server as failing, which paused every item of the profile. A module that reads `Refused` as "no access to this resource" should read `Forbidden` so too. See decision 0152.
+- This changelog is written from fragments: a pull request that changes `src/module_api` adds a file to `src/module_api/changelog.d/` instead of editing this file, and a release of the core moves the fragments here. See decision 0154. Modules need no change.
 - `ItemListView::setFilterValues(column, values)` gives values that a filter always lists first, whether or not a row has them, such as every state of a Status column. A chosen value among them stays chosen while no row has it. Modules need no change.
 - `ItemListView`: when columns hide by width, a `stretch` column counts as at most 160 pixels, and its longer text is elided. Status pills are measured with fractional font widths. Modules need no change.
 - `ItemContext::setWebLink(url)` gives the item's address on the web. The cell header then shows an **Open in browser** button for it. A web view of `createWebView()` sets it by itself, and its toolbar no longer has a button of its own. The method has a default, so modules need no change. A module that shows a "Web" link with `ActionRow::setWebLink()` or `ItemListView::setWebLink()` for the item's own page should call `setWebLink()` on the context instead. See decision 0148. `testing::FakeItemContext::webLink` holds the last address it was given.

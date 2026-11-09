@@ -6,9 +6,22 @@ The changes to the module interface, and what a module must do about them, are i
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-09
+
 ### Added
 
 - A list filter can always list a fixed set of values, such as every state of a Status column, so a chosen state stays chosen while no row has it. See `ItemListView::setFilterValues()` in [the module interface changelog](src/module_api/CHANGELOG.md).
+- `build-app.yml` checks the changelog fragments of an app or module repository that has `changelog.d/`. `tools/release-changelog.py --root <repository>` checks and releases another repository's fragments. It writes `VERSION` only where the repository has one.
+
+### Changed
+
+- A double click on the header of an item cell opens the item alone, as "Open Alone" does. "Edit Item…" in the cell menu still opens the item dialog. See [decision 0153](docs/decisions/0153-double-click-opens-the-item-alone.md).
+- The warning bar is amber with dark text, as the cells' problem pills are, so a refused token stands out. Before, it used the tooltip colours, which on macOS are close to the window's.
+- Pull requests add their changelog entries as fragments in `changelog.d/` and `src/module_api/changelog.d/`, and a release moves them into the changelogs with `tools/release-changelog.py`. CI runs for GitHub's merge queue too. See [decision 0154](docs/decisions/0154-changelog-fragments.md).
+
+### Fixed
+
+- A 403 answer fails only its own request, with "Not allowed (403)". Before, a 403 on a read marked the whole server as failing and paused every item of the profile. GitLab answers 403 when a token cannot see one project, so one such project stopped them all. Only a 401 does that now. See [decision 0152](docs/decisions/0152-403-fails-only-its-request.md).
 
 ## [0.14.0] - 2026-11-09
 
@@ -140,7 +153,8 @@ The first release of the core on its own, after it was split from `mirante` for 
 
 - `qrc:` addresses in item web views, which shared one origin among all pages.
 
-[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/rrgmc/mirante-core/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/rrgmc/mirante-core/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/rrgmc/mirante-core/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/rrgmc/mirante-core/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/rrgmc/mirante-core/compare/v0.8.6...v0.12.0
