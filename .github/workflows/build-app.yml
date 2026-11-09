@@ -178,6 +178,12 @@ jobs:
               python3 .mirante-core/tools/check-module-includes.py "$folder"
             done
 
+      # A repository that writes its changelog from fragments. See decision
+      # 0154.
+      - name: Check changelog fragments
+        if: runner.os == 'Linux' && hashFiles('changelog.d/**') != ''
+        run: python3 .mirante-core/tools/release-changelog.py --root . check
+
       - uses: astral-sh/setup-uv@v10.3.3
         with:
           # uv only runs tools. There are no Python dependencies to cache.
