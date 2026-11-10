@@ -14,9 +14,11 @@
 # to call release-app.yml. mirante-app-template shows this.
 #
 # The build jobs hold no secrets, so the code of a module cannot reach any. On
-# macOS, a separate job signs the finished bundle and runs nothing from the
-# build. release-app.yml publishes the packages. See
-# docs/decisions/0126-macos-signing-is-a-separate-job.md.
+# macOS, the build job makes the disk image itself, signed ad hoc, unless
+# macos-signing is developer-id. Then a separate job signs the finished bundle
+# with the Developer ID and runs nothing from the build. release-app.yml
+# publishes the packages. See docs/decisions/0126-macos-signing-is-a-separate-job.md
+# and docs/decisions/0155-ad-hoc-disk-image-in-the-build-job.md.
 
 name: Build app
 
@@ -289,27 +291,39 @@ jobs:
         if: runner.os == 'Linux'
         run: cd build/ci && cpack
 
-      # A zip would lose the symbolic links inside Qt's frameworks, so the bundle
-      # travels as a tar file. The signing job needs the version for the disk
-      # image's name.
+      # Without the Developer ID, the bundle that the install signed ad hoc goes
+      # straight into the disk image, so no second macOS job waits for a
+      # runner. See decision 0155.
+      - name: Make the disk image (macOS)
+        if: runner.os == 'macOS' && inputs.macos-signing != 'developer-id'
+        env:
+          EDITION: ${{ needs.prepare.outputs.edition }}
+        run: |
+          version=$(grep '^MIRANTE_VERSION:STRING=' build/ci/CMakeCache.txt | cut -d= -f2)
+          sh .mirante-core/tools/package-macos.sh build/ci/install             "build/ci/mirante${EDITION:+-$EDITION}-$version-macos.dmg"
+
+      # For the signing job. A zip would lose the symbolic links inside Qt's
+      # frameworks, so the bundle travels as a tar file. The signing job needs
+      # the version for the disk image's name.
       - name: Pack the bundle (macOS)
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && inputs.macos-signing == 'developer-id'
         run: |
           grep '^MIRANTE_VERSION:STRING=' build/ci/CMakeCache.txt | cut -d= -f2 > build/ci/version.txt
           tar -cf build/ci/mirante-bundle.tar -C build/ci/install .
 
       - uses: actions/upload-artifact@v7
-        if: runner.os != 'macOS'
+        if: runner.os != 'macOS' || inputs.macos-signing != 'developer-id'
         with:
           name: mirante-${{ runner.os }}
           path: |
             build/ci/mirante-*-win64.exe
+            build/ci/mirante*-macos.dmg
             build/ci/mirante*_*.deb
           if-no-files-found: error
           retention-days: 7
 
       - uses: actions/upload-artifact@v7
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && inputs.macos-signing == 'developer-id'
         with:
           name: mirante-macOS-bundle
           path: |
@@ -320,12 +334,13 @@ jobs:
 
   # Runs nothing from the build, and reads no cache, so what a module built
   # cannot reach the certificate. The bundle and its version are data here.
+  # Only for the Developer ID; otherwise the build job made the disk image.
   sign-macos:
     needs: [prepare, build]
+    if: inputs.macos-signing == 'developer-id'
     runs-on: macos-15
-    environment: ${{ inputs.macos-signing == 'developer-id' && 'release' || '' }}
+    environment: release
     env:
-      SIGNING: ${{ inputs.macos-signing }}
       EDITION: ${{ needs.prepare.outputs.edition }}
     steps:
       # Pinned to commits: this job can hold the signing secrets.
@@ -355,7 +370,6 @@ jobs:
       # A keychain of its own, with a random password, holds the Developer ID
       # certificate for this job only. The last step deletes it.
       - name: Import the signing certificate
-        if: env.SIGNING == 'developer-id'
         env:
           CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
           CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -378,15 +392,10 @@ jobs:
 
       - name: Sign the bundle and make the disk image
         run: |
-          identity=-
-          if [ "$SIGNING" = developer-id ]; then
-            identity="Developer ID Application"
-          fi
-          sh core/tools/sign-macos.sh install/mirante.app "$identity" core/resources/macos/webengine.entitlements
+          sh core/tools/sign-macos.sh install/mirante.app "Developer ID Application" core/resources/macos/webengine.entitlements
           sh core/tools/package-macos.sh install "$DMG"
 
       - name: Notarise the disk image
-        if: env.SIGNING == 'developer-id'
         env:
           NOTARY_API_KEY: ${{ secrets.NOTARY_API_KEY }}
           MIRANTE_NOTARY_KEY: ${{ runner.temp }}/notary.p8
@@ -405,7 +414,7 @@ jobs:
           retention-days: 7
 
       - name: Remove the signing keychain and key
-        if: always() && env.SIGNING == 'developer-id'
+        if: always()
         run: |
           security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
           rm -f "$RUNNER_TEMP/notary.p8"
