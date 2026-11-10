@@ -130,7 +130,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0123](0123-tokens-stay-on-their-origin.md) | A token goes only to the origin of its server | Accepted |
 | [0124](0124-the-core-owns-the-app.md) | The core owns the app | Accepted |
 | [0125](0125-how-modules-are-fetched.md) | How the core fetches modules, and the fields of the manifest | Accepted |
-| [0126](0126-macos-signing-is-a-separate-job.md) | macOS signing is a separate job | Accepted |
+| [0126](0126-macos-signing-is-a-separate-job.md) | macOS signing is a separate job | Accepted; ad hoc signing job superseded by 0155 |
 | [0127](0127-automatic-pin-updates.md) | Automatic pin updates, and a release for each merged update | Accepted |
 | [0128](0128-module-pages-have-their-own-origin.md) | Module pages have their own origin, on a `module://` scheme | Accepted |
 | [0129](0129-folder-entries-options-and-optional-modules.md) | Folder entries with build options, and optional modules | Accepted |
@@ -159,6 +159,7 @@ Each file records one design decision: what was decided, what else was considere
 | [0152](0152-403-fails-only-its-request.md) | A 403 fails only its own request | Accepted |
 | [0153](0153-double-click-opens-the-item-alone.md) | A double click on an item's title opens the item alone | Accepted |
 | [0154](0154-changelog-fragments.md) | Changelog fragments, and a merge queue | Accepted |
+| [0155](0155-ad-hoc-disk-image-in-the-build-job.md) | Without the Developer ID, the macOS build job makes the disk image | Accepted |
 
 ## Template
 

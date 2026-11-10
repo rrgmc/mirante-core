@@ -1,6 +1,6 @@
 # 0126. macOS signing is a separate job
 
-- Status: Accepted
+- Status: Accepted; the signing job for `none` superseded by [0155](0155-ad-hoc-disk-image-in-the-build-job.md)
 - Date: 2026-11-02
 
 ## Context
